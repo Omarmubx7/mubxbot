@@ -1,0 +1,15 @@
+[
+  {
+    "name": "Israa Ibrahim Saadeh",
+    "school": "School of Computing and Informatics",
+    "department": "Cyber Security",
+    "email": "israa.hasan@htu.edu.jo",
+    "office": "S-321",
+    "office_hours": {
+      "Monday": "11:30 PM – 12:30 PM",
+      "Tuesday": "2:30 PM – 3:30 PM",
+      "Thursday": "11:30 AM – 12:30 PM"
+    }
+  }
+  /* PASTE YOUR REAL JSON ARRAY HERE, KEEPING THE SAME FORMAT */
+]
