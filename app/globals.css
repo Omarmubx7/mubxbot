@@ -3,81 +3,75 @@
 
 @layer base {
   :root {
-    /* 2026 Vision - Pristine Light */
     --primary: #007AFF;
     --accent: #5856D6;
-    --bg-page: #FFFFFF;
+    --bg-page: #F2F2F7;
     --text-primary: #1C1C1E;
     --text-secondary: #636366;
     --text-tertiary: #8E8E93;
-    --success: #34C759;
     
-    /* Blended Atmosphere - Light */
-    --mesh-1: rgba(0, 122, 255, 0.12);
-    --mesh-2: rgba(88, 86, 214, 0.12);
-    --mesh-3: rgba(255, 45, 85, 0.08);
+    /* Blended Mesh Colors - Light */
+    --mesh-1: rgba(0, 122, 255, 0.15);
+    --mesh-2: rgba(88, 86, 214, 0.15);
+    --mesh-3: rgba(255, 45, 85, 0.1);
     
     --glass-bg: rgba(255, 255, 255, 0.4);
     --glass-border: rgba(255, 255, 255, 0.5);
-    --spatial-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.08);
   }
 
   .dark {
-    /* 2026 Vision - Midnight Glass */
     --primary: #0A84FF;
     --accent: #5E5CE6;
     --bg-page: #000000;
     --text-primary: #FFFFFF;
     --text-secondary: #AEAEB2;
     --text-tertiary: #8E8E93;
-    --success: #30D158;
 
-    /* Blended Atmosphere - Dark */
-    --mesh-1: rgba(10, 132, 255, 0.18);
-    --mesh-2: rgba(94, 92, 230, 0.18);
-    --mesh-3: rgba(255, 55, 95, 0.12);
+    /* Blended Mesh Colors - Dark */
+    --mesh-1: rgba(10, 132, 255, 0.2);
+    --mesh-2: rgba(94, 92, 230, 0.2);
+    --mesh-3: rgba(255, 55, 95, 0.15);
     
     --glass-bg: rgba(28, 28, 30, 0.45);
     --glass-border: rgba(255, 255, 255, 0.1);
-    --spatial-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5);
   }
 
   html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-page);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
     overscroll-behavior: none;
-    touch-action: manipulation;
-    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* Dynamic Atmosphere Background */
+    
+    /* Dynamic Theme Blended Mesh Background */
     background-image: 
       radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
       radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
       radial-gradient(at 100% 100%, var(--mesh-1) 0px, transparent 50%),
       radial-gradient(at 0% 100%, var(--mesh-3) 0px, transparent 50%);
     background-attachment: fixed;
+    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
 @layer components {
   .glass-surface {
     background: var(--glass-bg) !important;
-    backdrop-filter: blur(50px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(50px) saturate(190%) !important;
+    backdrop-filter: blur(30px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
     border: 1px solid var(--glass-border) !important;
+    transition: background 0.5s ease, border 0.5s ease;
   }
 
   .glass-card {
     background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(25px) saturate(170%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
+    backdrop-filter: blur(20px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 }
@@ -85,14 +79,11 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.chat-scroll::-webkit-scrollbar { display: none; }
-.chat-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-@keyframes appleSpring {
+@keyframes appleEntrance {
   from { opacity: 0; transform: translateY(15px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.spring-in {
-  animation: appleSpring 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.1) forwards;
+.animate-entrance {
+  animation: appleEntrance 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }

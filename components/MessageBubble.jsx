@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 export default function MessageBubble({ sender, children, isTyping = false, timestamp }) {
   const isUser = sender === "user";
   
-  // FIX: Bulletproof date handling
   let timeString = "";
   try {
     if (timestamp instanceof Date) {
@@ -19,31 +18,39 @@ export default function MessageBubble({ sender, children, isTyping = false, time
   }
 
   return (
-    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} px-4 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} px-4 mb-1`}
+    >
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%]`}>
         <div
-          className={`relative px-[14px] py-[10px] text-[15px] shadow-sm ${
+          className={`relative px-[16px] py-[10px] shadow-sm transition-all duration-300 ${
             isUser
-              ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-[18px] rounded-tr-[4px]'
-              : 'bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white rounded-[18px] rounded-tl-[4px]'
+              ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-[22px] rounded-tr-[4px]'
+              : 'glass-card text-[var(--text-primary)] rounded-[22px] rounded-tl-[4px]'
           }`}
         >
           {isTyping ? (
-            <div className="flex gap-1 items-center h-5">
+            <div className="flex gap-1.5 items-center h-5 px-1">
               {[0, 150, 300].map((delay) => (
-                <span key={delay} className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${delay}ms` }}></span>
+                <span 
+                  key={delay}
+                  className="w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)] animate-bounce" 
+                  style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
+                ></span>
               ))}
             </div>
           ) : (
-            <div className="leading-[1.4] break-words">{children}</div>
+            <div className="text-[15px] leading-[1.45] font-medium break-words relative z-10">{children}</div>
           )}
         </div>
         {timeString && (
-          <span className="text-[11px] text-[#8E8E93] dark:text-[#98989D] mt-1 px-1">
+          <span className="text-[10px] font-bold text-[var(--text-tertiary)] mt-1.5 px-2 uppercase tracking-tight opacity-70">
             {timeString}
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
