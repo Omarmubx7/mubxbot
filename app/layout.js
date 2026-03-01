@@ -9,6 +9,12 @@ const DoctorsContext = createContext();
 
 export const useDoctors = () => useContext(DoctorsContext);
 
+export const metadata = {
+  metadataBase: new URL("https://mbot.mubx.dev"),
+  title: "MubxBot | HTU School of Computing",
+  description: "Official Computing Directory for HTU School of Computing and Informatics.",
+};
+
 export default function RootLayout({ children }) {
   const [theme, setTheme] = useState("light");
   const [instructors, setInstructors] = useState([]);
