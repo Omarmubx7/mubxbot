@@ -726,6 +726,10 @@
     height: 100%;
   }
 
+  .h-screen {
+    height: 100vh;
+  }
+
   .max-h-\[80vh\] {
     max-height: 80vh;
   }
@@ -1703,8 +1707,20 @@
   }
 
   @media (min-width: 48rem) {
+    .md\:mb-\[5vh\] {
+      margin-bottom: 5vh;
+    }
+  }
+
+  @media (min-width: 48rem) {
     .md\:h-\[90vh\] {
       height: 90vh;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .md\:max-h-\[850px\] {
+      max-height: 850px;
     }
   }
 

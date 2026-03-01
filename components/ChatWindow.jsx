@@ -210,8 +210,8 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-chat)] relative overflow-hidden">
-      {/* 5.1 Header */}
-      <header className="h-[60px] px-4 flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 sticky top-0 z-50">
+      {/* 5.1 Header - Pinned */}
+      <header className="h-[60px] px-4 flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#007AFF] to-[#0A84FF] flex items-center justify-center text-white">
             <Monitor size={20} />
@@ -233,7 +233,7 @@ export default function ChatWindow() {
         </button>
       </header>
 
-      {/* Chat Area & Empty State */}
+      {/* Chat Area & Empty State - Scrollable */}
       <div className="flex-1 overflow-y-auto flex flex-col no-scrollbar" onClick={() => setSuggestions([])}>
         {messages.length === 0 ? (
           <EmptyState />
@@ -299,8 +299,8 @@ export default function ChatWindow() {
         </div>
       )}
 
-      {/* 5.4 Input Bar */}
-      <div className="h-[72px] px-4 flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 sticky bottom-0 z-50 shadow-input">
+      {/* 5.4 Input Bar - Pinned */}
+      <div className="h-[72px] px-4 flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
         <button className="w-9 h-9 flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
           <Plus size={24} />
         </button>
