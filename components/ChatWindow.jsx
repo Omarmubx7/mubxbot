@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Search, User, School, MapPin, Mail, Clock, Plus, Monitor } from "lucide-react";
+import { Monitor, Search, Plus, Send, User, School, MapPin, Mail, Clock } from "lucide-react";
 import Fuse from "fuse.js";
 import { AnimatePresence } from "framer-motion";
 import MessageBubble from "./MessageBubble.jsx";
-import { useDoctors } from "../app/layout.js";
+import { useDoctors } from "./Providers.jsx";
 
 const DoctorInfo = ({ doctor }) => (
   <div className="space-y-3 py-1 text-[var(--text-primary)]">

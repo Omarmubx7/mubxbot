@@ -3,7 +3,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ChatWindow from "../components/ChatWindow.jsx";
-import { useDoctors } from "./layout.js";
+import { useDoctors } from "../components/Providers.jsx";
 
 export default function Page() {
   const { loading } = useDoctors();
