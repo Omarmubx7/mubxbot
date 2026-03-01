@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from "react";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 // Create Context
 const DoctorsContext = createContext();
@@ -57,6 +58,7 @@ export default function RootLayout({ children }) {
         <DoctorsContext.Provider value={{ instructors, setInstructors, loading, theme, setTheme }}>
           {children}
         </DoctorsContext.Provider>
+        <Analytics />
       </body>
     </html>
   );
