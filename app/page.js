@@ -15,13 +15,13 @@ export default function Page() {
   );
 
   return (
-    <div className="h-screen h-[100dvh] w-full flex flex-col md:items-center p-0 md:bg-[var(--bg-chat)] transition-colors duration-300 overflow-hidden">
+    <div className="min-h-screen bg-[#F2F2F7] dark:bg-black flex justify-center transition-colors duration-300">
       <AnimatePresence mode="wait">
         <motion.div 
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="flex-1 flex flex-col w-full md:max-w-[480px] md:h-[90vh] md:max-h-[850px] md:mt-[5vh] md:mb-[5vh] bg-[var(--bg-page)] md:rounded-[20px] md:shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden relative"
+          className="flex flex-col w-full max-w-[430px] md:max-w-[720px] lg:max-w-[960px] min-h-screen bg-[var(--bg-page)] relative overflow-hidden"
         >
           <ChatWindow />
         </motion.div>
