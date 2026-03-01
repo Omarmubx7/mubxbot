@@ -21,7 +21,7 @@ export default function Page() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="flex flex-col w-full max-w-[430px] md:max-w-[720px] lg:max-w-[960px] min-h-screen bg-[var(--bg-page)] relative overflow-hidden"
+          className="flex flex-col w-full max-w-[430px] md:max-w-[720px] lg:max-w-[960px] min-h-screen bg-[var(--bg-page)] relative"
         >
           <ChatWindow />
         </motion.div>

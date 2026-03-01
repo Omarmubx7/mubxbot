@@ -238,8 +238,8 @@ export default function ChatWindow() {
     : ["Search another", "Office hours only"];
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-chat)] relative overflow-hidden font-sans">
-      <header className="h-[60px] min-h-[60px] px-4 pt-[env(safe-area-inset-top)] flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
+    <div className="flex flex-col h-full bg-[var(--bg-chat)] relative overflow-hidden font-sans pt-safe">
+      <header className="h-[60px] min-h-[60px] px-4 flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-gradient-to-tr from-[#007AFF] to-[#0A84FF] flex items-center justify-center shadow-sm">
             <Monitor size={18} className="text-white" />
@@ -327,7 +327,7 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <div className="h-[72px] min-h-[72px] px-4 pb-[env(safe-area-inset-bottom)] flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
+      <div className="h-[72px] min-h-[72px] px-4 pb-safe flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
         <button className="w-11 h-11 flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors active:scale-90">
           <Plus size={24} />
         </button>

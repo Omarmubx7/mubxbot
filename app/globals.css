@@ -54,6 +54,8 @@
   .chip-radius { border-radius: 20px; }
   .input-radius { border-radius: 24px; }
   .card-radius { border-radius: 16px; }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
   /* 3.5 Shadow & Depth (Light Mode) */
   .shadow-card { box-shadow: 0px 2px 8px rgba(0,0,0,0.04); }
