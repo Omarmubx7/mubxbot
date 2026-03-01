@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* 3.1 Color Palette - Light Mode */
+    --primary: #007AFF;
+    --msg-bot: #E9ECEF;
+    --bg-chat: #F8F9FA;
+    --bg-page: #FFFFFF;
+    --text-primary: #1C1C1E;
+    --text-secondary: #8E8E93;
+    --accent: #007AFF;
+    --success: #34C759;
+
+    /* 3.3 Spacing System */
+    --spacing-micro: 4px;
+    --spacing-xs: 8px;
+    --spacing-s: 12px;
+    --spacing-m: 16px;
+    --spacing-l: 24px;
+    --spacing-xl: 32px;
+    --spacing-xxl: 48px;
+  }
+
+  .dark {
+    /* 3.1 Color Palette - Dark Mode */
+    --primary: #0A84FF;
+    --msg-bot: #2C2C2E;
+    --bg-chat: #1C1C1E;
+    --bg-page: #000000;
+    --text-primary: #FFFFFF;
+    --text-secondary: #98989D;
+    --accent: #0A84FF;
+    --success: #30D158;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* 3.2 Typography Font Stack */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* 3.4 Corners & Radius */
+  .bubble-radius { border-radius: 18px; }
+  .chip-radius { border-radius: 20px; }
+  .input-radius { border-radius: 24px; }
+  .card-radius { border-radius: 16px; }
+
+  /* 3.5 Shadow & Depth (Light Mode) */
+  .shadow-card { box-shadow: 0px 2px 8px rgba(0,0,0,0.04); }
+  .shadow-bubble { box-shadow: 0px 1px 2px rgba(0,0,0,0.06); }
+  .shadow-input { box-shadow: 0px -1px 3px rgba(0,0,0,0.05); }
+
+  .dark .shadow-card { box-shadow: 0px 4px 12px rgba(0,0,0,0.3); }
+  .dark .shadow-bubble { box-shadow: 0px 1px 2px rgba(0,0,0,0.2); }
+  .dark .shadow-input { box-shadow: 0px -1px 3px rgba(0,0,0,0.2); }
+
+  /* 5.2.1 & 5.2.2 iMessage Bubble Tails */
+  .bubble-tail-bot::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: -6px;
+    width: 15px;
+    height: 18px;
+    background-color: var(--msg-bot);
+    border-bottom-right-radius: 10px;
+    z-index: -1;
+  }
+  .bubble-tail-bot::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: -12px;
+    width: 15px;
+    height: 18px;
+    background-color: var(--bg-chat);
+    border-bottom-right-radius: 8px;
+    z-index: 0;
+  }
+
+  .bubble-tail-user::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    right: -6px;
+    width: 15px;
+    height: 18px;
+    background-color: var(--primary);
+    border-bottom-left-radius: 10px;
+    z-index: -1;
+  }
+  .bubble-tail-user::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    right: -12px;
+    width: 15px;
+    height: 18px;
+    background-color: var(--bg-chat);
+    border-bottom-left-radius: 8px;
+    z-index: 0;
+  }
+}
+
+/* 6.1 Message Entrance Animation */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-entrance {
+  animation: fadeSlideUp 250ms ease-out forwards;
+}
+
+/* 6.6 Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-entrance {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
