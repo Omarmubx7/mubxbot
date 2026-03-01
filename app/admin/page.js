@@ -25,7 +25,7 @@ const Modal = ({ title, isOpen, onClose, children }) => (
         >
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
           </div>
           <div className="px-6 py-6 overflow-y-auto max-h-[80vh]">
             {children}
@@ -123,7 +123,7 @@ export default function AdminPage() {
           </div>
           <button 
             onClick={handleOpenAdd}
-            className="flex items-center justify-center gap-2 bg-[var(--primary)] text-white px-6 py-3 rounded-2xl font-bold hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all active:scale-95"
+            className="flex items-center justify-center gap-2 bg-[var(--primary)] text-white px-6 py-3.5 min-h-[48px] rounded-2xl font-bold hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all active:scale-95"
           >
             <Plus size={20} /> Add Instructor
           </button>
@@ -139,7 +139,7 @@ export default function AdminPage() {
                 placeholder="Search by name or department..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all"
+                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl min-h-[48px] py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[15px]"
               />
             </div>
             <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">
@@ -182,16 +182,18 @@ export default function AdminPage() {
                       {doc.office}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => handleOpenEdit(doc)}
-                          className="p-2 text-slate-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/5 rounded-xl transition-all"
+                          className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/5 rounded-xl transition-all"
+                          aria-label="Edit instructor"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button 
                           onClick={() => setIsDeleting(doc.name)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
+                          className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
+                          aria-label="Delete instructor"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -220,8 +222,9 @@ export default function AdminPage() {
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Full Name</label>
+            <label htmlFor="fullname" className="text-xs font-black uppercase tracking-widest text-slate-400">Full Name</label>
             <input 
+              id="fullname"
               required
               className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
               value={formData.name}
@@ -230,8 +233,9 @@ export default function AdminPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Department</label>
+              <label htmlFor="dept" className="text-xs font-black uppercase tracking-widest text-slate-400">Department</label>
               <input 
+                id="dept"
                 required
                 className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
                 value={formData.department}
@@ -239,8 +243,9 @@ export default function AdminPage() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Office</label>
+              <label htmlFor="office" className="text-xs font-black uppercase tracking-widest text-slate-400">Office</label>
               <input 
+                id="office"
                 required
                 className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
                 value={formData.office}
@@ -249,8 +254,9 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Email Address</label>
+            <label htmlFor="email" className="text-xs font-black uppercase tracking-widest text-slate-400">Email Address</label>
             <input 
+              id="email"
               required
               type="email"
               className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
@@ -283,13 +289,13 @@ export default function AdminPage() {
             <button 
               type="button"
               onClick={handleCloseModal}
-              className="flex-1 px-4 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-sm"
+              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-[15px]"
             >
               Cancel
             </button>
             <button 
               type="submit"
-              className="flex-1 px-4 py-3 rounded-2xl font-bold bg-[var(--primary)] text-white hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all text-sm"
+              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-[var(--primary)] text-white hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all text-[15px]"
             >
               {currentDoctor ? "Update Instructor" : "Save Instructor"}
             </button>
@@ -316,13 +322,13 @@ export default function AdminPage() {
           <div className="flex gap-3">
             <button 
               onClick={() => setIsDeleting(null)}
-              className="flex-1 px-4 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-sm"
+              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-[15px]"
             >
               Cancel
             </button>
             <button 
               onClick={() => handleDelete(isDeleting)}
-              className="flex-1 px-4 py-3 rounded-2xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all text-sm"
+              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all text-[15px]"
             >
               Delete Permanently
             </button>

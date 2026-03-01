@@ -196,10 +196,10 @@ export default function ChatWindow() {
                   <button
                     key={`${r.item.name}|${i}`}
                     onClick={() => handleSend(null, r.item)}
-                    className="w-full text-left p-3 rounded-xl border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all active:scale-[0.98] flex flex-col"
+                    className="w-full text-left p-3 min-h-[44px] rounded-xl border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all active:scale-[0.98] flex flex-col justify-center"
                   >
-                    <span className="font-bold text-[14px]">{r.item.name}</span>
-                    <span className="text-[11px] opacity-80">{r.item.department} • {r.item.office}</span>
+                    <span className="font-bold text-[14px] leading-tight">{r.item.name}</span>
+                    <span className="text-[11px] opacity-80 leading-tight">{r.item.department} • {r.item.office}</span>
                   </button>
                 ))}
               </div>
@@ -239,7 +239,7 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-chat)] relative overflow-hidden font-sans">
-      <header className="h-[60px] min-h-[60px] px-4 flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
+      <header className="h-[60px] min-h-[60px] px-4 pt-[env(safe-area-inset-top)] flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-gradient-to-tr from-[#007AFF] to-[#0A84FF] flex items-center justify-center shadow-sm">
             <Monitor size={18} className="text-white" />
@@ -254,7 +254,7 @@ export default function ChatWindow() {
         </div>
         <button 
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 active:rotate-180"
+          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 active:rotate-180"
           aria-label="Toggle light and dark theme"
         >
           {theme === "light" ? "☀️" : "🌙"}
@@ -295,7 +295,7 @@ export default function ChatWindow() {
                     handleSend(reply);
                   }
                 }}
-                className="px-4 py-2 chip-radius border-[1.5px] border-[var(--primary)] text-[var(--primary)] text-[14px] font-medium transition-all duration-200 hover:bg-[var(--primary)]/10 active:scale-[0.97]"
+                className="px-4 py-2 min-h-[44px] chip-radius border-[1.5px] border-[var(--primary)] text-[var(--primary)] text-[14px] font-medium transition-all duration-200 hover:bg-[var(--primary)]/10 active:scale-[0.97]"
               >
                 {reply}
               </button>
@@ -304,9 +304,11 @@ export default function ChatWindow() {
         )}
       </div>
 
+      {/* Suggestions Overlay - Anchored to input bar */}
       {suggestions.length > 0 && (
         <div 
-          className="absolute bottom-[84px] left-4 right-4 bg-[var(--bg-page)]/95 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden z-[60] animate-entrance"
+          className="absolute bottom-[calc(72px+env(safe-area-inset-bottom)+12px)] left-4 right-4 bg-[var(--bg-page)]/95 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-xl overflow-y-auto max-h-[40vh] z-[60] animate-entrance no-scrollbar"
+          role="listbox"
         >
           {suggestions.map((s, index) => (
             <button 
@@ -325,27 +327,28 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <div className="h-[72px] min-h-[72px] px-4 flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
-        <button className="w-9 h-9 flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors active:scale-90">
+      <div className="h-[72px] min-h-[72px] px-4 pb-[env(safe-area-inset-bottom)] flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
+        <button className="w-11 h-11 flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors active:scale-90">
           <Plus size={24} />
         </button>
         <div className="flex-1 relative flex items-center">
+          <label htmlFor="doctor-search" className="sr-only">Search for a doctor by name</label>
           <input 
+            id="doctor-search"
             className="w-full h-[44px] px-4 bg-[var(--msg-bot)] border-none input-radius text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--accent)]/30 transition-all outline-none"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type doctor name..."
-            aria-label="Search for a doctor by name"
           />
         </div>
         <button 
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 ${inputValue.trim() ? "bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20" : "bg-[var(--primary)]/50 text-white/70 cursor-not-allowed"}`}
+          className={`w-11 h-11 min-w-[44px] rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 ${inputValue.trim() ? "bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20" : "bg-[var(--primary)]/50 text-white/70 cursor-not-allowed"}`}
           onClick={() => handleSend()}
           disabled={!inputValue.trim()}
           aria-label="Send message"
         >
-          <Send size={18} />
+          <Send size={20} />
         </button>
       </div>
     </div>
