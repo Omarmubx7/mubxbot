@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, MapPin, School, User } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, MapPin, Clock } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,25 +9,22 @@ import { motion, AnimatePresence } from "framer-motion";
 const Modal = ({ title, isOpen, onClose, children }) => (
   <AnimatePresence>
     {isOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-md"
         />
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800"
+          className="relative w-full max-w-lg glass-surface rounded-[32px] shadow-2xl overflow-hidden border border-white/20"
         >
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
-            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+          <div className="px-8 py-6 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between bg-white/20 dark:bg-black/20">
+            <h3 className="text-xl font-sf-bold tracking-tight">{title}</h3>
+            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[var(--text-tertiary)]">✕</button>
           </div>
-          <div className="px-6 py-6 overflow-y-auto max-h-[80vh]">
+          <div className="px-8 py-8 overflow-y-auto max-h-[70vh] no-scrollbar">
             {children}
           </div>
         </motion.div>
@@ -44,35 +41,15 @@ export default function AdminPage() {
   const [isDeleting, setIsDeleting] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    school: "School of Computing and Informatics",
-    department: "",
-    email: "",
-    office: "",
-    office_hours: {
-      Monday: "",
-      Tuesday: "",
-      Wednesday: "",
-      Thursday: "",
-      Friday: ""
-    }
+    name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
+    office_hours: { Monday: "", Tuesday: "", Wednesday: "", Thursday: "", Friday: "" }
   });
 
   const handleOpenAdd = () => {
     setCurrentDoctor(null);
     setFormData({
-      name: "",
-      school: "School of Computing and Informatics",
-      department: "",
-      email: "",
-      office: "",
-      office_hours: {
-        Monday: "",
-        Tuesday: "",
-        Wednesday: "",
-        Thursday: "",
-        Friday: ""
-      }
+      name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
+      office_hours: { Monday: "", Tuesday: "", Wednesday: "", Thursday: "", Friday: "" }
     });
     setIsModalOpen(true);
   };
@@ -83,17 +60,10 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
   const handleSave = (e) => {
     e.preventDefault();
-    if (currentDoctor) {
-      setInstructors(prev => prev.map(d => d.name === currentDoctor.name ? formData : d));
-    } else {
-      setInstructors(prev => [...prev, formData]);
-    }
+    if (currentDoctor) { setInstructors(prev => prev.map(d => d.name === currentDoctor.name ? formData : d)); } 
+    else { setInstructors(prev => [...prev, formData]); }
     setIsModalOpen(false);
   };
 
@@ -110,93 +80,67 @@ export default function AdminPage() {
   if (loading) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-y-auto no-scrollbar relative font-sans">
+      {/* Premium Apple Header */}
+      <div className="sticky top-0 z-50 px-6 md:px-12 py-6 bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-b border-black/[0.03] dark:border-white/[0.05] pt-safe">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <Link href="/" className="inline-flex items-center text-sm font-medium text-[var(--primary)] hover:underline mb-2 gap-1">
-              <ArrowLeft size={14} /> Back to Chat
+            <Link href="/" className="inline-flex items-center text-[13px] font-sf-bold text-[var(--primary)] hover:opacity-70 mb-2 transition-all group">
+              <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MBOT
             </Link>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Admin Dashboard</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Manage School of Computing Directory</p>
+            <h1 className="text-[32px] font-sf-black tracking-tighter leading-tight">Control Center</h1>
           </div>
-          <button 
-            onClick={handleOpenAdd}
-            className="flex items-center justify-center gap-2 bg-[var(--primary)] text-white px-6 py-3.5 min-h-[48px] rounded-2xl font-bold hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all active:scale-95"
+          <button onClick={handleOpenAdd}
+            className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#007AFF] to-[#5856D6] text-white px-6 py-3 rounded-full font-sf-bold shadow-lg shadow-[#007AFF]/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
-            <Plus size={20} /> Add Instructor
+            <Plus size={20} strokeWidth={2.5} /> New Instructor
           </button>
         </div>
+      </div>
 
-        {/* Search & Stats */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 mb-6 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search by name or department..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl min-h-[48px] py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[15px]"
-              />
-            </div>
-            <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-              {filtered.length} Instructors Found
+      <div className="max-w-6xl mx-auto p-6 md:p-12 space-y-8 pb-32">
+        {/* Spotlight Search */}
+        <div className="glass-card rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
+          <div className="flex items-center gap-4 px-4">
+            <Search className="text-[var(--text-tertiary)]" size={22} />
+            <input type="text" placeholder="Search directoy..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 bg-transparent border-none min-h-[48px] text-[18px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
+            />
+            <div className="px-4 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[12px] font-sf-black text-[var(--text-secondary)] uppercase tracking-widest">
+              {filtered.length} FOUND
             </div>
           </div>
         </div>
 
         {/* Table View */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div className="glass-surface rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-[var(--shadow-spatial)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Instructor</th>
-                  <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Department</th>
-                  <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Contact</th>
-                  <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Office</th>
-                  <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                <tr className="bg-black/5 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
+                  <th className="px-8 py-4 text-[11px] font-sf-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Instructor</th>
+                  <th className="px-8 py-4 text-[11px] font-sf-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Department</th>
+                  <th className="px-8 py-4 text-[11px] font-sf-black uppercase tracking-[0.2em] text-[var(--text-tertiary)] text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+              <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.05]">
                 {filtered.map((doc) => (
-                  <tr key={doc.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900 dark:text-white">{doc.name}</div>
-                      <div className="text-[11px] text-slate-500">{doc.school}</div>
+                  <tr key={doc.name} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="font-sf-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
+                      <div className="flex items-center gap-2 mt-1.5 opacity-60">
+                        <Mail size={12} /> <span className="text-[13px] font-medium">{doc.email}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="bg-[var(--primary)]/10 text-[var(--primary)] text-[10px] font-black uppercase px-2.5 py-1 rounded-full whitespace-nowrap">
+                    <td className="px-8 py-6">
+                      <span className="bg-[var(--primary)]/10 text-[var(--primary)] text-[12px] font-sf-bold px-3 py-1 rounded-full whitespace-nowrap">
                         {doc.department}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-                        <Mail size={14} className="opacity-50" /> {doc.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300">
-                      {doc.office}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button 
-                          onClick={() => handleOpenEdit(doc)}
-                          className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/5 rounded-xl transition-all"
-                          aria-label="Edit instructor"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => setIsDeleting(doc.name)}
-                          className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
-                          aria-label="Delete instructor"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                    <td className="px-8 py-6 text-right">
+                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleOpenEdit(doc)} className="w-10 h-10 rounded-full bg-white/50 dark:bg-white/10 hover:bg-[var(--primary)] text-[var(--text-primary)] hover:text-white flex items-center justify-center transition-all shadow-sm"><Edit2 size={16} /></button>
+                        <button onClick={() => setIsDeleting(doc.name)} className="w-10 h-10 rounded-full bg-white/50 dark:bg-white/10 hover:bg-[#FF3B30] text-[var(--text-primary)] hover:text-white flex items-center justify-center transition-all shadow-sm"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -205,133 +149,63 @@ export default function AdminPage() {
             </table>
           </div>
           {filtered.length === 0 && (
-            <div className="py-20 text-center">
-              <div className="text-4xl mb-4">🔍</div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">No instructors found</h3>
-              <p className="text-slate-500">Try adjusting your search filters</p>
+            <div className="py-24 text-center">
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
+                <Search size={32} className="text-[var(--text-tertiary)] opacity-30" />
+              </div>
+              <h3 className="text-[20px] font-sf-bold text-[var(--text-primary)]">No matching results</h3>
+              <p className="text-[15px] text-[var(--text-secondary)] mt-2 font-medium">Try adjusting your filters or adding a new entry.</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal 
-        title={currentDoctor ? "Edit Instructor" : "Add New Instructor"} 
-        isOpen={isModalOpen} 
-        onClose={handleCloseModal}
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="fullname" className="text-xs font-black uppercase tracking-widest text-slate-400">Full Name</label>
-            <input 
-              id="fullname"
-              required
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-            />
+      <Modal title={currentDoctor ? "Edit Instructor" : "Add New Instructor"} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <form onSubmit={handleSave} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-sf-black uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Full Identity</label>
+            <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium"
+              value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Name" />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label htmlFor="dept" className="text-xs font-black uppercase tracking-widest text-slate-400">Department</label>
-              <input 
-                id="dept"
-                required
-                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-                value={formData.department}
-                onChange={(e) => setFormData({...formData, department: e.target.value})}
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="office" className="text-xs font-black uppercase tracking-widest text-slate-400">Office</label>
-              <input 
-                id="office"
-                required
-                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-                value={formData.office}
-                onChange={(e) => setFormData({...formData, office: e.target.value})}
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-xs font-black uppercase tracking-widest text-slate-400">Email Address</label>
-            <input 
-              id="email"
-              required
-              type="email"
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3 outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
-          </div>
-          
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-400 block mb-3">Office Hours</label>
             <div className="space-y-2">
-              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(day => (
-                <div key={day} className="flex items-center gap-2">
-                  <span className="w-24 text-sm font-bold text-slate-500">{day}</span>
-                  <input 
-                    className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-                    placeholder="e.g. 10:00 AM - 12:00 PM"
-                    value={formData.office_hours[day]}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      office_hours: { ...formData.office_hours, [day]: e.target.value }
-                    })}
-                  />
-                </div>
-              ))}
+              <label className="text-[11px] font-sf-black uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Department</label>
+              <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium"
+                value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} placeholder="Dept." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[11px] font-sf-black uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Office</label>
+              <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium"
+                value={formData.office} onChange={(e) => setFormData({...formData, office: e.target.value})} placeholder="Room" />
             </div>
           </div>
-
-          <div className="flex gap-3 pt-6">
-            <button 
-              type="button"
-              onClick={handleCloseModal}
-              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-[15px]"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-[var(--primary)] text-white hover:brightness-110 shadow-lg shadow-[var(--primary)]/20 transition-all text-[15px]"
-            >
-              {currentDoctor ? "Update Instructor" : "Save Instructor"}
-            </button>
+          <div className="space-y-2">
+            <label className="text-[11px] font-sf-black uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Digital Address</label>
+            <input required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium"
+              value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" />
+          </div>
+          <div className="flex gap-4 pt-4">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-sf-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all">Cancel</button>
+            <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-sf-bold bg-[#007AFF] text-white shadow-lg shadow-[#007AFF]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal 
-        title="Confirm Deletion" 
-        isOpen={!!isDeleting} 
-        onClose={() => setIsDeleting(null)}
-      >
-        <div className="space-y-6 text-center">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto">
-            <Trash2 size={32} />
+      {/* Delete Confirmation */}
+      <Modal title="Warning" isOpen={!!isDeleting} onClose={() => setIsDeleting(null)}>
+        <div className="space-y-8 text-center py-4">
+          <div className="w-20 h-20 bg-[#FF3B30]/10 text-[#FF3B30] rounded-full flex items-center justify-center mx-auto shadow-sm">
+            <Trash2 size={36} strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-slate-600 dark:text-slate-300">
-              Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">{isDeleting}</span>? 
-              This action cannot be undone.
+            <p className="text-[17px] font-medium opacity-80 leading-relaxed">
+              Are you sure you want to remove <span className="font-sf-bold text-[var(--text-primary)]">{isDeleting}</span> from the directory?
             </p>
           </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => setIsDeleting(null)}
-              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:brightness-95 transition-all text-[15px]"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={() => handleDelete(isDeleting)}
-              className="flex-1 px-4 py-4 min-h-[48px] rounded-2xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all text-[15px]"
-            >
-              Delete Permanently
-            </button>
+          <div className="flex gap-4">
+            <button onClick={() => setIsDeleting(null)} className="flex-1 px-6 py-4 rounded-2xl font-sf-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-all">Keep</button>
+            <button onClick={() => handleDelete(isDeleting)} className="flex-1 px-6 py-4 rounded-2xl font-sf-bold bg-[#FF3B30] text-white shadow-lg shadow-[#FF3B30]/20 hover:scale-[1.02] active:scale-95 transition-all">Delete</button>
           </div>
         </div>
       </Modal>

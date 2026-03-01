@@ -5,7 +5,7 @@ import Providers from "../components/Providers.jsx";
 
 export const metadata = {
   metadataBase: new URL("https://mbot.mubx.dev"),
-  title: "MubxBot | HTU School of Computing",
+  title: "MBOT | HTU School of Computing",
   description: "Official Computing Directory for HTU School of Computing and Informatics.",
 };
 
@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className="antialiased">
+      <body>
         <Providers>
           {children}
         </Providers>

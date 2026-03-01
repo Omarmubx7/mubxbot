@@ -3,50 +3,47 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export default function MessageBubble({ sender, children, isTyping = false, timestamp = new Date() }) {
+export default function MessageBubble({ sender, children, isTyping = false, timestamp }) {
   const isUser = sender === "user";
   
-  const timeString = timestamp.toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  }).toLowerCase();
+  // FIX: Bulletproof date handling
+  let timeString = "";
+  try {
+    if (timestamp instanceof Date) {
+      timeString = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    } else if (typeof timestamp === 'string') {
+      timeString = timestamp;
+    }
+  } catch (e) {
+    timeString = "";
+  }
 
   return (
-    <div className={`flex flex-col w-full mb-3 px-4 animate-entrance ${isUser ? "items-end" : "items-start"}`}>
-      <div
-        className={`relative max-w-[75%] px-[14px] py-[10px] bubble-radius text-[15px] leading-[1.4] shadow-bubble
-          ${isUser 
-            ? "bg-[var(--primary)] text-white bubble-tail-user" 
-            : "bg-[var(--msg-bot)] text-[var(--text-primary)] bubble-tail-bot"
+    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} px-4 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
+        <div
+          className={`relative px-[14px] py-[10px] text-[15px] shadow-sm ${
+            isUser
+              ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-[18px] rounded-tr-[4px]'
+              : 'bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white rounded-[18px] rounded-tl-[4px]'
           }`}
-      >
-        {isTyping ? (
-          <div className="flex gap-1.5 py-1.5 px-1 items-center justify-center">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ 
-                  opacity: [0.4, 1, 0.4],
-                  scale: [0.8, 1, 0.8]
-                }}
-                transition={{ 
-                  duration: 0.8, 
-                  repeat: Infinity, 
-                  delay: i * 0.2,
-                  ease: "easeInOut"
-                }}
-                className={`w-[6px] h-[6px] rounded-full ${isUser ? "bg-white" : "bg-[var(--text-secondary)]"}`}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="relative z-10 break-words">{children}</div>
+        >
+          {isTyping ? (
+            <div className="flex gap-1 items-center h-5">
+              {[0, 150, 300].map((delay) => (
+                <span key={delay} className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${delay}ms` }}></span>
+              ))}
+            </div>
+          ) : (
+            <div className="leading-[1.4] break-words">{children}</div>
+          )}
+        </div>
+        {timeString && (
+          <span className="text-[11px] text-[#8E8E93] dark:text-[#98989D] mt-1 px-1">
+            {timeString}
+          </span>
         )}
       </div>
-      <span className={`text-[11px] mt-1 text-[var(--text-secondary)] font-normal px-1 ${isUser ? "text-right" : "text-left"}`}>
-        {timeString}
-      </span>
     </div>
   );
 }

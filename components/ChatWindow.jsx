@@ -1,65 +1,77 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Monitor, Search, Plus, Send } from "lucide-react";
+import { Moon, Sun, GraduationCap, Plus, Send, Search, X, ArrowRight, Mail, MapPin, Clock, User } from "lucide-react";
 import Fuse from "fuse.js";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import MessageBubble from "./MessageBubble.jsx";
 import { useDoctors } from "./Providers.jsx";
 
-const DoctorInfo = ({ doctor }) => (
-  <div className="space-y-3 py-1 text-[var(--text-primary)] animate-entrance">
-    <div className="flex items-center gap-3 mb-2">
-      <div className="text-[20px]">👤</div>
-      <h3 className="text-[15px] font-semibold">{doctor.name}</h3>
+const HighlightText = ({ text, highlight }) => {
+  if (!text) return null;
+  if (!highlight || !highlight.trim()) return <span>{text}</span>;
+  try {
+    const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.toString().split(new RegExp(`(${escaped})`, "gi"));
+    return (
+      <span>
+        {parts.map((p, i) => p.toLowerCase() === highlight.toLowerCase() ? <mark key={i} className="bg-[var(--primary)]/20 text-[var(--primary)] font-bold rounded-[2px] px-0.5">{p}</mark> : p)}
+      </span>
+    );
+  } catch (e) {
+    return <span>{text}</span>;
+  }
+};
+
+const InstructorCard = ({ doctor }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    className="p-5 glass-card rounded-[28px] space-y-5 text-[var(--text-primary)] shadow-sm border border-white/20"
+  >
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+        <User size={28} strokeWidth={1.5} />
+      </div>
+      <div>
+        <h3 className="text-[18px] font-bold leading-tight tracking-tight">{doctor.name}</h3>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-0.5">{doctor.department}</p>
+      </div>
     </div>
-    <div className="space-y-2.5 ml-0.5">
-      <div className="flex items-start gap-2.5 text-[14px]">
-        <span className="w-5 text-center">🏫</span>
-        <span className="flex-1 opacity-90">{doctor.department} / {doctor.school}</span>
+
+    <div className="grid grid-cols-1 gap-2">
+      <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.02]">
+        <MapPin size={16} className="text-[var(--text-tertiary)]" />
+        <span className="text-[14px] font-medium opacity-90">Office {doctor.office || "TBD"}</span>
       </div>
-      <div className="flex items-start gap-2.5 text-[14px]">
-        <span className="w-5 text-center">🏢</span>
-        <span className="flex-1 opacity-90">Office: {doctor.office}</span>
-      </div>
-      <div className="flex items-start gap-2.5 text-[14px]">
-        <span className="w-5 text-center">✉️</span>
-        <a 
-          href={`mailto:${doctor.email}`} 
-          className="text-[var(--primary)] hover:underline flex-1" 
-          aria-label={`Send email to ${doctor.name}`}
-        >
-          {doctor.email}
-        </a>
-      </div>
+      <a href={`mailto:${doctor.email || ''}`} className="flex items-center justify-between p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-[var(--primary)]/5 group transition-all border border-transparent hover:border-[var(--primary)]/20">
+        <div className="flex items-center gap-3">
+          <Mail size={16} className="text-[var(--text-tertiary)]" />
+          <span className="text-[14px] font-medium text-[var(--primary)]">{doctor.email || "No email available"}</span>
+        </div>
+        <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 text-[var(--primary)]" />
+      </a>
     </div>
-    <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/10">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-5 text-center text-[14px]">🕐</span>
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-secondary)]">Office Hours:</span>
+
+    <div className="pt-2 border-t border-black/5 dark:border-white/5">
+      <div className="flex items-center gap-2 mb-3">
+        <Clock size={14} className="text-[var(--text-tertiary)]" />
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--text-secondary)]">Weekly Availability</span>
       </div>
-      <div className="space-y-1.5 ml-7 font-sans text-[13px]">
-        {Object.entries(doctor.office_hours).map(([day, hours]) => (
-          <div key={day} className="flex justify-between border-b border-black/[0.03] dark:border-white/[0.03] pb-1">
-            <span className="text-[var(--text-primary)] font-medium">{day}</span>
-            <span className="text-[var(--text-secondary)]">{hours || "Closed"}</span>
+      <div className="grid grid-cols-1 gap-1">
+        {Object.entries(doctor.office_hours || {}).map(([day, hours]) => (
+          <div key={day} className="flex justify-between items-center py-1.5 px-1 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0">
+            <span className="text-[13px] font-semibold opacity-60">{day}</span>
+            <span className={`text-[13px] ${hours ? "font-medium" : "opacity-30 italic"}`}>{hours || "Closed"}</span>
           </div>
         ))}
       </div>
     </div>
-  </div>
-);
-
-const EmptyState = () => (
-  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-entrance bg-[var(--bg-chat)]">
-    <div className="text-[48px] mb-4 drop-shadow-sm">🎓</div>
-    <h1 className="text-[18px] font-semibold text-[var(--text-primary)] mb-2">HTU Computing Directory</h1>
-    <p className="text-[14px] text-[var(--text-secondary)] max-w-[260px] leading-relaxed">Search for instructors by name, department, or office.</p>
-  </div>
+  </motion.div>
 );
 
 export default function ChatWindow() {
-  const { instructors, loading, theme, setTheme } = useDoctors();
+  const { instructors = [], loading = false, theme = "light", setTheme = () => {} } = useDoctors() || {};
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [fuseInstance, setFuseInstance] = useState(null);
@@ -71,22 +83,24 @@ export default function ChatWindow() {
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!loading && instructors.length > 0) {
-      const fuseOptions = {
-        threshold: 0.3,
-        keys: ["name", "department", "school", "email", "office"]
-      };
-      setFuseInstance(new Fuse(instructors, fuseOptions));
+    if (!loading && instructors && instructors.length > 0) {
+      const fuse = new Fuse(instructors, { 
+        threshold: 0.3, 
+        includeMatches: true,
+        keys: ["name", "department", "office", "email"] 
+      });
+      setFuseInstance(fuse);
       
-      // Welcome message
-      setMessages([{
-        id: "welcome",
-        sender: "system",
-        content: "Hi! 👋 I can help you find HTU computing instructors. Try typing a name like 'Israa' or a department like 'Cyber Security'.",
-        timestamp: new Date()
-      }]);
+      if (messages.length === 0) {
+        setMessages([{
+          id: "welcome",
+          sender: "system",
+          content: "Welcome to MBOT Intelligence. I can help you find instructors, browse departments, and locate offices at the School of Computing.",
+          timestamp: new Date()
+        }]);
+      }
     }
-  }, [loading, instructors]);
+  }, [loading, instructors, messages.length]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,262 +108,148 @@ export default function ChatWindow() {
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    
-    if (inputValue.trim().length > 1 && fuseInstance) {
+    if (inputValue && inputValue.trim().length > 0 && fuseInstance) {
       searchTimeoutRef.current = setTimeout(() => {
-        const results = fuseInstance.search(inputValue).slice(0, 10);
-        setSuggestions(results);
+        setSuggestions(fuseInstance.search(inputValue).slice(0, 6));
         setHighlightedIndex(-1);
-      }, 150);
+      }, 100);
     } else {
       setSuggestions([]);
-      setHighlightedIndex(-1);
     }
-
     return () => clearTimeout(searchTimeoutRef.current);
   }, [inputValue, fuseInstance]);
 
   const handleSend = (overrideValue = null, specificDoctor = null) => {
-    const query = (overrideValue || inputValue).trim();
+    const valToUse = (typeof overrideValue === 'string') ? overrideValue : null;
+    let query = (valToUse || inputValue || "").toString().trim();
+    
     if (!query && !specificDoctor) return;
 
-    const userMsg = { 
-      id: Date.now().toString(), 
-      sender: "user", 
-      content: specificDoctor ? specificDoctor.name : query,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, userMsg]);
+    const originalQuery = query;
+    const aliases = { "cs": "Computer Science", "ai": "Data Science", "cyber": "Cyber Security" };
+    if (aliases[query.toLowerCase()]) query = aliases[query.toLowerCase()];
+    
+    const officeMatch = query.match(/^([A-Z])(\d{3})$/i);
+    if (officeMatch) query = `${officeMatch[1].toUpperCase()}-${officeMatch[2]}`;
+
+    setMessages(prev => [...prev, { id: Date.now().toString(), sender: "user", content: specificDoctor ? specificDoctor.name : originalQuery, timestamp: new Date() }]);
     setInputValue("");
     setSuggestions([]);
-    
-    if (specificDoctor) {
-      setLastDoctor(specificDoctor);
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          sender: "system",
-          content: <DoctorInfo doctor={specificDoctor} />,
-          timestamp: new Date()
-        }]);
-      }, 600);
-      return;
-    }
-
     setIsTyping(true);
     
     setTimeout(() => {
       setIsTyping(false);
-      
-      // Handle special command "Office hours only"
-      if (query.toLowerCase().includes("office hours only") && lastDoctor) {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          sender: "system",
-          content: (
-            <div className="space-y-2">
-              <span className="text-[14px] font-semibold">🕐 Office Hours for {lastDoctor.name}:</span>
-              <div className="space-y-1 ml-4 text-[13px]">
-                {Object.entries(lastDoctor.office_hours).map(([day, hours]) => (
-                  <div key={day} className="flex justify-between border-b border-black/5 dark:border-white/5 pb-1 max-w-[200px]">
-                    <span className="font-medium">{day}</span>
-                    <span className="text-[var(--text-secondary)]">{hours || "Closed"}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ),
-          timestamp: new Date()
-        }]);
-        return;
-      }
+      try {
+        if (specificDoctor) {
+          setLastDoctor(specificDoctor);
+          setMessages(prev => [...prev, { id: Date.now() + 1, sender: "system", content: <InstructorCard doctor={specificDoctor} />, timestamp: new Date() }]);
+          return;
+        }
 
-      const res = fuseInstance.search(query);
-      
-      if (res.length === 0) {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          sender: "system",
-          content: `I couldn't find any instructors matching '${query}'. Try checking the spelling or browse by department.`,
-          timestamp: new Date()
-        }]);
-      } else if (res.length === 1) {
-        const doc = res[0].item;
-        setLastDoctor(doc);
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          sender: "system",
-          content: <DoctorInfo doctor={doc} />,
-          timestamp: new Date()
-        }]);
-      } else {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          sender: "system",
-          content: (
-            <div className="space-y-3">
-              <p className="text-[14px]">I found multiple instructors matching "{query}". Which one do you mean?</p>
-              <div className="flex flex-col gap-2 pt-1">
-                {res.slice(0, 3).map((r, i) => (
-                  <button
-                    key={`${r.item.name}|${i}`}
-                    onClick={() => handleSend(null, r.item)}
-                    className="w-full text-left p-3 min-h-[44px] rounded-xl border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all active:scale-[0.98] flex flex-col justify-center"
-                  >
-                    <span className="font-bold text-[14px] leading-tight">{r.item.name}</span>
-                    <span className="text-[11px] opacity-80 leading-tight">{r.item.department} • {r.item.office}</span>
+        if (query.toLowerCase() === "by department") {
+          const departments = [...new Set(instructors.map(i => i.department))].sort();
+          setMessages(prev => [...prev, { id: Date.now() + 1, sender: "system", content: (
+            <div className="space-y-3 p-1">
+              <p className="text-[14px] font-bold text-[var(--text-primary)]">Explore Departments</p>
+              <div className="grid grid-cols-1 gap-2">
+                {departments.map(dept => (
+                  <button key={dept} onClick={() => handleSend(dept)} className="flex items-center justify-between p-3 rounded-2xl glass-card hover:bg-[var(--primary)]/10 transition-all text-left">
+                    <span className="text-[14px] font-medium text-[var(--text-primary)]">{dept}</span>
+                    <ArrowRight size={14} className="opacity-40 text-[var(--text-tertiary)]" />
                   </button>
                 ))}
               </div>
             </div>
-          ),
-          timestamp: new Date()
-        }]);
-      }
-    }, 800);
-  };
+          ), timestamp: new Date() }]);
+          return;
+        }
 
-  const handleKeyDown = (e) => {
-    if (suggestions.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
-      } else if (e.key === "Enter" && highlightedIndex >= 0) {
-        e.preventDefault();
-        const selected = suggestions[highlightedIndex].item;
-        handleSend(selected.name);
-      } else if (e.key === "Enter") {
-        handleSend();
-      } else if (e.key === "Escape") {
-        setSuggestions([]);
+        if (!fuseInstance) return;
+        const res = fuseInstance.search(query);
+        if (res.length === 0) {
+          setMessages(prev => [...prev, { id: Date.now() + 1, sender: "system", content: `No results found for “${originalQuery}”.`, timestamp: new Date() }]);
+        } else if (res.length === 1) {
+          handleSend(null, res[0].item);
+        } else {
+          setMessages(prev => [...prev, { id: Date.now() + 1, sender: "system", content: (
+            <div className="space-y-3">
+              <p className="text-[14px] font-medium opacity-70 text-[var(--text-primary)]">Multiple matches found:</p>
+              <div className="grid gap-2">
+                {res.slice(0, 5).map((r, i) => (
+                  <button key={i} onClick={() => handleSend(null, r.item)} className="flex items-center gap-3 p-3 rounded-2xl glass-card hover:bg-[var(--primary)]/10 transition-all text-left group">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold text-[14px] group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">{r.item.name.charAt(0)}</div>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="font-bold text-[14px] truncate text-[var(--text-primary)]">{r.item.name}</div>
+                      <div className="text-[11px] uppercase tracking-tighter opacity-50 truncate text-[var(--text-secondary)]">{r.item.department}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ), timestamp: new Date() }]);
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } else if (e.key === "Enter") {
-      handleSend();
-    }
+    }, 500);
   };
-
-  const quickReplies = messages.length <= 1 
-    ? ["Search name", "By department", "Office hours"]
-    : ["Search another", "Office hours only"];
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-chat)] relative overflow-hidden font-sans pt-safe">
-      <header className="h-[60px] min-h-[60px] px-4 flex items-center justify-between bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-black/5 dark:border-white/10 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-gradient-to-tr from-[#007AFF] to-[#0A84FF] flex items-center justify-center shadow-sm">
-            <Monitor size={18} className="text-white" />
+    <div className="flex flex-col h-full bg-transparent overflow-hidden font-sans relative">
+      <header className="flex items-center justify-between px-6 py-4 glass-surface sticky top-0 z-50 backdrop-blur-3xl pt-safe">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#007AFF] to-[#5856D6] flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <GraduationCap className="w-6 h-6 text-white" />
           </div>
-          <div>
-            <h2 className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight">MubxBot</h2>
-            <p className="text-[12px] text-[var(--text-secondary)] flex items-center gap-1.5 font-normal">
-              <span className="w-2 h-2 rounded-full bg-[#34C759] shadow-sm animate-pulse" />
-              Online
-            </p>
+          <div className="flex flex-col">
+            <span className="text-[17px] font-bold leading-tight tracking-tight text-[var(--text-primary)]">MBOT</span>
+            <span className="text-[12px] text-[var(--success)] font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
+              Intelligence
+            </span>
           </div>
         </div>
-        <button 
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 active:rotate-180"
-          aria-label="Toggle light and dark theme"
-        >
-          {theme === "light" ? "☀️" : "🌙"}
+        <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 hover:scale-110 active:scale-90 transition-all">
+          {theme === 'light' ? <Sun size={18} className="text-[#636366]" /> : <Moon size={18} className="text-[#AEAEB2]" />}
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto flex flex-col no-scrollbar bg-[var(--bg-chat)]" onClick={() => setSuggestions([])}>
-        {messages.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="p-4 space-y-1">
-            <AnimatePresence initial={false}>
-              {messages.map(m => (
-                <MessageBubble 
-                  key={m.id} 
-                  sender={m.sender} 
-                  timestamp={m.timestamp || new Date()}
-                >
-                  {m.content}
-                </MessageBubble>
-              ))}
-              {isTyping && <MessageBubble key="typing" sender="system" isTyping />}
-            </AnimatePresence>
-            <div ref={chatEndRef} />
-          </div>
-        )}
-
-        {!isTyping && suggestions.length === 0 && (
-          <div className="px-4 pb-4 flex flex-wrap gap-2 animate-entrance mt-auto">
-            {quickReplies.map(reply => (
-              <button
-                key={reply}
-                onClick={() => {
-                  if (reply === "Search name" || reply === "Search another") {
-                    setInputValue("");
-                    document.querySelector('input')?.focus();
-                  } else {
-                    handleSend(reply);
-                  }
-                }}
-                className="px-4 py-2 min-h-[44px] chip-radius border-[1.5px] border-[var(--primary)] text-[var(--primary)] text-[14px] font-medium transition-all duration-200 hover:bg-[var(--primary)]/10 active:scale-[0.97]"
-              >
-                {reply}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto py-6 no-scrollbar relative chat-scroll" onClick={() => setSuggestions([])}>
+        <div className="max-w-[640px] mx-auto w-full px-4">
+          <AnimatePresence initial={false}>
+            {messages.map((m) => <MessageBubble key={m.id} sender={m.sender} timestamp={m.timestamp}>{m.content}</MessageBubble>)}
+            {isTyping && <MessageBubble sender="system" isTyping />}
+          </AnimatePresence>
+          <div ref={chatEndRef} className="h-32" />
+        </div>
       </div>
 
-      {/* Suggestions Overlay - Anchored to input bar */}
-      {suggestions.length > 0 && (
-        <div 
-          className="absolute bottom-[calc(72px+env(safe-area-inset-bottom)+12px)] left-4 right-4 bg-[var(--bg-page)]/95 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-xl overflow-y-auto max-h-[40vh] z-[60] animate-entrance no-scrollbar"
-          role="listbox"
-        >
-          {suggestions.map((s, index) => (
-            <button 
-              key={`${s.item.name}|${index}`} 
-              onClick={() => handleSend(s.item.name)} 
-              onMouseEnter={() => setHighlightedIndex(index)}
-              className={`w-full text-left p-3 min-h-[44px] cursor-pointer text-[var(--text-primary)] transition-colors flex items-center gap-3 border-none outline-none ${highlightedIndex === index ? "bg-[var(--primary)]/10" : "hover:bg-[var(--primary)]/5"}`}
-            >
-              <Search size={14} className="text-[var(--text-secondary)]" />
-              <div className="flex-1">
-                <div className={`text-[14px] ${highlightedIndex === index ? "font-bold" : "font-semibold"}`}>{s.item.name}</div>
-                <div className="text-[11px] text-[var(--text-secondary)] uppercase tracking-tight">{s.item.department} • {s.item.office}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {suggestions.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-[500px] md:translate-x-[-50%] md:left-[50%] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-3xl border border-black/5 rounded-[28px] shadow-2xl overflow-hidden z-[60]"
+          >
+            {suggestions.map((s, index) => (
+              <button key={index} onClick={() => handleSend(null, s.item)} onMouseEnter={() => setHighlightedIndex(index)}
+                className={`w-full text-left p-4 flex items-center gap-4 transition-all border-b border-black/5 last:border-0 ${highlightedIndex === index ? "bg-[var(--primary)] text-white shadow-xl" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${highlightedIndex === index ? "bg-white/20" : "bg-[var(--primary)]/10 text-[var(--primary)]"}`}>{s.item.name.charAt(0)}</div>
+                <div className="flex-1 overflow-hidden">
+                  <div className="font-bold text-[15px] truncate text-[var(--text-primary)]"><HighlightText text={s.item.name} highlight={inputValue} /></div>
+                  <div className={`text-[11px] uppercase tracking-tighter opacity-60 truncate ${highlightedIndex === index ? "text-white" : "text-[var(--text-secondary)]"}`}><HighlightText text={s.item.department} highlight={inputValue} /></div>
+                </div>
+                <Search size={16} className="opacity-20" />
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="h-[72px] min-h-[72px] px-4 pb-safe flex items-center gap-3 bg-[var(--bg-page)]/80 backdrop-blur-md border-t border-black/5 dark:border-white/10 z-50 shadow-input">
-        <button className="w-11 h-11 flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors active:scale-90">
-          <Plus size={24} />
-        </button>
-        <div className="flex-1 relative flex items-center">
-          <label htmlFor="doctor-search" className="sr-only">Search for a doctor by name</label>
-          <input 
-            id="doctor-search"
-            className="w-full h-[44px] px-4 bg-[var(--msg-bot)] border-none input-radius text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--accent)]/30 transition-all outline-none"
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type doctor name..."
-          />
-        </div>
-        <button 
-          className={`w-11 h-11 min-w-[44px] rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 ${inputValue.trim() ? "bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20" : "bg-[var(--primary)]/50 text-white/70 cursor-not-allowed"}`}
-          onClick={() => handleSend()}
-          disabled={!inputValue.trim()}
-          aria-label="Send message"
-        >
-          <Send size={20} />
-        </button>
+      <div className="flex items-center gap-3 px-4 py-4 glass-surface border-t border-black/5 dark:border-white/10 backdrop-blur-3xl pb-safe">
+        <button onClick={() => { setMessages([]); setLastDoctor(null); }} className="p-2.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors active:scale-90" title="Reset Chat"><Plus className={`w-6 h-6 ${messages.length > 0 ? "rotate-45 text-red-500" : "text-[var(--primary)]"} transition-transform`} /></button>
+        <input value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="Ask intelligence..."
+          className="flex-1 h-11 px-5 rounded-full bg-black/5 dark:bg-white/10 text-[16px] outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[var(--text-primary)] placeholder-[var(--text-tertiary)]" autoComplete="off" />
+        <button onClick={() => handleSend()} disabled={!inputValue.trim()} className={`p-3 rounded-full transition-all active:scale-90 ${inputValue.trim() ? 'bg-[var(--primary)] text-white shadow-lg' : 'bg-black/5 dark:bg-white/5 text-gray-400 cursor-not-allowed'}`}><Send size={18} fill={inputValue.trim() ? "currentColor" : "none"} /></button>
       </div>
     </div>
   );

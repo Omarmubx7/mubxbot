@@ -1,134 +1,98 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @layer base {
   :root {
-    /* 3.1 Color Palette - Light Mode */
+    /* 2026 Vision - Pristine Light */
     --primary: #007AFF;
-    --msg-bot: #E9ECEF;
-    --bg-chat: #F8F9FA;
+    --accent: #5856D6;
     --bg-page: #FFFFFF;
     --text-primary: #1C1C1E;
-    --text-secondary: #8E8E93;
-    --accent: #007AFF;
+    --text-secondary: #636366;
+    --text-tertiary: #8E8E93;
     --success: #34C759;
-
-    /* 3.3 Spacing System - 4px Multiples */
-    --spacing-micro: 4px;
-    --spacing-xs: 8px;
-    --spacing-s: 12px;
-    --spacing-m: 16px;
-    --spacing-l: 24px;
-    --spacing-xl: 32px;
-    --spacing-xxl: 48px;
+    
+    /* Blended Atmosphere - Light */
+    --mesh-1: rgba(0, 122, 255, 0.12);
+    --mesh-2: rgba(88, 86, 214, 0.12);
+    --mesh-3: rgba(255, 45, 85, 0.08);
+    
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --spatial-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.08);
   }
 
   .dark {
-    /* 3.1 Color Palette - Dark Mode */
+    /* 2026 Vision - Midnight Glass */
     --primary: #0A84FF;
-    --msg-bot: #2C2C2E;
-    --bg-chat: #1C1C1E;
+    --accent: #5E5CE6;
     --bg-page: #000000;
     --text-primary: #FFFFFF;
-    --text-secondary: #98989D;
-    --accent: #0A84FF;
+    --text-secondary: #AEAEB2;
+    --text-tertiary: #8E8E93;
     --success: #30D158;
+
+    /* Blended Atmosphere - Dark */
+    --mesh-1: rgba(10, 132, 255, 0.18);
+    --mesh-2: rgba(94, 92, 230, 0.18);
+    --mesh-3: rgba(255, 55, 95, 0.12);
+    
+    --glass-bg: rgba(28, 28, 30, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --spatial-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5);
   }
 
   html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    /* 3.2 Typography Font Stack - Exact SF Pro Text inclusion */
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-page);
+    font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--text-primary);
+    background-color: var(--bg-page);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow: hidden; /* Prevent body scroll, use internal scroll */
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Dynamic Atmosphere Background */
+    background-image: 
+      radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, var(--mesh-1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, var(--mesh-3) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* 3.4 Corners & Radius */
-  .bubble-radius { border-radius: 18px; }
-  .chip-radius { border-radius: 20px; }
-  .input-radius { border-radius: 24px; }
-  .card-radius { border-radius: 16px; }
-  .pt-safe { padding-top: env(safe-area-inset-top); }
-  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-
-  /* 3.5 Shadow & Depth (Light Mode) */
-  .shadow-card { box-shadow: 0px 2px 8px rgba(0,0,0,0.04); }
-  .shadow-bubble { box-shadow: 0px 1px 2px rgba(0,0,0,0.06); }
-  .shadow-input { box-shadow: 0px -1px 3px rgba(0,0,0,0.05); }
-
-  .dark .shadow-card { box-shadow: 0px 4px 12px rgba(0,0,0,0.3); }
-  .dark .shadow-bubble { box-shadow: 0px 1px 2px rgba(0,0,0,0.2); }
-  .dark .shadow-input { box-shadow: 0px -1px 3px rgba(0,0,0,0.2); }
-
-  /* 5.2.1 & 5.2.2 iMessage Bubble Tails */
-  .bubble-tail-bot::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: -6px;
-    width: 15px;
-    height: 18px;
-    background-color: var(--msg-bot);
-    border-bottom-right-radius: 10px;
-    z-index: -1;
-  }
-  .bubble-tail-bot::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: -12px;
-    width: 15px;
-    height: 18px;
-    background-color: var(--bg-chat);
-    border-bottom-right-radius: 8px;
-    z-index: 0;
+  .glass-surface {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(50px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(50px) saturate(190%) !important;
+    border: 1px solid var(--glass-border) !important;
   }
 
-  .bubble-tail-user::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: -6px;
-    width: 15px;
-    height: 18px;
-    background-color: var(--primary);
-    border-bottom-left-radius: 10px;
-    z-index: -1;
-  }
-  .bubble-tail-user::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: -12px;
-    width: 15px;
-    height: 18px;
-    background-color: var(--bg-chat);
-    border-bottom-left-radius: 8px;
-    z-index: 0;
+  .glass-card {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(25px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 }
 
-/* 6.1 Message Entrance Animation */
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.chat-scroll::-webkit-scrollbar { display: none; }
+.chat-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes appleSpring {
+  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-entrance {
-  animation: fadeSlideUp 250ms ease-out forwards;
-}
-
-/* 6.6 Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  .animate-entrance {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
+.spring-in {
+  animation: appleSpring 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.1) forwards;
 }
