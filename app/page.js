@@ -15,13 +15,13 @@ export default function Page() {
   );
 
   return (
-    <div className="h-screen w-full flex flex-col md:items-center p-0 md:bg-[#F8F9FA] dark:md:bg-[#000000] transition-colors duration-300 overflow-hidden">
+    <div className="h-screen h-[100dvh] w-full flex flex-col md:items-center p-0 md:bg-[var(--bg-chat)] transition-colors duration-300 overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div 
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="flex-1 flex flex-col w-full md:max-w-[480px] md:h-[90vh] md:max-h-[850px] md:mt-[5vh] md:mb-[5vh] bg-[var(--bg-page)] md:rounded-[16px] md:shadow-card overflow-hidden relative"
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="flex-1 flex flex-col w-full md:max-w-[480px] md:h-[90vh] md:max-h-[850px] md:mt-[5vh] md:mb-[5vh] bg-[var(--bg-page)] md:rounded-[20px] md:shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden relative"
         >
           <ChatWindow />
         </motion.div>
