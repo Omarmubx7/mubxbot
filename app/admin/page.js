@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, MapPin, School, User } from "lucide-react";
-import { useDoctors } from "../components/Providers.jsx";
+import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
