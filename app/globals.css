@@ -79,6 +79,13 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+.chat-scroll::-webkit-scrollbar {
+  width: 0px;
+}
+.chat-scroll {
+  scrollbar-width: none;
+}
+
 @keyframes appleEntrance {
   from { opacity: 0; transform: translateY(15px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
