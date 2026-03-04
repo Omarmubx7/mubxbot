@@ -22,4 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-data/raw/
+data/raw/.next/
+App Development/dist/
+
+.next/
