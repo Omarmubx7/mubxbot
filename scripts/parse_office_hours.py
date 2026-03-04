@@ -494,6 +494,9 @@ def main():
         json.dump(all_records, f, indent=2, ensure_ascii=False)
 
     print(f"\n✅ Done! {len(all_records)} total records → {OUTPUT_FILE}")
+    import shutil
+    shutil.copy(OUTPUT_FILE, "./public/office_hours.json")
+    print("📋 Copied to public/office_hours.json")
 
 
 if __name__ == "__main__":
