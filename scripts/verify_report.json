@@ -1,0 +1,1281 @@
+{
+  "all_ok": false,
+  "files": [
+    {
+      "file": "As’har Khamaiseh- أسحار.pdf",
+      "slots": 4,
+      "faculty": "As’har Khamaiseh- أسحار",
+      "email": "ashar.khamaiseh@htu.edu.jo",
+      "office": "S-311",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30-10:00",
+        "10:00-11:00",
+        "11:00-1:00",
+        "1:00-2:30"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Balqees- Office hours.pdf",
+      "slots": 4,
+      "faculty": "Balqees Aldabaibeh",
+      "email": "Balqis.aldabaibeh@htu.edu.jo",
+      "office": "S320",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10-11",
+        "10-11:30",
+        "11:30-1",
+        "1-2.30"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Dr Murad Yaghi.pdf",
+      "slots": 4,
+      "faculty": "Murad Yaghi",
+      "email": "murad.yaghi@htu.edu.jo",
+      "office": "S-322",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11:30-2:30",
+        "2:30-4:00",
+        "2:30-400",
+        "4:00-5:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Dr-Huthaifa_Office_Hours_Fall_25_26.pdf",
+      "slots": 3,
+      "faculty": "Dr. Huthaifa Al-Omari",
+      "email": "huthaifa.alomari@htu.edu.jo",
+      "office": "S-322",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11:30-13:00",
+        "13:00-14:30",
+        "14:30-16:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Dr-Salem.pdf",
+      "slots": 4,
+      "faculty": "",
+      "email": "salem.alemaishat@htu.edu.jo",
+      "office": "S-323",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [],
+      "available_sample": [
+        "Office Hours",
+        "Dr. Salem Alemaishat - Fall 2025 Office Hours"
+      ],
+      "header_idx": 10,
+      "ok": ""
+    },
+    {
+      "file": "Eng Ashraf.pdf",
+      "slots": 2,
+      "faculty": "Ashraf Alsmadi",
+      "email": "ashraf.al-smadi@htu.edu.jo",
+      "office": "S310",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "1:30-2:30",
+        "2:00 – 5:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office hour",
+        "Office hour",
+        "Office hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Asmaa Lafe.pdf",
+      "slots": 3,
+      "faculty": "Eng. Asmaa Lafi",
+      "email": "asmaa.lafi@htu.edu.jo",
+      "office": "S-321",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "9:00 – 10:00",
+        "12:00 – 1:00",
+        "1:00 – 2:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "O.H.",
+        "O.H.",
+        "O.H.",
+        "O.H."
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Asmaa Sabah.pdf",
+      "slots": 5,
+      "faculty": "Asma Mohammad Sabbah",
+      "email": "asma.sabbah@htu.edu.jo",
+      "office": "S-311",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 10:00",
+        "10:00 – 11:30",
+        "11:30 – 1:00",
+        "01:30 – 2:30",
+        "2:30 – 4:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 13,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Ayah Jaradat.pdf",
+      "slots": 4,
+      "faculty": "Aya Sate’ Jaradat",
+      "email": "aya.jaradat@htu.edu.jo",
+      "office": "ijc-05",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30-10:00",
+        "11:30-1:00",
+        "1:00-2:30",
+        "2:30-3:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office hour",
+        "Office hour",
+        "Office hour",
+        "Office hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Ayah karajah.pdf",
+      "slots": 4,
+      "faculty": "Ayah karajah",
+      "email": "Ayah.karajeh@htu.edu.jo",
+      "office": "S312",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10-11",
+        "10:30-11:30",
+        "10-11",
+        "10:30-11:30"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Batool Alarmouti.pdf",
+      "slots": 5,
+      "faculty": "Batool Alarmouti",
+      "email": "batool.alarmouti@htu.edu.jo",
+      "office": "S-320",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "08:30-10:00",
+        "(9:00 – 10:00)",
+        "10:00 – 11:00",
+        "11:30 – 01:00",
+        "(11:30-12:30)"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 12,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Bushra AlZeirah.pdf",
+      "slots": 3,
+      "faculty": "Bushra AlZeirah",
+      "email": "Bushra.Alzeirah@htu.edu.jo",
+      "office": "S-315",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "9-11",
+        "10-12",
+        "1-2"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office hour",
+        "Office hour",
+        "Office hour",
+        "Office hour"
+      ],
+      "header_idx": 16,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Israa Saadeh.pdf",
+      "slots": 4,
+      "faculty": "Israa Ibrahim Saadeh",
+      "email": "israa.hasan@htu.edu.jo",
+      "office": "S-321",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11:30-1:00",
+        "11:30-12:30",
+        "11:30-1:00",
+        "11:30-12:30"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Orwah Aladailehdocx.pdf",
+      "slots": 2,
+      "faculty": "Orwah mohammed Aladaileh",
+      "email": "orwa.aladaileh@htu.edu.jo",
+      "office": "S-308",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10:00 Am – 11:30 Am 10:00 Am – 11:30 Am",
+        "10:00 Am – 11:30 Am 10:00 Am – 11:30 Am"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Rahma.pdf",
+      "slots": 3,
+      "faculty": "Rahmeh Fawaz Mostafa Ibrahim",
+      "email": "Rahmeh.ibrahim@htu.edu.jo",
+      "office": "S-321",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10:00am-11:00am",
+        "13:00pm-14:00pm",
+        "09:00am-15:00pm"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Available",
+        "Available",
+        "Available",
+        "Available"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Razan Quran-Office hours.pdf",
+      "slots": 4,
+      "faculty": "Razan AlQuraan",
+      "email": "razan.alquran@htu.edu.jo",
+      "office": "S-320",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "12:00 - 1:00",
+        "1:00 – 2:30",
+        "2:30 – 4:00",
+        "4:00 – 5:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Sama.pdf",
+      "slots": 3,
+      "faculty": "Sama Hamza",
+      "email": "sama.hamza@htu.edu.jo",
+      "office": "S-315",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "12:00 – 2:00",
+        "12:00 – 2:00",
+        "12:00 – 1:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "☒",
+        "☒",
+        "☒"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Samer.pdf",
+      "slots": 4,
+      "faculty": "Samer Suleiman",
+      "email": "samer.suleiman@htu.edu.jo",
+      "office": "",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8.30 – 10.00",
+        "10.00-11.30",
+        "11.30- 13.00",
+        "13.00-16.00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Sara Abdo.pdf",
+      "slots": 5,
+      "faculty": "Sara Falah Mohammad Abdo",
+      "email": "Sara.Abdo@htu.edu.jo",
+      "office": "S-315",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30-10:00",
+        "10:00-11:30",
+        "11:30-1:00",
+        "1:00-2:30",
+        "2:30-4:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Shatha_Hawawsheh_Office hours.pdf",
+      "slots": 2,
+      "faculty": "Academic School: School of Computing and Informatics",
+      "email": "",
+      "office": "S-2013",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 11:30",
+        "11:30 – 1:00",
+        "11:30 – 1:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": ""
+    },
+    {
+      "file": "Eng Sultan Office hours.pdf",
+      "slots": 4,
+      "faculty": "Sultan M. Alrushdan",
+      "email": "sultan.alrushdan@htu.edu.jo",
+      "office": "S-308",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "08:30-10:00",
+        "10:00-11:30",
+        "11:30-13:00",
+        "13:00-14:30"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Weam.pdf",
+      "slots": 4,
+      "faculty": "Eng. Weaam Alrbeiqi",
+      "email": "weaam.alrbeiqi@htu.edu.jo",
+      "office": "",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 10:00",
+        "10:00 – 11:30",
+        "S/W 11:00 – 12:30",
+        "M/Th 11:30 – 12:30",
+        "13:00 – 14:30"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng Yara Alharahsheh.pdf",
+      "slots": 4,
+      "faculty": "Yara Alharahsheh",
+      "email": "Yara.Alharahsheh@htu.edu.jo",
+      "office": "IJC-05",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11.00-13.00",
+        "13.00 - 14.30",
+        "14.30-16.00",
+        "16.00-17.00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "(Office Hour)",
+        "(Office Hour)",
+        "(Office Hour)",
+        "(Office Hour)"
+      ],
+      "header_idx": 21,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng. Tasnim Al-Harasis Office hours.pdf",
+      "slots": 3,
+      "faculty": "Tasnim Mohammad Adel Aziz Al-Harasis",
+      "email": "Tasnim.alharasis@htu.edu.jo",
+      "office": "S-311",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10:00-11:00",
+        "11:0-12:00",
+        "12:00-1:00",
+        "1:00-2:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Eng_Elham Derbas.pdf",
+      "slots": 2,
+      "faculty": "Elham Mahmoud Derbas",
+      "email": "Elham.derbas@htu.edu.jo",
+      "office": "S321",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11:30-1:00",
+        "11:30-1:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office hour",
+        "Office hour",
+        "Office hour",
+        "Office hour"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Malek Allouzi.pdf",
+      "slots": 6,
+      "faculty": "Malek Allouzi",
+      "email": "malik.louzi@htu.edu.jo",
+      "office": "S-310",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 13:00",
+        "11:30 – 13:30",
+        "8:30 – 13:00",
+        "11:30 – 13:30",
+        "14:30 – 15:00"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office Hours_Eng.Ibrahim Ghanem.pdf",
+      "slots": 3,
+      "faculty": "Eng. Ibrahim Ghanem",
+      "email": "Ibrahim.ghanem@htu.edu.jo",
+      "office": "Eiman Building | IJC-07",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "12 – 2/Sun,",
+        "10 - 4/Mon",
+        "3 - 4/Tue"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "✓",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      "header_idx": 16,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours - Eyad Taqieddin- Fall 2025 - 2026.pdf",
+      "slots": 4,
+      "faculty": "Prof. Eyad Taqieddin",
+      "email": "eyad.taqieddin@htu.edu.jo",
+      "office": "S-314",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "10:00 – 11:30",
+        "10:00 – 11:30",
+        "2:30 – 4:00",
+        "2:30 – 4:00"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours - Fadia Ala'eddin - Fall 2026.pdf",
+      "slots": 3,
+      "faculty": "Fadia Sami Nu’man Ala’eddin",
+      "email": "fadia.alaeddin@htu.edu.jo",
+      "office": "S-320",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "11:30 – 1:00",
+        "11:30 – 12:00",
+        "12:00 – 1:00",
+        "9: 30 – 10: 00"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours - Islam Al Omari - Fall2026 (002).pdf",
+      "slots": 2,
+      "faculty": "Islam Al Omari",
+      "email": "Islam.Alomari@htu.edu.jo",
+      "office": "S-312",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "13:00 – 15:00",
+        "13:00 – 15:00"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours - Suhaib Al-Obeidallah Fall 25-26.pdf",
+      "slots": 2,
+      "faculty": "Eng. Suhaib Al-Obeidallah",
+      "email": "suhaib.alobeidallah@htu.edu.jo",
+      "office": "IJC-07 - Iman",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "09:00 – 10:00",
+        "10:00 – 13:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "OH",
+        "OH"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours Mariam Biltawi.pdf",
+      "slots": 5,
+      "faculty": "Dr. Mariam Biltawi",
+      "email": "mariam.biltawi@htu.edu.jo",
+      "office": "S-309",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "1:00PM - 2:00PM",
+        "2:30PM - 4:00PM",
+        "12:00PM-1:00PM",
+        "1:00PM - 2:30PM",
+        "2:30PM - 4:00PM"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours",
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours Rami Al-Ouran Fall 25-26.pdf",
+      "slots": 4,
+      "faculty": "Dr. Rami Al-Ouran",
+      "email": "rami.alouran@htu.edu.jo",
+      "office": "S-314",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "1:00pm-2:00pm",
+        "12:00pm-1:00pm",
+        "1:00pm-2:00pm",
+        "12:00pm-1:00pm"
+      ],
+      "available_sample": [
+        "Office Hours"
+      ],
+      "header_idx": 15,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours Raneem S-309.pdf",
+      "slots": 6,
+      "faculty": "Dr. Raneem Qaddoura",
+      "email": "raneem.qaddoura@htu.edu.jo",
+      "office": "S-309",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30-10:00",
+        "10:00-11:30",
+        "11:30-13:00",
+        "13:00-14:30",
+        "14:30-16:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 12,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours-waed_2025.pdf",
+      "slots": 6,
+      "faculty": "Wa’ed Alsawareah",
+      "email": "waed.alsawareah@htu.edu.jo",
+      "office": "IJC",
+      "day_order": [
+        "Sunday",
+        "Monday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 10",
+        "10:00 – 11:30",
+        "11:30 – 13:00",
+        "1:00- 2:30",
+        "10:30-12:00"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 14,
+      "ok": [
+        "Sunday",
+        "Monday",
+        "Wednesday",
+        "Thursday"
+      ]
+    },
+    {
+      "file": "Office hours_ Bassam Kasasbeh fall 2025.pdf",
+      "slots": 5,
+      "faculty": "Bassam Kasasbeh",
+      "email": "bassam.alkasasbeh@htu.edu.jo",
+      "office": "S-310",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Tuesday",
+        "Wednesday"
+      ],
+      "time_matches_sample": [
+        "8:30 – 11:30",
+        "11:30 – 14:30",
+        "8:30 – 10:00",
+        "10:00 – 13:00",
+        "11:30 – 12:30"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office Hour",
+        "Office Hour"
+      ],
+      "header_idx": 13,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Tuesday",
+        "Wednesday"
+      ]
+    },
+    {
+      "file": "Sami almashaqbeh Office hours.pdf",
+      "slots": 5,
+      "faculty": "Sami Aqeel Murshed Almashaqbeh",
+      "email": "sami.al-mashaqbeh@htu.edu.jo",
+      "office": "S-310",
+      "day_order": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "time_matches_sample": [
+        "8.30 – 10.00",
+        "10.00-11.30",
+        "11.30- 01.00",
+        "01.00-2.00",
+        "02:00-17:59"
+      ],
+      "available_sample": [
+        "Office Hours",
+        "Office hour",
+        "Office hour",
+        "Office hour",
+        "Office hour"
+      ],
+      "header_idx": 13,
+      "ok": [
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ]
+    }
+  ]
+}
