@@ -60,16 +60,76 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (currentDoctor) { setInstructors(prev => prev.map(d => d.name === currentDoctor.name ? formData : d)); } 
-    else { setInstructors(prev => [...prev, formData]); }
-    setIsModalOpen(false);
+    try {
+      if (currentDoctor) {
+        // If the name changed, delete the old record then create the new one
+        if (formData.name !== currentDoctor.name) {
+          const del = await fetch('/api/admin/doctors', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: currentDoctor.name })
+          });
+          if (!del.ok) throw new Error(await del.text());
+
+          const post = await fetch('/api/admin/doctors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          if (!post.ok) throw new Error(await post.text());
+        } else {
+          const res = await fetch('/api/admin/doctors', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          if (!res.ok) throw new Error(await res.text());
+        }
+      } else {
+        const res = await fetch('/api/admin/doctors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (!res.ok) throw new Error(await res.text());
+      }
+
+      // Refresh list from server
+      const r = await fetch('/api/doctors');
+      if (r.ok) {
+        const data = await r.json();
+        setInstructors(data);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save: ' + (err.message || err));
+    }
   };
 
-  const handleDelete = (name) => {
-    setInstructors(prev => prev.filter(d => d.name !== name));
-    setIsDeleting(null);
+  const handleDelete = async (name) => {
+    if (!confirm(`Delete ${name}?`)) { setIsDeleting(null); return; }
+    try {
+      const res = await fetch('/api/admin/doctors', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      const r = await fetch('/api/doctors');
+      if (r.ok) {
+        const data = await r.json();
+        setInstructors(data);
+      }
+      setIsDeleting(null);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete: ' + (err.message || err));
+      setIsDeleting(null);
+    }
   };
 
   const filtered = instructors.filter(d => 

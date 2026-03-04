@@ -29,7 +29,7 @@ export default function Providers({ children }) {
 
   // Data Logic
   useEffect(() => {
-    fetch("/doctors.json")
+    fetch("/api/doctors")
       .then(res => res.json())
       .then(data => {
         setInstructors(data);
