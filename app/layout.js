@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Providers from "../components/Providers.jsx";
 
 export const metadata = {
-  metadataBase: new URL("https://mubxbot.mubx.dev"),
+  metadataBase: new URL("https://bot.mubx.dev"),
   title: "MBOT | HTU School of Computing",
   description: "Official Computing Directory for HTU School of Computing and Informatics.",
 };
