@@ -7,7 +7,12 @@ export function middleware(req) {
     const expectedUser = process.env.ADMIN_USER;
     const expectedPass = process.env.ADMIN_PASS;
     if (!expectedUser || !expectedPass) {
-      return new NextResponse('Admin access disabled (no credentials configured)', { status: 403 });
+      // If credentials are not configured, allow access in non-production for local development
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('ADMIN_USER/ADMIN_PASS not set — allowing /admin access in development only');
+      } else {
+        return new NextResponse('Admin access disabled (no credentials configured)', { status: 403 });
+      }
     }
     const match = auth.match(/^Basic\s+(.*)$/i);
     if (!match) {
