@@ -12,15 +12,15 @@ def normalize(dept):
 
     # AI group: variants containing data / science / artificial / intelligent / ai
     if re.search(r'\b(data\s*science|data|artificial|intelligen|ai)\b', low):
-        return 'ai'
+        return 'AI'
 
     # CS group: computer or cs
     if re.search(r'\b(computer|cs)\b', low):
-        return 'cs'
+        return 'CS'
 
     # Cyber group: cyber or security
     if re.search(r'\b(cyber|security|cybersecurity)\b', low):
-        return 'cyber'
+        return 'Cyber'
 
     return d
 
