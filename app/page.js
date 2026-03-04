@@ -53,9 +53,9 @@ export default function Page() {
 
   const getAlias = (query) => {
     const aliases = {
-      "cs": "Computer Science",
-      "ai": "Data Science",
-      "cyber": "Cyber Security",
+      "cs": "CS",
+      "ai": "AI",
+      "cyber": "Cyber",
       "petersons": "Petersons",
       "it": "Information Technology"
     };
