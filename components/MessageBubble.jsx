@@ -27,7 +27,7 @@ export default function MessageBubble({ sender, children, isTyping = false, time
         <div
           className={`relative px-[16px] py-[10px] shadow-sm transition-all duration-300 ${
             isUser
-              ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-[22px] rounded-tr-[4px]'
+              ? 'bg-[#DC2626] dark:bg-[#EF4444] text-white rounded-[22px] rounded-tr-[4px]'
               : 'glass-card text-[var(--text-primary)] rounded-[22px] rounded-tl-[4px]'
           }`}
         >

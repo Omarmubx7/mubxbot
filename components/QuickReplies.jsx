@@ -9,7 +9,7 @@ export function QuickReplies({ options, onSelect }) {
         <button
           key={index}
           onClick={() => onSelect(option)}
-          className="px-4 py-2 rounded-[20px] border border-[#007AFF] dark:border-[#0A84FF] text-[#007AFF] dark:text-[#0A84FF] text-[14px] font-medium hover:bg-[#007AFF]/10 dark:hover:bg-[#0A84FF]/10 transition-all active:scale-95 shadow-sm"
+          className="px-4 py-2 rounded-[20px] border border-[#DC2626] dark:border-[#EF4444] text-[#DC2626] dark:text-[#EF4444] text-[14px] font-medium hover:bg-[#DC2626]/10 dark:hover:bg-[#EF4444]/10 transition-all active:scale-95 shadow-sm"
         >
           {option}
         </button>

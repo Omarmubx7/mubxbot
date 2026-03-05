@@ -33,7 +33,7 @@ export function ChatInput({ onSend, onChange, placeholder = "Type doctor name…
         className="w-9 h-9 rounded-full flex items-center justify-center bg-[#E9ECEF] dark:bg-[#2C2C2E] hover:bg-[#D1D5DB] dark:hover:bg-[#3A3A3C] transition-colors"
         aria-label="Add attachment"
       >
-        <Plus className="w-5 h-5 text-[#007AFF] dark:text-[#0A84FF]" />
+        <Plus className="w-5 h-5 text-[#DC2626] dark:text-[#EF4444]" />
       </button>
 
       {/* Input field */}
@@ -43,7 +43,7 @@ export function ChatInput({ onSend, onChange, placeholder = "Type doctor name…
         onChange={(e) => handleChange(e.target.value)}
         onKeyPress={handleKeyPress}
         placeholder={placeholder}
-        className="flex-1 h-10 px-4 rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] dark:focus:ring-[#0A84FF] transition-shadow"
+        className="flex-1 h-10 px-4 rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[15px] outline-none focus:ring-2 focus:ring-[#DC2626] dark:focus:ring-[#EF4444] transition-shadow"
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
@@ -54,7 +54,7 @@ export function ChatInput({ onSend, onChange, placeholder = "Type doctor name…
       <button
         onClick={handleSend}
         disabled={!message.trim()}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#007AFF] dark:bg-[#0A84FF] hover:bg-[#0062CC] dark:hover:bg-[#0077ED] disabled:bg-[#E9ECEF] dark:disabled:bg-[#2C2C2E] transition-colors active:scale-95"
+        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#DC2626] dark:bg-[#EF4444] hover:bg-[#B91C1C] dark:hover:bg-[#DC2626] disabled:bg-[#E9ECEF] dark:disabled:bg-[#2C2C2E] transition-colors active:scale-95"
         aria-label="Send message"
       >
         <Send className={`w-5 h-5 ${message.trim() ? 'text-white' : 'text-[#8E8E93] dark:text-[#98989D]'}`} />

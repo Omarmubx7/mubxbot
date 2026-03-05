@@ -151,7 +151,7 @@ export default function AdminPage() {
             <h1 className="text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
           </div>
           <button onClick={handleOpenAdd}
-            className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#007AFF] to-[#5856D6] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#007AFF]/20 hover:scale-[1.02] active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
             <Plus size={20} strokeWidth={2.5} /> New Instructor
           </button>
@@ -247,7 +247,7 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-4 pt-4">
             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[var(--text-primary)]">Cancel</button>
-            <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#007AFF] text-white shadow-lg shadow-[#007AFF]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
+            <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#DC2626] text-white shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
           </div>
         </form>
       </Modal>

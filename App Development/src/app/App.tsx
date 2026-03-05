@@ -97,7 +97,7 @@ export default function App() {
       <div className="text-[14px] opacity-90">🏫 {doctor.department}</div>
       <div className="text-[14px] opacity-90">🏢 {doctor.office || "TBD"}</div>
       <div className="text-[14px]">
-        ✉️ <a href={`mailto:${doctor.email}`} className="text-[#007AFF] dark:text-[#0A84FF] underline decoration-[#007AFF]/30">{doctor.email}</a>
+        ✉️ <a href={`mailto:${doctor.email}`} className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30">{doctor.email}</a>
       </div>
       <div className="pt-2 mt-2 border-t border-black/5 dark:border-white/5">
         <div className="text-[13px] font-semibold mb-1">🕐 Office Hours:</div>
@@ -173,7 +173,7 @@ export default function App() {
                 <button
                   key={dept}
                   onClick={() => handleSendMessage(dept)}
-                  className="px-3 py-1.5 rounded-full border border-[#007AFF] text-[#007AFF] dark:text-[#0A84FF] text-[13px] font-medium hover:bg-[#007AFF]/5 active:scale-95 transition-all"
+                  className="px-3 py-1.5 rounded-full border border-[#DC2626] text-[#DC2626] dark:text-[#EF4444] text-[13px] font-medium hover:bg-[#DC2626]/5 active:scale-95 transition-all"
                 >
                   {dept}
                 </button>
@@ -236,9 +236,9 @@ export default function App() {
                 <button
                   key={i}
                   onClick={() => handleSendMessage(r.item.name, r.item)}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#007AFF]/10 transition-all text-left group border border-black/5 dark:border-white/5"
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-[#007AFF]/10 text-[#007AFF] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#007AFF] group-hover:text-white transition-colors">
+                  <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
                     {r.item.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -307,9 +307,9 @@ export default function App() {
               <button
                 key={index}
                 onClick={() => handleSendMessage(s.item.name, s.item)}
-                className="w-full text-left p-3 hover:bg-[#007AFF]/10 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0"
+                className="w-full text-left p-3 hover:bg-[#DC2626]/10 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#007AFF]/10 text-[#007AFF] flex items-center justify-center font-bold text-[14px]">
+                <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px]">
                   {s.item.name.charAt(0)}
                 </div>
                 <div className="flex-1 overflow-hidden">

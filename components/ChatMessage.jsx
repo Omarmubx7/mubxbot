@@ -9,7 +9,7 @@ export function ChatMessage({ type, content, timestamp }) {
         <div
           className={`rounded-[18px] px-[14px] py-[10px] shadow-sm ${
             isUser
-              ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white'
+              ? 'bg-[#DC2626] dark:bg-[#EF4444] text-white'
               : 'bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white'
           }`}
         >

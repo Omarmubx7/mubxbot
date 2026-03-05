@@ -204,7 +204,7 @@ export default function ChatWindow() {
     <div className="flex flex-col h-full bg-transparent overflow-hidden font-sans relative">
       <header className="flex items-center justify-between px-6 py-4 glass-surface sticky top-0 z-[100] border-b border-black/[0.03] dark:border-white/[0.03] backdrop-blur-3xl pt-safe">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#007AFF] to-[#5856D6] flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#DC2626] to-[#B91C1C] flex items-center justify-center shadow-lg shadow-red-500/20">
             <GraduationCap className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div className="flex flex-col">

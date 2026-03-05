@@ -11,7 +11,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #007AFF;
+  --primary: #DC2626;
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.95 0.0058 264.53);
   --secondary-foreground: #030213;
@@ -44,8 +44,8 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   /* Mesh Colors */
-  --mesh-1: rgba(0, 122, 255, 0.12);
-  --mesh-2: rgba(88, 86, 214, 0.12);
+  --mesh-1: rgba(220, 38, 38, 0.12);
+  --mesh-2: rgba(239, 68, 68, 0.12);
   --mesh-3: rgba(255, 45, 85, 0.08);
 }
 
@@ -56,7 +56,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #0A84FF;
+  --primary: #EF4444;
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -86,8 +86,8 @@
   --sidebar-ring: oklch(0.439 0 0);
 
   /* Mesh Colors - Dark */
-  --mesh-1: rgba(10, 132, 255, 0.15);
-  --mesh-2: rgba(94, 92, 230, 0.15);
+  --mesh-1: rgba(239, 68, 68, 0.15);
+  --mesh-2: rgba(185, 28, 28, 0.15);
   --mesh-3: rgba(255, 55, 95, 0.1);
 }
 
