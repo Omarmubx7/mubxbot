@@ -40,25 +40,25 @@ Use Framer’s **Auto Layout / Stack** features where helpful.
 
 Light mode:
 
-- User bubbles: `#007AFF`
+- User bubbles: `#DC2626`
 - Bot bubbles: `#E9ECEF`
 - Chat background: `#F8F9FA`
 - Page background: `#FFFFFF`
 - Text primary: `#1C1C1E`
 - Text secondary: `#8E8E93`
-- Accent / links / focus: `#007AFF`
+- Accent / links / focus: `#DC2626`
 
 Dark mode:
 
-- User bubbles: `#0A84FF`
+- User bubbles: `#EF4444`
 - Bot bubbles: `#2C2C2E`
 - Chat background: `#1C1C1E`
 - Page background: `#000000`
 - Text primary: `#FFFFFF`
 - Text secondary: `#98989D`
-- Accent / links / focus: `#0A84FF`
+- Accent / links / focus: `#EF4444`
 
-User bubble must always be blue (light or dark).  
+User bubble must always be red (light or dark).  
 No bright/neon colors or heavy gradients, except a **subtle gradient in the avatar** if you like.
 
 #### 2.2 Typography
@@ -159,7 +159,7 @@ Message bubbles:
 
 Quick replies:
 
-- Horizontal wrap / grid: pill-shaped buttons with border in blue, text in blue.
+- Horizontal wrap / grid: pill-shaped buttons with border in red, text in red.
 
 Typing indicator:
 

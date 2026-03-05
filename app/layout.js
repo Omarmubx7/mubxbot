@@ -3,7 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Providers from "../components/Providers.jsx";
 
-const OG_IMAGE_URL = "/og-image.png?v=20260305";
+const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
 
 export const metadata = {
   metadataBase: new URL("https://bot.mubx.dev"),
