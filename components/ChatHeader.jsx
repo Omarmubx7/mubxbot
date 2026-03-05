@@ -12,7 +12,7 @@ export function ChatHeader({ theme, onToggleTheme }) {
         </div>
         <div className="flex flex-col">
           <span className="text-[15px] font-semibold leading-tight text-[#1C1C1E] dark:text-white">
-            MubxBot
+            MUBXBot
           </span>
           <span className="text-[12px] leading-tight text-[#8E8E93] dark:text-[#98989D]">
             Online

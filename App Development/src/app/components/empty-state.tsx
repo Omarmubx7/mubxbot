@@ -7,7 +7,7 @@ export function EmptyState() {
         <GraduationCap className="w-8 h-8 text-white" strokeWidth={2} />
       </div>
       <h2 className="text-[18px] font-semibold text-[#1C1C1E] dark:text-white mb-2 leading-tight">
-        HTU Computing Directory
+        MUBXBot Directory
       </h2>
       <p className="text-[14px] text-[#8E8E93] dark:text-[#98989D] leading-[1.4]">
         Search for instructors by name, department, or office.

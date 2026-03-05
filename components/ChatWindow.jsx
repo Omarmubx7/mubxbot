@@ -88,7 +88,7 @@ export default function ChatWindow() {
           setMessages([{
             id: "welcome",
             sender: "system",
-            content: "Welcome to MBOT Intelligence. I can help you find instructors, departments, and offices at the School of Computing.",
+            content: "Welcome to MUBXBot. I can help you find instructors, departments, and offices at the School of Computing.",
             timestamp: new Date()
           }]);
         }
@@ -208,10 +208,10 @@ export default function ChatWindow() {
             <GraduationCap className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[17px] font-bold leading-tight tracking-tight text-[var(--text-primary)]">MBOT</span>
+            <span className="text-[17px] font-bold leading-tight tracking-tight text-[var(--text-primary)]">MUBXBot</span>
             <span className="text-[12px] text-[var(--success)] font-bold flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
-              Intelligence
+              Online
             </span>
           </div>
         </div>

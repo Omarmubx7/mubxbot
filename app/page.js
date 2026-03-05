@@ -231,7 +231,7 @@ export default function Page() {
       <div className="h-[100dvh] w-full flex items-center justify-center bg-white dark:bg-black">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
-          <p className="text-gray-400 font-medium animate-pulse tracking-tight">Initializing MBOT...</p>
+          <p className="text-gray-400 font-medium animate-pulse tracking-tight">Initializing MUBXBot...</p>
         </div>
       </div>
     );

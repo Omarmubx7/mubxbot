@@ -146,7 +146,7 @@ export default function AdminPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <Link href="/" className="inline-flex items-center text-[13px] font-bold text-[var(--primary)] hover:opacity-70 mb-2 transition-all group">
-              <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MBOT
+              <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MUBXBot
             </Link>
             <h1 className="text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
           </div>
@@ -163,7 +163,7 @@ export default function AdminPage() {
         <div className="glass-card rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
           <div className="flex items-center gap-4 px-4">
             <Search className="text-[var(--text-tertiary)]" size={22} />
-            <input type="text" placeholder="Search directoy..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            <input type="text" placeholder="Search directory..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 bg-transparent border-none min-h-[48px] text-[18px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
             />
             <div className="px-4 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
