@@ -3,6 +3,8 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Providers from "../components/Providers.jsx";
 
+const OG_IMAGE_URL = "/og-image.png?v=20260305";
+
 export const metadata = {
   metadataBase: new URL("https://bot.mubx.dev"),
   title: "MUBXBot | HTU School of Computing",
@@ -12,7 +14,7 @@ export const metadata = {
     description: "MUBXBot is the official assistant for the HTU School of Computing and Informatics.",
     images: [
       {
-        url: "/og-image.png",
+        url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
         alt: "MUBXBot - HTU School of Computing",
@@ -24,7 +26,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "MUBXBot | HTU School of Computing",
     description: "MUBXBot is the official assistant for the HTU School of Computing and Informatics.",
-    images: ["/og-image.png"],
+    images: [OG_IMAGE_URL],
   },
 };
 
