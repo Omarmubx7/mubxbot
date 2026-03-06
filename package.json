@@ -6,14 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "parse": "node scripts/parse.js"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.0.6",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@vercel/analytics": "^1.6.1",
+    "axios": "^1.13.6",
+    "dotenv": "^17.3.1",
     "framer-motion": "^12.34.3",
     "fuse.js": "^7.1.0",
     "lucide-react": "^0.477.0",
     "next": "^15.2.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.1",
+    "openai": "^6.27.0",
+    "pdf-parse": "^2.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss-animate": "^1.0.7"

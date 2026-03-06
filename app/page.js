@@ -13,7 +13,34 @@ import { useDoctors } from '../components/Providers';
 
 export default function Page() {
   const { instructors, loading, theme, setTheme } = useDoctors();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => ([
+    {
+      id: 'welcome-message',
+      type: 'bot',
+      content: (
+        <div className="space-y-3">
+          <div className="font-bold text-[16px]">👋 Welcome to MUBXBot!</div>
+          <div className="text-[14px] leading-relaxed opacity-90">
+            Your go-to assistant for finding instructor information at HTU's School of Computing and Informatics.
+          </div>
+          <div className="space-y-2">
+            <div className="text-[13px] font-semibold opacity-95">🔍 What I can help you with:</div>
+            <div className="text-[13px] opacity-85 space-y-1 pl-4">
+              <div>• Find instructor contact details</div>
+              <div>• Check office hours and availability</div>
+              <div>• Search by name, department, or office</div>
+              <div>• Get complete instructor profiles</div>
+            </div>
+          </div>
+          <div className="text-[13px] opacity-80 pt-1">
+            💡 <span className="font-medium">Quick tip:</span> Just type an instructor's name, or use the buttons below to get started!
+          </div>
+        </div>
+      ),
+      timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      quickReplies: ['Search name', 'By department', 'Office hours']
+    }
+  ]));
   const [isTyping, setIsTyping] = useState(false);
   const [fuseInstance, setFuseInstance] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -23,7 +50,13 @@ export default function Page() {
 
   useEffect(() => {
     if (instructors && instructors.length > 0) {
-      const fuse = new Fuse(instructors, {
+      // Normalize departments before indexing with Fuse (Bug #10)
+      const normalizedInstructors = instructors.map(inst => ({
+        ...inst,
+        department: normalizeDepartment(inst.department)
+      }));
+      
+      const fuse = new Fuse(normalizedInstructors, {
         threshold: 0.3,
         includeMatches: true,
         keys: ["name", "department", "office", "email"]
@@ -51,6 +84,92 @@ export default function Page() {
     return query;
   };
 
+  // Normalize and validate time ranges (Bug #8, #9)
+  const formatTimeRange = (timeStr) => {
+    if (!timeStr || timeStr === "Closed") return timeStr;
+
+    // Check for invalid times like "40:00"
+    const invalidTimePattern = /(\d{2,}):(\d{2})/g;
+    const matches = [...timeStr.matchAll(invalidTimePattern)];
+    for (const match of matches) {
+      const hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      if (hours > 23 || minutes > 59) {
+        return "Invalid time - please contact admin";
+      }
+    }
+
+    // If already has AM/PM, return as-is
+    if (/AM|PM|am|pm/i.test(timeStr)) {
+      return timeStr;
+    }
+
+    // Parse time range like "11:30 - 1:00" or "2:30 - 4:00"
+    const rangeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
+    if (rangeMatch) {
+      let [, startHr, startMin, endHr, endMin] = rangeMatch;
+      startHr = parseInt(startHr);
+      endHr = parseInt(endHr);
+
+      // Apply reasonable defaults: 8-11 AM, 12 noon/PM, 1-7 PM, 8-11 PM
+      const startPeriod = startHr >= 8 && startHr < 12 ? "AM" : "PM";
+      const endPeriod = endHr >= 1 && endHr < 8 ? "PM" : endHr >= 8 && endHr < 12 ? "AM" : "PM";
+
+      return `${startHr}:${startMin} ${startPeriod} - ${endHr}:${endMin} ${endPeriod}`;
+    }
+
+    // Single time without range
+    const singleMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
+    if (singleMatch) {
+      const hr = parseInt(singleMatch[1]);
+      const period = hr >= 8 && hr < 12 ? "AM" : "PM";
+      return timeStr.replace(/(\d{1,2}:\d{2})/, `$1 ${period}`);
+    }
+
+    return timeStr;
+  };
+
+  // Normalize department names (Bug #10)
+  const normalizeDepartment = (dept) => {
+    if (!dept) return dept;
+    
+    const normalized = dept.trim().toLowerCase();
+    
+    // Computer Science variants
+    if (normalized === 'cs' || normalized === 'computer science') {
+      return 'Computer Science';
+    }
+    
+    // Cyber Security variants
+    if (normalized === 'cyber security' || 
+        normalized === 'cybersecurity' || 
+        normalized === 'cyber security department') {
+      return 'Cyber Security';
+    }
+    
+    // Data Science and AI variants
+    if (normalized.includes('data science') || 
+        normalized.includes('ai') || 
+        normalized.includes('artificial intelligence') ||
+        normalized.includes('artificial intelligent')) {
+      return 'Data Science and Artificial Intelligence';
+    }
+    
+    // Information Technology
+    if (normalized === 'it' || normalized === 'information technology') {
+      return 'Information Technology';
+    }
+    
+    // Return original with proper casing if no match
+    return dept.charAt(0).toUpperCase() + dept.slice(1).toLowerCase();
+  };
+
+  const sanitizeInput = (query) => {
+    const cleaned = query.replace(/[^a-zA-Z0-9\s@.-]/g, '').trim();
+    if (cleaned.length < 2) return null;
+    return cleaned;
+  };
+
   const getAlias = (query) => {
     const aliases = {
       "cs": "CS",
@@ -65,7 +184,8 @@ export default function Page() {
   const InstructorCard = ({ doctor }) => (
     <div className="space-y-3 py-1">
       <div className="font-semibold text-[16px]">👤 {doctor.name}</div>
-      <div className="text-[14px] opacity-90">🏫 {doctor.department}</div>
+      {doctor.school && <div className="text-[13px] opacity-70">🎓 {doctor.school}</div>}
+      <div className="text-[14px] opacity-90">🏫 {normalizeDepartment(doctor.department)}</div>
       <div className="text-[14px] opacity-90">🏢 {doctor.office || "TBD"}</div>
       <div className="text-[14px]">
         ✉️ <a href={`mailto:${doctor.email}`} className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30">{doctor.email}</a>
@@ -76,13 +196,61 @@ export default function Page() {
           {Object.entries(doctor.office_hours || {}).map(([day, hours]) => (
             <div key={day} className="flex justify-between text-[13px]">
               <span className="opacity-70">{day}:</span>
-              <span className="font-medium">{hours || "Closed"}</span>
+              <span className="font-medium">{formatTimeRange(hours)}</span>
             </div>
           ))}
         </div>
       </div>
     </div>
   );
+
+  const OfficeHoursCard = ({ data }) => (
+    <div className="space-y-3 py-1">
+      <div className="font-semibold text-[16px]">👤 {data.name || data.professor}</div>
+      {data.department && <div className="text-[14px] opacity-90">🏫 {data.department}</div>}
+      {data.school && <div className="text-[13px] opacity-70">🎓 {data.school}</div>}
+      {data.office && <div className="text-[14px] opacity-90">🏢 {data.office}</div>}
+      {data.email && (
+        <div className="text-[14px]">
+          ✉️ <a href={`mailto:${data.email}`} className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30">{data.email}</a>
+        </div>
+      )}
+      <div className="pt-2 mt-2 border-t border-black/5 dark:border-white/5">
+        <div className="text-[13px] font-semibold mb-1">🕐 Office Hours:</div>
+        <div className="text-[13px] whitespace-pre-wrap opacity-90 bg-black/5 dark:bg-white/5 p-3 rounded-lg font-mono">
+          {data.rawText || 'No schedule information available'}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTextWithClickableEmails = (text) => {
+    if (!text) return null;
+
+    const emailChunkRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const isEmail = (value) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
+
+    return text.split('\n').map((line, lineIndex) => (
+      <React.Fragment key={`line-${lineIndex}`}>
+        {line.split(emailChunkRegex).map((chunk, chunkIndex) => {
+          if (isEmail(chunk)) {
+            return (
+              <a
+                key={`chunk-${lineIndex}-${chunkIndex}`}
+                href={`mailto:${chunk}`}
+                className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30"
+              >
+                {chunk}
+              </a>
+            );
+          }
+
+          return <React.Fragment key={`chunk-${lineIndex}-${chunkIndex}`}>{chunk}</React.Fragment>;
+        })}
+        {lineIndex < text.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
 
   const handleInputChange = (val) => {
     setInputValue(val);
@@ -92,6 +260,34 @@ export default function Page() {
     } else {
       setSuggestions([]);
     }
+  };
+
+  const handleQuickReply = (action) => {
+    if (action === 'Search name') {
+      // Just show a prompt, don't search
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'bot',
+        content: "Please type an instructor's name in the search box below.",
+        timestamp: getCurrentTime()
+      }]);
+      return;
+    } else if (action === 'By department') {
+      // Trigger department list
+      handleBotResponse('by department');
+      return;
+    } else if (action === 'Office hours') {
+      // Ask for name
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'bot',
+        content: "Whose office hours would you like to see? Please type an instructor's name.",
+        timestamp: getCurrentTime()
+      }]);
+      return;
+    }
+    // For other quick replies like "Search another", trigger the actual behavior
+    handleBotResponse(action);
   };
 
   const handleSendMessage = (text, specificDoctor = null) => {
@@ -109,9 +305,9 @@ export default function Page() {
     setInputValue('');
 
     setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
+    setTimeout(async () => {
       if (specificDoctor) {
+        setIsTyping(false);
         setMessages(prev => [...prev, {
           id: Date.now() + 1,
           type: 'bot',
@@ -119,20 +315,217 @@ export default function Page() {
           timestamp: getCurrentTime()
         }]);
       } else {
-        handleBotResponse(text);
+        await handleBotResponse(text);
       }
     }, 800);
   };
 
-  const handleBotResponse = (userText) => {
+  const handleBotResponse = async (userText) => {
     let query = userText.trim();
+    
+    // Sanitize input first
+    const sanitized = sanitizeInput(query);
+    if (!sanitized) {
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'bot',
+        content: "Please type a valid instructor name (at least 2 letters).",
+        timestamp: getCurrentTime(),
+        quickReplies: ['By department', 'Search name']
+      }]);
+      return;
+    }
+    
+    query = sanitized;
     query = getAlias(query);
     query = formatOffice(query);
 
     const lowerText = query.toLowerCase();
 
+    // Route most informational queries through API so name/email/day variants are handled consistently.
+    const isApiQuery =
+      lowerText.length > 1 &&
+      lowerText !== 'by department' &&
+      lowerText !== 'search another';
+
+    if (isApiQuery) {
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userText })
+        });
+        
+        const data = await response.json();
+        
+        setIsTyping(false);
+
+        // Handle different response types
+        if (data.type === 'ai_response' || data.type === 'smart_response') {
+          // AI-powered or smart structured response
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <div className="text-[14px] whitespace-pre-wrap leading-relaxed">
+                  {renderTextWithClickableEmails(data.response)}
+                </div>
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            quickReplies: ['Search another', 'By department']
+          }]);
+        } else if (data.type === 'disambiguation') {
+          // Multiple matches - ask which one they mean
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <div className="text-[14px] font-medium">{data.message}</div>
+                <div className="grid gap-2">
+                  {data.options.map((prof, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSendMessage(prof.professor)}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-[#DC2626]/5 to-transparent hover:from-[#DC2626]/10 transition-all text-left group border border-[#DC2626]/20 hover:border-[#DC2626]/40"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-[#DC2626]/15 text-[#DC2626] flex items-center justify-center font-bold text-[15px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors flex-shrink-0">
+                        {prof.professor.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[14px] mb-0.5">{prof.professor}</div>
+                        {prof.department && (
+                          <div className="text-[12px] opacity-60 mb-1">{prof.department}</div>
+                        )}
+                        {prof.office && (
+                          <div className="text-[11px] opacity-50">🏢 {prof.office}</div>
+                        )}
+                      </div>
+                      <div className="text-[#DC2626] opacity-0 group-hover:opacity-100 transition-opacity">
+                        →
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            quickReplies: ['Search another', 'By department']
+          }]);
+        } else if (data.type === 'office_hours') {
+          if (data.results.length === 1) {
+            // Single result - show card
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: <OfficeHoursCard data={data.results[0]} />,
+              timestamp: getCurrentTime(),
+              quickReplies: ['Search another', 'By department']
+            }]);
+          } else if (data.results.length > 1) {
+            // Multiple results - show clickable list
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: (
+                <div className="space-y-3">
+                  <div className="text-[14px] opacity-70">Found {data.results.length} professors:</div>
+                  <div className="grid gap-2">
+                    {data.results.slice(0, 5).map((prof, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSendMessage(prof.professor)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
+                          {prof.professor.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[14px] truncate">{prof.professor}</div>
+                          <div className="text-[11px] opacity-50 truncate uppercase tracking-tight">{prof.department || prof.school}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ),
+              timestamp: getCurrentTime(),
+              quickReplies: ['Search another', 'By department']
+            }]);
+          }
+        } else if (data.type === 'no_results') {
+          // No results found
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <div>
+                  {data.suggestions?.length > 0
+                    ? `I couldn't find office hours for '${data.message}'. Try checking the spelling or pick one of these close matches:`
+                    : `I couldn't find office hours for '${data.message}'. Try checking the spelling or browse by department.`}
+                </div>
+                {data.guidance && (
+                  <div className="text-[13px] opacity-80 bg-[#DC2626]/5 border border-[#DC2626]/20 rounded-lg px-3 py-2">
+                    {data.guidance}
+                  </div>
+                )}
+                {data.hints?.length > 0 && (
+                  <div className="space-y-1">
+                    {data.hints.map((hint, idx) => (
+                      <div key={idx} className="text-[12px] opacity-70">• {hint}</div>
+                    ))}
+                  </div>
+                )}
+                {data.suggestions?.length > 0 && (
+                  <div className="grid gap-2">
+                    {data.suggestions.map((prof, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSendMessage(prof.professor)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
+                          {prof.professor.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[14px] truncate">{prof.professor}</div>
+                          <div className="text-[11px] opacity-50 truncate uppercase tracking-tight">{prof.department || 'Faculty'}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            quickReplies: ['By department', 'Search another']
+          }]);
+        } else {
+          // Help message
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: "I can help you find professor office hours! Try asking:\n• 'When is Dr. Ahmad available?'\n• 'Show me office hours for Murad Yaghi'\n• Or just type a professor's name",
+            timestamp: getCurrentTime(),
+            quickReplies: ['By department', 'Search name']
+          }]);
+        }
+        return;
+      } catch (error) {
+        console.error('API Error:', error);
+        setIsTyping(false);
+        // Fall through to regular search if API fails
+      }
+    }
+
     if (lowerText === "by department") {
-      const departments = [...new Set(instructors.map(i => i.department))].sort();
+      // Normalize departments and get unique list (Bug #10)
+      const departments = [...new Set(instructors.map(i => normalizeDepartment(i.department)))].sort();
+      setIsTyping(false);
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
@@ -158,6 +551,7 @@ export default function Page() {
     }
 
     if (lowerText === "search name" || lowerText === "office hours") {
+      setIsTyping(false);
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
@@ -168,6 +562,7 @@ export default function Page() {
     }
 
     if (!fuseInstance) {
+      setIsTyping(false);
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
@@ -178,6 +573,8 @@ export default function Page() {
     }
 
     const results = fuseInstance.search(query);
+
+    setIsTyping(false);
 
     if (results.length === 0) {
       setMessages(prev => [...prev, {
@@ -237,6 +634,13 @@ export default function Page() {
     );
   }
 
+  const inlineSuggestion = (() => {
+    if (!inputValue || suggestions.length === 0) return '';
+    const first = suggestions[0]?.item?.name || '';
+    if (!first) return '';
+    return first.toLowerCase().startsWith(inputValue.toLowerCase()) ? first : '';
+  })();
+
   return (
     <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative font-sans">
       {/* Background Mesh */}
@@ -257,7 +661,7 @@ export default function Page() {
               <div className="flex justify-center mt-6">
                  <QuickReplies 
                   options={['Search name', 'By department', 'Office hours']} 
-                  onSelect={(opt) => handleSendMessage(opt)}
+                  onSelect={(opt) => handleQuickReply(opt)}
                  />
               </div>
             </div>
@@ -273,7 +677,7 @@ export default function Page() {
                   {message.quickReplies && index === messages.length - 1 && (
                     <QuickReplies
                       options={message.quickReplies}
-                      onSelect={(opt) => handleSendMessage(opt)}
+                      onSelect={(opt) => handleQuickReply(opt)}
                     />
                   )}
                 </div>
@@ -286,7 +690,7 @@ export default function Page() {
 
         {/* Suggestions Overlay */}
         {suggestions.length > 0 && (
-          <div className="absolute bottom-[72px] left-4 right-4 md:left-auto md:right-auto md:w-[480px] md:left-1/2 md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="absolute bottom-[72px] left-4 right-4 md:left-1/2 md:right-auto md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
             <div className="px-4 py-2 border-b border-black/5 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-black/50">
               <span className="text-[10px] font-bold uppercase tracking-wider opacity-40 text-black dark:text-white">Suggestions</span>
               <button onClick={() => setSuggestions([])} className="opacity-40 hover:opacity-100 transition-opacity text-black dark:text-white"><X size={14} /></button>
@@ -313,7 +717,12 @@ export default function Page() {
         )}
 
         {/* Input Bar */}
-        <ChatInput onSend={handleSendMessage} onChange={handleInputChange} />
+        <ChatInput
+          value={inputValue}
+          onSend={handleSendMessage}
+          onChange={handleInputChange}
+          inlineSuggestion={inlineSuggestion}
+        />
       </div>
     </main>
   );

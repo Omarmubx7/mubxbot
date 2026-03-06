@@ -1,25 +1,44 @@
 "use client";
 
 import { Plus, Send } from 'lucide-react';
-import { useState } from 'react';
-
-export function ChatInput({ onSend, onChange, placeholder = "Type doctor name…" }) {
-  const [message, setMessage] = useState('');
+ 
+export function ChatInput({
+  value,
+  onSend,
+  onChange,
+  inlineSuggestion,
+  placeholder = "Type doctor name…"
+}) {
+  const message = value ?? '';
 
   const handleChange = (val) => {
-    setMessage(val);
     if (onChange) onChange(val);
   };
 
   const handleSend = () => {
     if (message.trim()) {
       onSend(message.trim());
-      setMessage('');
       if (onChange) onChange('');
     }
   };
 
-  const handleKeyPress = (e) => {
+  const getInlineRemainder = () => {
+    if (!message || !inlineSuggestion) return '';
+    if (inlineSuggestion.toLowerCase().startsWith(message.toLowerCase()) && inlineSuggestion.length > message.length) {
+      return inlineSuggestion.slice(message.length);
+    }
+    return '';
+  };
+
+  const inlineRemainder = getInlineRemainder();
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab' && inlineRemainder) {
+      e.preventDefault();
+      if (onChange) onChange(inlineSuggestion);
+      return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -28,27 +47,27 @@ export function ChatInput({ onSend, onChange, placeholder = "Type doctor name…
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
-      {/* Plus button */}
-      <button
-        className="w-9 h-9 rounded-full flex items-center justify-center bg-[#E9ECEF] dark:bg-[#2C2C2E] hover:bg-[#D1D5DB] dark:hover:bg-[#3A3A3C] transition-colors"
-        aria-label="Add attachment"
-      >
-        <Plus className="w-5 h-5 text-[#DC2626] dark:text-[#EF4444]" />
-      </button>
-
-      {/* Input field */}
-      <input
-        type="text"
-        value={message}
-        onChange={(e) => handleChange(e.target.value)}
-        onKeyPress={handleKeyPress}
-        placeholder={placeholder}
-        className="flex-1 h-10 px-4 rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[15px] outline-none focus:ring-2 focus:ring-[#DC2626] dark:focus:ring-[#EF4444] transition-shadow"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck="false"
-      />
+      {/* Input field with inline autocomplete */}
+      <div className="flex-1 h-10 relative rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] focus-within:ring-2 focus-within:ring-[#DC2626] dark:focus-within:ring-[#EF4444] transition-shadow">
+        {inlineRemainder && (
+          <div className="absolute inset-0 px-4 flex items-center pointer-events-none text-[15px]">
+            <span className="invisible whitespace-pre">{message}</span>
+            <span className="text-[#8E8E93] dark:text-[#98989D] whitespace-pre">{inlineRemainder}</span>
+          </div>
+        )}
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full h-full px-4 rounded-full bg-transparent text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[15px] outline-none"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+        />
+      </div>
 
       {/* Send button */}
       <button

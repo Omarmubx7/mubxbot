@@ -137,7 +137,16 @@ export default function AdminPage() {
     d.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-[#000000]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-red-500/20 border-t-red-500 animate-spin" />
+          <p className="text-[var(--text-secondary)] font-medium animate-pulse tracking-tight">Loading admin panel...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] overflow-y-auto no-scrollbar relative font-sans">

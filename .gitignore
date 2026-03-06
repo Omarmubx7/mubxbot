@@ -26,3 +26,8 @@ data/raw/.next/
 App Development/dist/
 
 .next/
+
+# Environment variables
+.env
+.env.local
+.env.*.local

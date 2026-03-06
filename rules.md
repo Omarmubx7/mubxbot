@@ -2,8 +2,9 @@
 
 ## General Rules
 - Always use the latest version of the files.
-- The bot name is "MBOT".
+- The bot name is "MUBXBOT".
 - The bot is for HTU School of Computing only.
+- there are only 3 section CS && ai && cyber so fix the json file
 
 ## "App Development" Design System (Figma)
 When adding new features or components, you MUST adhere strictly to these design principles to match the high-fidelity Figma design:
