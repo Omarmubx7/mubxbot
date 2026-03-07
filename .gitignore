@@ -31,3 +31,6 @@ App Development/dist/
 .env
 .env.local
 .env.*.local
+
+# Watcher state
+data/snapshot.json
