@@ -697,7 +697,7 @@ test: Add unit tests for searchOfficeHours()
 
 **License:** Educational Use Only (HTU Internal Project)
 
-**Author:** Omar Mubarak  
+**Author:** Omar Mubaidin  
 **Affiliation:** School of Computing and Informatics, Hashemite University of Technology  
 **Contact:** [GitHub Profile](https://github.com/Omarmubx7)
 
