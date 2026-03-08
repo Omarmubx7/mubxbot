@@ -67,8 +67,12 @@ async function checkForChanges() {
   }
 }
 
-// Run every 6 hours
-cron.schedule('0 */6 * * *', checkForChanges);
+module.exports = { getFileList, loadSnapshot, saveSnapshot, checkForChanges };
 
-// Run once immediately on start
-checkForChanges();
+if (require.main === module) {
+  // Run every 6 hours
+  cron.schedule('0 */6 * * *', checkForChanges);
+
+  // Run once immediately on start
+  checkForChanges();
+}
