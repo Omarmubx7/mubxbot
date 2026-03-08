@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "parse": "node scripts/parse.js"
+    "parse": "node scripts/parse.js",
+    "watcher": "node scripts/watcher.js"
   },
   "dependencies": {
     "@azure/msal-node": "^5.0.6",
@@ -36,3 +37,4 @@
     "tailwindcss": "^4.0.0"
   }
 }
+
