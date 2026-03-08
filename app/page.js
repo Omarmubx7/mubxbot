@@ -707,7 +707,7 @@ export default function Page() {
         <ChatHeader theme={theme} onToggleTheme={toggleTheme} />
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-4 chat-scroll relative">
+        <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center">
               <EmptyState />
@@ -719,7 +719,7 @@ export default function Page() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4 pb-2">
               {messages.map((message, index) => (
                 <div key={message.id} className="space-y-4">
                   <ChatMessage
@@ -743,23 +743,23 @@ export default function Page() {
 
         {/* Suggestions Overlay */}
         {suggestions.length > 0 && (
-          <div className="absolute bottom-[72px] left-4 right-4 md:left-1/2 md:right-auto md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="absolute bottom-[84px] sm:bottom-[88px] left-2 right-2 sm:left-4 sm:right-4 md:left-1/2 md:right-auto md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
             <div className="px-4 py-2 border-b border-black/5 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-black/50">
               <span className="text-[10px] font-bold uppercase tracking-wider opacity-40 text-black dark:text-white">Suggestions</span>
               <button onClick={() => setSuggestions([])} className="opacity-40 hover:opacity-100 transition-opacity text-black dark:text-white"><X size={14} /></button>
             </div>
-            <div className="max-h-[240px] overflow-y-auto">
+            <div className="max-h-[45dvh] sm:max-h-[240px] overflow-y-auto">
               {suggestions.map((s, index) => (
                 <button
                   key={index}
                   onClick={() => handleSendMessage(s.item.name, s.item)}
-                  className="w-full text-left p-3 hover:bg-[#DC2626]/10 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0"
+                  className="w-full text-left p-3.5 sm:p-3 hover:bg-[#DC2626]/10 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px]">
+                  <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px]">
                     {s.item.name.charAt(0)}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <div className="text-[14px] font-bold truncate text-black dark:text-white">{s.item.name}</div>
+                    <div className="text-[15px] sm:text-[14px] font-bold truncate text-black dark:text-white">{s.item.name}</div>
                     <div className="text-[10px] uppercase tracking-widest opacity-50 truncate text-black dark:text-white">{s.item.department}</div>
                   </div>
                   <Search size={14} className="opacity-20 text-black dark:text-white" />

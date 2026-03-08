@@ -46,9 +46,9 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
+    <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-3 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
       {/* Input field with inline autocomplete */}
-      <div className="flex-1 h-10 relative rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] focus-within:ring-2 focus-within:ring-[#DC2626] dark:focus-within:ring-[#EF4444] transition-shadow">
+      <div className="flex-1 h-11 sm:h-10 relative rounded-full bg-[#E9ECEF] dark:bg-[#2C2C2E] focus-within:ring-2 focus-within:ring-[#DC2626] dark:focus-within:ring-[#EF4444] transition-shadow">
         {inlineRemainder && (
           <div className="absolute inset-0 px-4 flex items-center pointer-events-none text-[15px]">
             <span className="invisible whitespace-pre">{message}</span>
@@ -61,7 +61,7 @@ export function ChatInput({
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full h-full px-4 rounded-full bg-transparent text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[15px] outline-none"
+          className="w-full h-full px-4 rounded-full bg-transparent text-[#1C1C1E] dark:text-white placeholder:text-[#8E8E93] dark:placeholder:text-[#98989D] text-[16px] sm:text-[15px] outline-none"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
@@ -73,7 +73,7 @@ export function ChatInput({
       <button
         onClick={handleSend}
         disabled={!message.trim()}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#DC2626] dark:bg-[#EF4444] hover:bg-[#B91C1C] dark:hover:bg-[#DC2626] disabled:bg-[#E9ECEF] dark:disabled:bg-[#2C2C2E] transition-colors active:scale-95"
+        className="w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[#DC2626] dark:bg-[#EF4444] hover:bg-[#B91C1C] dark:hover:bg-[#DC2626] disabled:bg-[#E9ECEF] dark:disabled:bg-[#2C2C2E] transition-colors active:scale-95"
         aria-label="Send message"
       >
         <Send className={`w-5 h-5 ${message.trim() ? 'text-white' : 'text-[#8E8E93] dark:text-[#98989D]'}`} />
