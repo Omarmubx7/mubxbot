@@ -454,11 +454,15 @@ It runs your watcher on GitHub-hosted runners, so your PC does not need to be on
 
 #### 1. Commit and Push Workflow File
 
+The workflow file already exists at `.github/workflows/watcher-notify.yml`. Push it to GitHub:
+
 ```bash
 git add .github/workflows/watcher-notify.yml
 git commit -m "chore: add cloud watcher workflow"
 git push
 ```
+
+**Important:** After pushing, go to your GitHub repository and click the **Actions** tab. You should now see "Watch Office Hours Updates" in the workflow list. If you don't see it, refresh the page or check that the file was pushed to the correct branch.
 
 #### 2. Add Required GitHub Secrets
 
@@ -488,11 +492,16 @@ Why: the workflow commits `data/snapshot.json` after each check when needed.
 
 #### 4. Run It Once Manually
 
-In GitHub: **Actions -> Watch Office Hours Updates -> Run workflow**
+**Before this step:** Make sure you completed steps 1-3 above (pushed workflow, added secrets, set permissions).
+
+In GitHub: Navigate to **Actions tab -> Watch Office Hours Updates (left sidebar) -> Run workflow (right side button)**
+
+Click the green "Run workflow" button and select your branch (usually `main`).
 
 Expected first-run behavior:
 1. It may only initialize/update snapshot.
 2. You might not receive an email unless a real change is detected.
+3. Check the workflow run logs to confirm it executed without errors.
 
 #### 5. Confirm Scheduled Runs
 
