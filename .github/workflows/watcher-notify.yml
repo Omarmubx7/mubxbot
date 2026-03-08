@@ -27,6 +27,7 @@ jobs:
 
       - name: Run watcher
         env:
+          WATCHER_ONCE: 'true'
           SHAREPOINT_FEDAUTH: ${{ secrets.SHAREPOINT_FEDAUTH }}
           SHAREPOINT_RTFA: ${{ secrets.SHAREPOINT_RTFA }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}

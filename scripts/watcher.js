@@ -37,7 +37,7 @@ async function saveSnapshot(files) {
   await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(files, null, 2));
 }
 
-async function checkForChanges() {
+async function checkForChanges({ throwOnError = false } = {}) {
   console.log(`[${new Date().toISOString()}] Checking for changes...`);
 
   try {
@@ -64,11 +64,26 @@ async function checkForChanges() {
     }
   } catch (err) {
     console.error('Watcher error:', err.message);
+    if (throwOnError) {
+      throw err;
+    }
   }
 }
 
-// Run every 6 hours
-cron.schedule('0 */6 * * *', checkForChanges);
+async function main() {
+  const runOnce = process.env.WATCHER_ONCE === 'true' || process.env.CI === 'true';
 
-// Run once immediately on start
-checkForChanges();
+  if (runOnce) {
+    await checkForChanges({ throwOnError: true });
+    return;
+  }
+
+  // Local daemon mode: run now, then every 6 hours.
+  cron.schedule('0 */6 * * *', () => checkForChanges());
+  await checkForChanges();
+}
+
+main().catch((err) => {
+  console.error('Watcher fatal error:', err.message);
+  process.exitCode = 1;
+});
