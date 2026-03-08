@@ -29,6 +29,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [instructors, setInstructors] = useState<any[]>([]);
+  const [officeHours, setOfficeHours] = useState<any[]>([]);
   const [fuseInstance, setFuseInstance] = useState<Fuse<any> | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -47,18 +48,23 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch('/doctors.json')
-      .then(res => res.json())
-      .then(data => {
-        setInstructors(data);
-        const fuse = new Fuse(data, {
+    // Load both doctors and office hours data
+    Promise.all([
+      fetch('/doctors.json').then(res => res.json()),
+      fetch('/office_hours.json').then(res => res.json()).catch(() => [])
+    ])
+      .then(([doctorsData, officeHoursData]) => {
+        setInstructors(doctorsData);
+        setOfficeHours(officeHoursData || []);
+        
+        const fuse = new Fuse(doctorsData, {
           threshold: 0.3,
           includeMatches: true,
           keys: ["name", "department", "office", "email"]
         });
         setFuseInstance(fuse);
       })
-      .catch(err => console.error('Error loading doctors:', err));
+      .catch(err => console.error('Error loading data:', err));
   }, []);
 
   useEffect(() => {
@@ -89,6 +95,15 @@ export default function App() {
       "it": "Information Technology"
     };
     return aliases[query.toLowerCase()] || query;
+  };
+
+  const getOfficeHoursByEmail = (email: string) => {
+    return officeHours.filter(hour => hour.email?.toLowerCase() === email?.toLowerCase());
+  };
+
+  const getOfficeHoursByFaculty = (facultyName: string) => {
+    const normalized = facultyName.toLowerCase();
+    return officeHours.filter(hour => hour.faculty?.toLowerCase().includes(normalized) || normalized.includes(hour.faculty?.toLowerCase()));
   };
 
   const InstructorCard = ({ doctor }: { doctor: any }) => (
@@ -141,12 +156,34 @@ export default function App() {
     setTimeout(() => {
       setIsTyping(false);
       if (specificDoctor) {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          type: 'bot',
-          content: <InstructorCard doctor={specificDoctor} />,
-          timestamp: getCurrentTime()
-        }]);
+        // Check if there are office hours available for this doctor
+        // Try email first, then faculty name
+        const emailMatch = getOfficeHoursByEmail(specificDoctor.email);
+        const hoursData = emailMatch.length > 0 ? emailMatch : getOfficeHoursByFaculty(specificDoctor.name);
+        
+        if (hoursData && hoursData.length > 0) {
+          // Use OfficeHoursDisplay component for office hours
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            type: 'bot',
+            content: {
+              type: 'office_hours',
+              faculty: hoursData[0].faculty,
+              email: hoursData[0].email,
+              department: hoursData[0].department,
+              hours: hoursData
+            },
+            timestamp: getCurrentTime()
+          }]);
+        } else {
+          // Fallback to InstructorCard if no office hours found
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            type: 'bot',
+            content: <InstructorCard doctor={specificDoctor} />,
+            timestamp: getCurrentTime()
+          }]);
+        }
       } else {
         handleBotResponse(text);
       }
@@ -217,13 +254,36 @@ export default function App() {
         quickReplies: ['By department', 'Office hours']
       }]);
     } else if (results.length === 1) {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        type: 'bot',
-        content: <InstructorCard doctor={results[0].item} />,
-        timestamp: getCurrentTime(),
-        quickReplies: ['Search another', 'By department']
-      }]);
+      const doctor = results[0].item;
+      // Try email first, then faculty name
+      const emailMatch = getOfficeHoursByEmail(doctor.email);
+      const hoursData = emailMatch.length > 0 ? emailMatch : getOfficeHoursByFaculty(doctor.name);
+      
+      if (hoursData && hoursData.length > 0) {
+        // Use OfficeHoursDisplay for office hours
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          type: 'bot',
+          content: {
+            type: 'office_hours',
+            faculty: hoursData[0].faculty,
+            email: hoursData[0].email,
+            department: hoursData[0].department,
+            hours: hoursData
+          },
+          timestamp: getCurrentTime(),
+          quickReplies: ['Search another', 'By department']
+        }]);
+      } else {
+        // Fallback to InstructorCard
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          type: 'bot',
+          content: <InstructorCard doctor={doctor} />,
+          timestamp: getCurrentTime(),
+          quickReplies: ['Search another', 'By department']
+        }]);
+      }
     } else {
       setMessages(prev => [...prev, {
         id: Date.now(),

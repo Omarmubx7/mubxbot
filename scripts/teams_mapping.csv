@@ -1,0 +1,16 @@
+# Teams Mapping File - Auto-generated or manually added
+# Format: email,teams_url
+#
+# To auto-populate this file, run:
+#   python fetch_teams_urls.py 1     # Microsoft Graph API (recommended)
+#   python fetch_teams_urls.py 2     # Teams PowerShell (Windows)
+#   python fetch_teams_urls.py 3     # Generate from emails (simple)
+#
+# Manual option:
+# 1. Go to Teams app
+# 2. Right-click on person's name 
+# 3. Select "Start a chat" 
+# 4. Copy URL from browser
+# 5. Paste here: https://teams.microsoft.com/l/chat/0/conversation/[USER_ID]
+
+email,teams_url
