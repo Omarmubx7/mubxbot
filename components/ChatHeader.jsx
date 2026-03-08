@@ -11,10 +11,15 @@ export function ChatHeader({ theme, onToggleTheme }) {
           <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.5} />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-[15px] font-semibold leading-tight text-[#1C1C1E] dark:text-white truncate">
-            MUBXBot
-          </span>
-          <span className="text-[12px] leading-tight text-[#8E8E93] dark:text-[#98989D]">
+          <div className="flex flex-col">
+            <span className="text-[15px] font-semibold leading-tight text-[#1C1C1E] dark:text-white truncate">
+              MUBXBot
+            </span>
+            <span className="text-[10px] font-medium leading-tight text-red-500 dark:text-red-400 tracking-wide">
+              BY MUBX
+            </span>
+          </div>
+          <span className="text-[12px] leading-tight text-[#8E8E93] dark:text-[#98989D] mt-0.5">
             Online
           </span>
         </div>
