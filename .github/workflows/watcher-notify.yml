@@ -1,0 +1,48 @@
+name: Watch Office Hours Updates
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  watcher:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run watcher
+        env:
+          SHAREPOINT_FEDAUTH: ${{ secrets.SHAREPOINT_FEDAUTH }}
+          SHAREPOINT_RTFA: ${{ secrets.SHAREPOINT_RTFA }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+        run: node scripts/watcher.js
+
+      - name: Commit snapshot when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/snapshot.json; then
+            echo "No snapshot changes"
+            exit 0
+          fi
+
+          git add data/snapshot.json
+          git commit -m "chore: update watcher snapshot"
+          git push

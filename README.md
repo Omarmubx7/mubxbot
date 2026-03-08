@@ -431,6 +431,166 @@ node scripts/watcher.js
 
 ---
 
+## 24/7 Watcher Deployment (Runs Even When Your PC Is Off)
+
+This project now includes a cloud scheduler workflow at `.github/workflows/watcher-notify.yml`.
+It runs your watcher on GitHub-hosted runners, so your PC does not need to be on.
+
+### What This Deployment Does
+
+1. Runs `node scripts/watcher.js` every 6 hours.
+2. Uses GitHub Actions secrets for SharePoint and Gmail credentials.
+3. Sends email notification when changes are detected.
+4. Commits `data/snapshot.json` back to the repository when it changes, preserving watcher state between runs.
+
+### Prerequisites
+
+1. GitHub repository with Actions enabled.
+2. Existing watcher script (`scripts/watcher.js`) and notifier (`scripts/notify.js`).
+3. Gmail App Password (not your normal account password).
+4. Valid SharePoint cookies (`SHAREPOINT_FEDAUTH`, `SHAREPOINT_RTFA`).
+
+### Step-by-Step Setup
+
+#### 1. Commit and Push Workflow File
+
+```bash
+git add .github/workflows/watcher-notify.yml
+git commit -m "chore: add cloud watcher workflow"
+git push
+```
+
+#### 2. Add Required GitHub Secrets
+
+In GitHub: **Repo -> Settings -> Secrets and variables -> Actions -> New repository secret**
+
+Create these secrets exactly:
+
+1. `SHAREPOINT_FEDAUTH`
+2. `SHAREPOINT_RTFA`
+3. `GMAIL_USER`
+4. `GMAIL_APP_PASSWORD`
+5. `NOTIFY_EMAIL`
+
+Notes:
+- `GMAIL_USER` is the Gmail sender account.
+- `NOTIFY_EMAIL` is the mailbox that receives alerts.
+- If sender and receiver are the same, that is fine.
+
+#### 3. Allow Workflow to Push Snapshot Changes
+
+In GitHub: **Repo -> Settings -> Actions -> General -> Workflow permissions**
+
+Set:
+- `Read and write permissions`
+
+Why: the workflow commits `data/snapshot.json` after each check when needed.
+
+#### 4. Run It Once Manually
+
+In GitHub: **Actions -> Watch Office Hours Updates -> Run workflow**
+
+Expected first-run behavior:
+1. It may only initialize/update snapshot.
+2. You might not receive an email unless a real change is detected.
+
+#### 5. Confirm Scheduled Runs
+
+Default schedule in workflow:
+
+```yaml
+schedule:
+  - cron: '0 */6 * * *'
+```
+
+This means every 6 hours in UTC.
+
+### Timezone Guide (UTC vs Amman)
+
+GitHub cron uses UTC.
+
+If you want runs at 6 AM, 12 PM, 6 PM, 12 AM Amman time (UTC+3 most of the year), use:
+
+```yaml
+schedule:
+  - cron: '0 3,9,15,21 * * *'
+```
+
+Adjust if daylight-saving rules change in your region.
+
+### How to Verify It Is Working
+
+1. Go to **Actions** and open the latest run.
+2. Check `Run watcher` step logs:
+   - Should print "Checking for changes..."
+   - Should print either "No changes detected." or "Changes detected! Sending notification..."
+3. Check `Commit snapshot when changed` step:
+   - "No snapshot changes" is normal when nothing changed.
+4. Confirm email inbox receives notifications when changes exist.
+
+### Common Problems and Fixes
+
+#### Problem 1: SMTP authentication failed
+
+Symptoms:
+- `Invalid login` or `Username and Password not accepted`
+
+Fix:
+1. Enable 2-Step Verification on Gmail account.
+2. Generate an App Password.
+3. Replace `GMAIL_APP_PASSWORD` secret with the new value.
+
+#### Problem 2: SharePoint returns 401/403
+
+Symptoms:
+- Watcher fails to fetch files from SharePoint API.
+
+Fix:
+1. Refresh `SHAREPOINT_FEDAUTH` and `SHAREPOINT_RTFA` cookies.
+2. Update both secrets in GitHub.
+3. Run workflow manually to verify.
+
+#### Problem 3: Workflow cannot push snapshot
+
+Symptoms:
+- `Permission to ... denied` on `git push`
+
+Fix:
+1. Ensure workflow permissions are `Read and write`.
+2. Ensure branch protection allows GitHub Actions bot pushes (or adapt protection rules).
+
+#### Problem 4: Workflow did not trigger exactly on expected minute
+
+Explanation:
+- GitHub Actions schedules are best-effort and may start with small delays.
+
+Fix:
+- This is normal for scheduled workflows; no code change needed.
+
+### Security Recommendations
+
+1. Never hardcode secrets in source files.
+2. Rotate Gmail App Password and SharePoint cookies regularly.
+3. Limit repository admin access.
+4. Use a dedicated notifier mailbox instead of personal email when possible.
+
+### Optional Hardening Improvements
+
+1. Add retry logic in `scripts/watcher.js` for transient network errors.
+2. Add a "heartbeat" email once per day proving watcher health.
+3. Add fallback notification channel (e.g., Teams webhook).
+4. Move snapshot state to external storage if multiple watchers/environments are used.
+
+### Recovery Checklist (If Alerts Stop)
+
+1. Open latest failed run in Actions.
+2. Identify failing step (`Run watcher` vs `Commit snapshot`).
+3. Validate all five secrets exist and are current.
+4. Run workflow manually after fixing secrets.
+5. Confirm new successful run and test change notification.
+
+---
+
 ## Performance & Scalability
 
 ### Benchmarks (Apple M1, 16GB RAM)
