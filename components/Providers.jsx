@@ -9,6 +9,7 @@ export const useDoctors = () => useContext(DoctorsContext);
 export default function Providers({ children }) {
   const [theme, setTheme] = useState("light");
   const [instructors, setInstructors] = useState([]);
+  const [officeHours, setOfficeHours] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Theme Logic
@@ -29,20 +30,23 @@ export default function Providers({ children }) {
 
   // Data Logic
   useEffect(() => {
-    fetch("/api/doctors")
-      .then(res => res.json())
-      .then(data => {
-        setInstructors(data);
+    Promise.all([
+      fetch("/api/doctors").then(res => res.json()),
+      fetch("/office_hours.json").then(res => res.json()).catch(() => [])
+    ])
+      .then(([doctorsData, officeHoursData]) => {
+        setInstructors(doctorsData);
+        setOfficeHours(officeHoursData || []);
         setLoading(false);
       })
       .catch(err => {
-        console.error("Failed to load instructors:", err);
+        console.error("Failed to load data:", err);
         setLoading(false);
       });
   }, []);
 
   return (
-    <DoctorsContext.Provider value={{ instructors, setInstructors, loading, theme, setTheme }}>
+    <DoctorsContext.Provider value={{ instructors, setInstructors, officeHours, setOfficeHours, loading, theme, setTheme }}>
       {children}
     </DoctorsContext.Provider>
   );

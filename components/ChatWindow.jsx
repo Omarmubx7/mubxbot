@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Moon, Sun, GraduationCap, Plus, Send, Search, ArrowRight, User, Mail, MapPin, Clock } from "lucide-react";
+import { Moon, Sun, GraduationCap, Plus, Send, Search, ArrowRight, User, Mail, MapPin, Clock, X } from "lucide-react";
 import Fuse from "fuse.js";
 import { AnimatePresence, motion } from "framer-motion";
 import MessageBubble from "./MessageBubble.jsx";

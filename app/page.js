@@ -10,9 +10,10 @@ import { TypingIndicator } from '../components/TypingIndicator';
 import { ChatInput } from '../components/ChatInput';
 import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
+import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 
 export default function Page() {
-  const { instructors, loading, theme, setTheme } = useDoctors();
+  const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
     {
       id: 'welcome-message',
@@ -76,6 +77,11 @@ export default function Page() {
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  const getOfficeHoursByEmail = (email) => {
+    if (!email || !officeHours) return [];
+    return officeHours.filter(hour => hour.email?.toLowerCase() === email?.toLowerCase());
   };
 
   const formatOffice = (query) => {
@@ -205,23 +211,18 @@ export default function Page() {
   );
 
   const OfficeHoursCard = ({ data }) => (
-    <div className="space-y-3 py-1">
-      <div className="font-semibold text-[16px]">👤 {data.name || data.professor}</div>
-      {data.department && <div className="text-[14px] opacity-90">🏫 {data.department}</div>}
-      {data.school && <div className="text-[13px] opacity-70">🎓 {data.school}</div>}
-      {data.office && <div className="text-[14px] opacity-90">🏢 {data.office}</div>}
-      {data.email && (
-        <div className="text-[14px]">
-          ✉️ <a href={`mailto:${data.email}`} className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30">{data.email}</a>
-        </div>
-      )}
-      <div className="pt-2 mt-2 border-t border-black/5 dark:border-white/5">
-        <div className="text-[13px] font-semibold mb-1">🕐 Office Hours:</div>
-        <div className="text-[13px] whitespace-pre-wrap opacity-90 bg-black/5 dark:bg-white/5 p-3 rounded-lg font-mono">
-          {data.rawText || 'No schedule information available'}
-        </div>
-      </div>
-    </div>
+    <OfficeHoursDisplay
+      officeHours={(data.officeHours || []).map(slot => ({
+        ...slot,
+        office: slot.office || data.office,
+        email: slot.email || data.email,
+        department: slot.department || data.department,
+        faculty: slot.faculty || data.name || data.professor
+      }))}
+      faculty={data.name || data.professor}
+      email={data.email}
+      department={normalizeDepartment(data.department)}
+    />
   );
 
   const renderTextWithClickableEmails = (text) => {
@@ -308,12 +309,32 @@ export default function Page() {
     setTimeout(async () => {
       if (specificDoctor) {
         setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          type: 'bot',
-          content: <InstructorCard doctor={specificDoctor} />,
-          timestamp: getCurrentTime()
-        }]);
+        // Check if there are office hours available for this doctor
+        const hoursData = getOfficeHoursByEmail(specificDoctor.email);
+        
+        if (hoursData && hoursData.length > 0) {
+          // Use OfficeHoursDisplay component with Teams button
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            type: 'bot',
+            content: <OfficeHoursDisplay 
+              officeHours={hoursData}
+              faculty={hoursData[0].faculty || specificDoctor.name}
+              email={hoursData[0].email}
+              department={hoursData[0].department || specificDoctor.department}
+            />,
+            timestamp: getCurrentTime(),
+            quickReplies: ['Search another', 'By department']
+          }]);
+        } else {
+          // Fallback to InstructorCard if no office hours found
+          setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            type: 'bot',
+            content: <InstructorCard doctor={specificDoctor} />,
+            timestamp: getCurrentTime()
+          }]);
+        }
       } else {
         await handleBotResponse(text);
       }
@@ -363,20 +384,31 @@ export default function Page() {
 
         // Handle different response types
         if (data.type === 'ai_response' || data.type === 'smart_response') {
-          // AI-powered or smart structured response
-          setMessages(prev => [...prev, {
-            id: Date.now(),
-            type: 'bot',
-            content: (
-              <div className="space-y-3">
-                <div className="text-[14px] whitespace-pre-wrap leading-relaxed">
-                  {renderTextWithClickableEmails(data.response)}
+          // If the API resolved one professor, always render the unified card UI.
+          if (Array.isArray(data.results) && data.results.length === 1) {
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: <OfficeHoursCard data={data.results[0]} />,
+              timestamp: getCurrentTime(),
+              quickReplies: ['Search another', 'By department']
+            }]);
+          } else {
+            // Keep free-form text rendering for non-profile responses.
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: (
+                <div className="space-y-3">
+                  <div className="text-[14px] whitespace-pre-wrap leading-relaxed">
+                    {renderTextWithClickableEmails(data.response)}
+                  </div>
                 </div>
-              </div>
-            ),
-            timestamp: getCurrentTime(),
-            quickReplies: ['Search another', 'By department']
-          }]);
+              ),
+              timestamp: getCurrentTime(),
+              quickReplies: ['Search another', 'By department']
+            }]);
+          }
         } else if (data.type === 'disambiguation') {
           // Multiple matches - ask which one they mean
           setMessages(prev => [...prev, {
@@ -585,13 +617,34 @@ export default function Page() {
         quickReplies: ['By department', 'Office hours']
       }]);
     } else if (results.length === 1) {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        type: 'bot',
-        content: <InstructorCard doctor={results[0].item} />,
-        timestamp: getCurrentTime(),
-        quickReplies: ['Search another', 'By department']
-      }]);
+      // Check if office hours exist for this instructor
+      const doctor = results[0].item;
+      const hoursData = getOfficeHoursByEmail(doctor.email);
+      
+      if (hoursData && hoursData.length > 0) {
+        // Show office hours with Teams button
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          type: 'bot',
+          content: <OfficeHoursDisplay 
+            officeHours={hoursData}
+            faculty={hoursData[0].faculty || doctor.name}
+            email={hoursData[0].email}
+            department={hoursData[0].department || doctor.department}
+          />,
+          timestamp: getCurrentTime(),
+          quickReplies: ['Search another', 'By department']
+        }]);
+      } else {
+        // No office hours - show regular card
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          type: 'bot',
+          content: <InstructorCard doctor={doctor} />,
+          timestamp: getCurrentTime(),
+          quickReplies: ['Search another', 'By department']
+        }]);
+      }
     } else {
       setMessages(prev => [...prev, {
         id: Date.now(),
