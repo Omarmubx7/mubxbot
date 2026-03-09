@@ -52,15 +52,23 @@ async function checkForChanges({ throwOnError = false } = {}) {
 
     const updatedFiles = currentFiles
       .filter(f => snapshotMap[f.name] && snapshotMap[f.name] !== f.modified)
-      .map(f => f.name);
+      .map(f => ({ name: f.name, old: snapshotMap[f.name], new: f.modified }));
 
-    if (newFiles.length > 0 || updatedFiles.length > 0) {
+    // Log what changed for debugging
+    if (updatedFiles.length > 0) {
+      console.log('Updated files details:');
+      updatedFiles.forEach(u => console.log(`  ${u.name}: ${u.old} -> ${u.new}`));
+    }
+
+    const updatedFileNames = updatedFiles.map(f => f.name);
+
+    if (newFiles.length > 0 || updatedFileNames.length > 0) {
       console.log('Changes detected! Sending notification...');
-      await sendNotification(newFiles, updatedFiles);
+      await sendNotification(newFiles, updatedFileNames);
       await saveSnapshot(currentFiles);
     } else {
       console.log('No changes detected.');
-      await saveSnapshot(currentFiles);
+      // Only save snapshot on actual changes to avoid false positives from timestamp formatting differences
     }
   } catch (err) {
     console.error('Watcher error:', err.message);
