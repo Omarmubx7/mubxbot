@@ -1,22 +1,108 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import pg from 'pg';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const DAY_ORDER = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DATABASE_URL = process.env.DATABASE_URL || '';
+const { Client } = pg;
 
 function normalizeName(value = '') {
   return String(value).trim().toLowerCase();
 }
 
 async function readRows() {
+  if (DATABASE_URL) {
+    const client = new Client({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    await client.connect();
+    try {
+      const { rows } = await client.query(
+        `
+          SELECT
+            faculty,
+            department,
+            email,
+            office,
+            day,
+            start,
+            "end",
+            type
+          FROM office_hours_entries
+        `
+      );
+      return rows;
+    } finally {
+      await client.end();
+    }
+  }
+
   const raw = await fs.readFile(DATA_PATH, 'utf8');
   const parsed = JSON.parse(raw || '[]');
   return Array.isArray(parsed) ? parsed : [];
 }
 
 async function writeRows(rows) {
-  await fs.writeFile(DATA_PATH, `${JSON.stringify(rows, null, 2)}\n`, 'utf8');
+  if (DATABASE_URL) {
+    const client = new Client({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    await client.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('TRUNCATE TABLE office_hours_entries');
+
+      const insertSql = `
+        INSERT INTO office_hours_entries (
+          faculty,
+          department,
+          email,
+          office,
+          day,
+          start,
+          "end",
+          type
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      `;
+
+      for (const row of rows) {
+        await client.query(insertSql, [
+          row.faculty || '',
+          row.department || '',
+          row.email || '',
+          row.office || '',
+          row.day || '',
+          row.start || '',
+          row.end || '',
+          row.type || 'In-Person'
+        ]);
+      }
+
+      await client.query('COMMIT');
+      return;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      await client.end();
+    }
+  }
+
+  try {
+    await fs.writeFile(DATA_PATH, `${JSON.stringify(rows, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    if (error?.code === 'EROFS' || error?.code === 'EPERM') {
+      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+    }
+
+    throw error;
+  }
 }
 
 function parseDaySlots(rawValue = '') {

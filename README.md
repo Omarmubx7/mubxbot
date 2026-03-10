@@ -35,6 +35,17 @@ npm run secrets:scan
 
 - CI also runs `gitleaks` on pull requests via `.github/workflows/secret-scan.yml`.
 
+## Neon Database Setup (Persistent Admin Data)
+
+Admin edits and chatbot office-hours search can use Neon Postgres when `DATABASE_URL` is set.
+
+1. Create a Neon project and copy the connection string.
+2. Set `DATABASE_URL` in your local `.env` and in Vercel Environment Variables.
+3. Run `sql/neon_schema.sql` in the Neon SQL editor.
+4. (Optional) Import your existing `data/office_hours.json` rows into `office_hours_entries`.
+
+When `DATABASE_URL` is not set, the app falls back to local JSON files.
+
 ---
 
 ## System Architecture

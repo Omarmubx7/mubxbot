@@ -3,6 +3,13 @@ import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../lib/adminAuth.js';
 
 export const metadata = {
+  title: 'MUBX Admin',
+  description: 'MUBXBot administrative control center.',
+  icons: {
+    icon: '/admin-control-logo.svg',
+    shortcut: '/admin-control-logo.svg',
+    apple: '/admin-control-logo.svg'
+  },
   robots: {
     index: false,
     follow: false,

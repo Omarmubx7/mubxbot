@@ -18,7 +18,9 @@ const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:
       {title}
     </div>
     <div className={`text-[16px] font-bold break-words ${accent}`}>
-      {value}
+      {typeof value === 'string' && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)
+        ? <a href={`mailto:${value}`} className="underline decoration-current/30 hover:decoration-current">{value}</a>
+        : value}
     </div>
     {subtitle && (
       <div className="text-[13px] opacity-70 break-words">

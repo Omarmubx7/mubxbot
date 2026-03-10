@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import pg from 'pg';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
+const DATABASE_URL = process.env.DATABASE_URL || '';
+const { Client } = pg;
 
 const DAY_ORDER = {
   Saturday: 0,
@@ -82,11 +85,47 @@ function aggregate(rows) {
   });
 }
 
+async function readRowsFromDatabase() {
+  const client = new Client({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      `
+        SELECT
+          faculty,
+          department,
+          email,
+          office,
+          day,
+          start,
+          "end",
+          type
+        FROM office_hours_entries
+      `
+    );
+    return rows;
+  } finally {
+    await client.end();
+  }
+}
+
+async function readRowsFromFile() {
+  const raw = await fs.readFile(DATA_PATH, 'utf8');
+  const parsed = JSON.parse(raw || '[]');
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 export async function GET() {
   try {
-    const raw = await fs.readFile(DATA_PATH, 'utf8');
-    const parsed = JSON.parse(raw || '[]');
-    const normalized = aggregate(Array.isArray(parsed) ? parsed : []);
+    const rows = DATABASE_URL
+      ? await readRowsFromDatabase()
+      : await readRowsFromFile();
+
+    const normalized = aggregate(rows);
     return NextResponse.json(normalized, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to read doctors data' }, { status: 500 });

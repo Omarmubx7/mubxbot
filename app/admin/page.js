@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+
+const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v1';
 
 const Modal = ({ title, isOpen, onClose, children }) => (
   <AnimatePresence>
@@ -33,6 +36,26 @@ const Modal = ({ title, isOpen, onClose, children }) => (
     )}
   </AnimatePresence>
 );
+
+Modal.propTypes = {
+  title: PropTypes.string.isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  children: PropTypes.node.isRequired
+};
+
+function ClickableEmail({ email, className = '' }) {
+  return (
+    <a href={`mailto:${email}`} className={className}>
+      {email}
+    </a>
+  );
+}
+
+ClickableEmail.propTypes = {
+  email: PropTypes.string.isRequired,
+  className: PropTypes.string
+};
 
 export default function AdminPage() {
   const { instructors, setInstructors, loading } = useDoctors() || { instructors: [], loading: true };
@@ -65,51 +88,98 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
+  const refreshInstructors = async () => {
+    const response = await fetch('/api/doctors');
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setInstructors(data);
+    globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
+  };
+
+  const persistInstructorsLocally = (nextInstructors) => {
+    setInstructors(nextInstructors);
+    globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(nextInstructors));
+  };
+
+  const upsertDoctorInList = (doctors, doctor) => {
+    const key = String(doctor?.name || '').trim().toLowerCase();
+    if (!key) return doctors;
+
+    const filtered = doctors.filter(item => String(item?.name || '').trim().toLowerCase() !== key);
+    return [...filtered, doctor];
+  };
+
+  const removeDoctorFromList = (doctors, doctorName) => {
+    const key = String(doctorName || '').trim().toLowerCase();
+    if (!key) return doctors;
+    return doctors.filter(item => String(item?.name || '').trim().toLowerCase() !== key);
+  };
+
+  const requestDoctorMutation = async (method, payload) => {
+    const response = await fetch('/api/admin/doctors', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      let message = 'Request failed';
+
+      try {
+        const body = await response.json();
+        message = body?.error || body?.details || message;
+      } catch {
+        message = await response.text();
+      }
+
+      throw new Error(message || 'Request failed');
+    }
+
+    return response;
+  };
+
+  const saveExistingDoctor = async () => {
+    const nameChanged = formData.name === currentDoctor.name;
+
+    if (nameChanged) {
+      await requestDoctorMutation('PUT', formData);
+      return;
+    }
+
+    await requestDoctorMutation('DELETE', { name: currentDoctor.name });
+    await requestDoctorMutation('POST', formData);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       if (currentDoctor) {
-        // If the name changed, delete the old record then create the new one
-        if (formData.name !== currentDoctor.name) {
-          const del = await fetch('/api/admin/doctors', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: currentDoctor.name })
-          });
-          if (!del.ok) throw new Error(await del.text());
-
-          const post = await fetch('/api/admin/doctors', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-          });
-          if (!post.ok) throw new Error(await post.text());
-        } else {
-          const res = await fetch('/api/admin/doctors', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-          });
-          if (!res.ok) throw new Error(await res.text());
-        }
+        await saveExistingDoctor();
       } else {
-        const res = await fetch('/api/admin/doctors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-        if (!res.ok) throw new Error(await res.text());
+        await requestDoctorMutation('POST', formData);
       }
 
-      // Refresh list from server
-      const r = await fetch('/api/doctors');
-      if (r.ok) {
-        const data = await r.json();
-        setInstructors(data);
-      }
+      await refreshInstructors();
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
+      const message = String(err?.message || err || '');
+
+      if (/read-only/i.test(message)) {
+        let nextInstructors = instructors;
+
+        if (currentDoctor && String(currentDoctor.name).trim().toLowerCase() !== String(formData.name).trim().toLowerCase()) {
+          nextInstructors = removeDoctorFromList(nextInstructors, currentDoctor.name);
+        }
+
+        nextInstructors = upsertDoctorInList(nextInstructors, formData);
+        persistInstructorsLocally(nextInstructors);
+        setIsModalOpen(false);
+        alert('Saved locally in this browser. Server storage is read-only in this deployment.');
+        return;
+      }
+
       alert('Failed to save: ' + (err.message || err));
     }
   };
@@ -117,21 +187,21 @@ export default function AdminPage() {
   const handleDelete = async (name) => {
     if (!confirm(`Delete ${name}?`)) { setIsDeleting(null); return; }
     try {
-      const res = await fetch('/api/admin/doctors', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (!res.ok) throw new Error(await res.text());
-
-      const r = await fetch('/api/doctors');
-      if (r.ok) {
-        const data = await r.json();
-        setInstructors(data);
-      }
+      await requestDoctorMutation('DELETE', { name });
+      await refreshInstructors();
       setIsDeleting(null);
     } catch (err) {
       console.error(err);
+      const message = String(err?.message || err || '');
+
+      if (/read-only/i.test(message)) {
+        const nextInstructors = removeDoctorFromList(instructors, name);
+        persistInstructorsLocally(nextInstructors);
+        setIsDeleting(null);
+        alert('Deleted locally in this browser. Server storage is read-only in this deployment.');
+        return;
+      }
+
       alert('Failed to delete: ' + (err.message || err));
       setIsDeleting(null);
     }
@@ -312,7 +382,7 @@ export default function AdminPage() {
                 <div>
                   <div className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
                   <div className="flex items-center gap-2 mt-2 opacity-70 text-[var(--text-primary)] break-all">
-                    <Mail size={12} /> <span className="text-[12px] font-medium">{doc.email}</span>
+                    <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[12px] font-medium underline decoration-transparent hover:decoration-current" />
                   </div>
                 </div>
                 <div>
@@ -342,7 +412,7 @@ export default function AdminPage() {
                     <td className="px-8 py-6">
                       <div className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
                       <div className="flex items-center gap-2 mt-1.5 opacity-60 text-[var(--text-primary)]">
-                        <Mail size={12} /> <span className="text-[13px] font-medium">{doc.email}</span>
+                        <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[13px] font-medium underline decoration-transparent hover:decoration-current" />
                       </div>
                     </td>
                     <td className="px-8 py-6">
@@ -377,25 +447,25 @@ export default function AdminPage() {
       <Modal title={currentDoctor ? "Edit Instructor" : "Add New Instructor"} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <form onSubmit={handleSave} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Full Identity</label>
-            <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
+            <label htmlFor="doctor-name" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Full Identity</label>
+            <input id="doctor-name" required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
               value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Name" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Department</label>
-              <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
+              <label htmlFor="doctor-department" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Department</label>
+              <input id="doctor-department" required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
                 value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} placeholder="Dept." />
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Office</label>
-              <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
+              <label htmlFor="doctor-office" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Office</label>
+              <input id="doctor-office" required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
                 value={formData.office} onChange={(e) => setFormData({...formData, office: e.target.value})} placeholder="Room" />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Digital Address</label>
-            <input required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
+            <label htmlFor="doctor-email" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Digital Address</label>
+            <input id="doctor-email" required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
               value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" />
           </div>
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 pt-4">

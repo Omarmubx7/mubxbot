@@ -1,4 +1,11 @@
 export const metadata = {
+  title: 'MUBX Admin Login',
+  description: 'Secure login for the MUBXBot admin area.',
+  icons: {
+    icon: '/admin-control-logo.svg',
+    shortcut: '/admin-control-logo.svg',
+    apple: '/admin-control-logo.svg'
+  },
   robots: {
     index: false,
     follow: false,
