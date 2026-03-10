@@ -21,15 +21,17 @@ CREATE INDEX IF NOT EXISTS idx_office_hours_entries_email ON office_hours_entrie
 
 CREATE INDEX IF NOT EXISTS idx_office_hours_entries_day ON office_hours_entries (day);
 
-CREATE TABLE IF NOT EXISTS bot_static_responses (
-    id BIGSERIAL PRIMARY KEY,
-    trigger TEXT NOT NULL,
-    response TEXT NOT NULL,
-    audience TEXT NOT NULL DEFAULT 'user',
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
-);
+CREATE TABLE
+    IF NOT EXISTS bot_static_responses (
+        id BIGSERIAL PRIMARY KEY,
+        trigger TEXT NOT NULL,
+        response TEXT NOT NULL,
+        audience TEXT NOT NULL DEFAULT 'user',
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
+    );
 
 CREATE INDEX IF NOT EXISTS idx_bot_static_responses_trigger ON bot_static_responses (trigger);
+
 CREATE INDEX IF NOT EXISTS idx_bot_static_responses_active ON bot_static_responses (is_active);
