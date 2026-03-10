@@ -4,7 +4,7 @@ import path from 'path';
 import pg from 'pg';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
-const DATABASE_URL = process.env.DATABASE_URL || '';
+const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const { Client } = pg;
 
 const DAY_ORDER = {

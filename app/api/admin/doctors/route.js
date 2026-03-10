@@ -5,7 +5,7 @@ import pg from 'pg';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const DAY_ORDER = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const DATABASE_URL = process.env.DATABASE_URL || '';
+const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const { Client } = pg;
 
 function normalizeName(value = '') {
