@@ -67,6 +67,16 @@ export default function AdminPage() {
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
   const [metricsUpdatedAt, setMetricsUpdatedAt] = useState(null);
+  const [staticResponsesMetrics, setStaticResponsesMetrics] = useState({
+    total: 0,
+    active: 0,
+    byAudience: {
+      user: 0,
+      admin: 0,
+      all: 0,
+      other: 0
+    }
+  });
 
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
@@ -222,6 +232,22 @@ export default function AdminPage() {
     d.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalRequests = chatMetrics?.totalRequests ?? 0;
+  const safeRate = (value) => (totalRequests > 0 ? ((value / totalRequests) * 100) : 0);
+  const disambiguationIssued = chatMetrics?.disambiguationsIssued ?? 0;
+  const disambiguationResolved = chatMetrics?.disambiguationsResolved ?? 0;
+  const disambiguationResolutionRate = disambiguationIssued > 0
+    ? (disambiguationResolved / disambiguationIssued) * 100
+    : 0;
+  const uniqueDepartments = new Set(
+    instructors
+      .map((item) => String(item?.department || '').trim())
+      .filter(Boolean)
+  ).size;
+  const staticCoverageRate = staticResponsesMetrics.total > 0
+    ? (staticResponsesMetrics.active / staticResponsesMetrics.total) * 100
+    : 0;
+
   const loadChatMetrics = async () => {
     try {
       setMetricsLoading(true);
@@ -240,9 +266,48 @@ export default function AdminPage() {
     }
   };
 
+  const loadStaticResponsesMetrics = async () => {
+    try {
+      const response = await fetch('/api/admin/static-responses', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to load static responses metrics');
+
+      const rows = await response.json();
+      const safeRows = Array.isArray(rows) ? rows : [];
+
+      const byAudience = {
+        user: 0,
+        admin: 0,
+        all: 0,
+        other: 0
+      };
+
+      for (const row of safeRows) {
+        const audience = String(row?.audience || '').toLowerCase();
+        if (audience === 'user') byAudience.user += 1;
+        else if (audience === 'admin') byAudience.admin += 1;
+        else if (audience === 'all') byAudience.all += 1;
+        else byAudience.other += 1;
+      }
+
+      setStaticResponsesMetrics({
+        total: safeRows.length,
+        active: safeRows.filter((row) => row?.is_active !== false).length,
+        byAudience
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     loadChatMetrics();
-    const timer = setInterval(loadChatMetrics, 30000);
+    loadStaticResponsesMetrics();
+
+    const timer = setInterval(() => {
+      loadChatMetrics();
+      loadStaticResponsesMetrics();
+    }, 30000);
+
     return () => clearInterval(timer);
   }, []);
 
@@ -378,6 +443,84 @@ export default function AdminPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Advanced KPI Suite */}
+        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Advanced KPI Suite</h2>
+              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">Operational + conversational performance indicators.</p>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                ['Smart Response Rate', `${safeRate(chatMetrics?.smartResponses ?? 0).toFixed(1)}%`],
+                ['No-Result Rate', `${safeRate(chatMetrics?.noResults ?? 0).toFixed(1)}%`],
+                ['Error Rate', `${safeRate(chatMetrics?.errors ?? 0).toFixed(1)}%`],
+                ['Disambiguation Resolution', `${disambiguationResolutionRate.toFixed(1)}%`],
+                ['Instructors Indexed', instructors.length],
+                ['Departments Covered', uniqueDepartments],
+                ['Static Responses Active', staticResponsesMetrics.active],
+                ['Static Coverage', `${staticCoverageRate.toFixed(1)}%`]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</div>
+                  <div className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4 space-y-4">
+                <div className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Conversation Funnel</div>
+                {[
+                  ['Smart Responses', safeRate(chatMetrics?.smartResponses ?? 0), '#16A34A'],
+                  ['No Results', safeRate(chatMetrics?.noResults ?? 0), '#D97706'],
+                  ['Errors', safeRate(chatMetrics?.errors ?? 0), '#DC2626'],
+                  ['Help Responses', safeRate(chatMetrics?.helpResponses ?? 0), '#2563EB']
+                ].map(([label, rate, color]) => (
+                  <div key={label} className="space-y-1.5">
+                    <div className="flex justify-between text-[12px]">
+                      <span className="font-medium text-[var(--text-secondary)]">{label}</span>
+                      <span className="font-bold text-[var(--text-primary)]">{Number(rate).toFixed(1)}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(Number(rate), 100)}%`, backgroundColor: color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4 space-y-4">
+                <div className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Static Responses Audience Mix</div>
+                {[
+                  ['User', staticResponsesMetrics.byAudience.user],
+                  ['Admin', staticResponsesMetrics.byAudience.admin],
+                  ['All', staticResponsesMetrics.byAudience.all],
+                  ['Other', staticResponsesMetrics.byAudience.other]
+                ].map(([label, count]) => {
+                  const percentage = staticResponsesMetrics.total > 0
+                    ? (Number(count) / staticResponsesMetrics.total) * 100
+                    : 0;
+
+                  return (
+                    <div key={label} className="space-y-1.5">
+                      <div className="flex justify-between text-[12px]">
+                        <span className="font-medium text-[var(--text-secondary)]">{label}</span>
+                        <span className="font-bold text-[var(--text-primary)]">{count} ({percentage.toFixed(1)}%)</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                        <div className="h-full rounded-full bg-[#DC2626]" style={{ width: `${Math.min(percentage, 100)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Table View */}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
+import pg from 'pg';
 import { 
   searchOfficeHours, 
   suggestClosestProfessors,
@@ -13,6 +14,8 @@ import {
 } from '../../../lib/getOfficeHours.js';
 
 const DISAMBIGUATION_TTL_MS = 5 * 60 * 1000;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
+const { Client } = pg;
 const pendingDisambiguations = new Map();
 const chatMetrics = {
   totalRequests: 0,
@@ -24,6 +27,77 @@ const chatMetrics = {
   helpResponses: 0,
   errors: 0
 };
+
+async function withDb(fn) {
+  const client = new Client({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}
+
+async function logChatRequest({
+  outcome,
+  disambiguationIssued = false,
+  disambiguationResolved = false,
+  disambiguationExpired = false
+}) {
+  if (!DATABASE_URL) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO chat_request_logs (
+          outcome,
+          disambiguation_issued,
+          disambiguation_resolved,
+          disambiguation_expired
+        ) VALUES ($1, $2, $3, $4)
+      `,
+      [outcome, disambiguationIssued, disambiguationResolved, disambiguationExpired]
+    );
+  });
+}
+
+async function getPersistedMetrics() {
+  if (!DATABASE_URL) return null;
+
+  return withDb(async (client) => {
+    const result = await client.query(
+      `
+        SELECT
+          COUNT(*)::int AS total_requests,
+          COUNT(*) FILTER (WHERE outcome = 'smart_response')::int AS smart_responses,
+          COUNT(*) FILTER (WHERE outcome = 'no_results')::int AS no_results,
+          COUNT(*) FILTER (WHERE outcome = 'help')::int AS help_responses,
+          COUNT(*) FILTER (WHERE outcome = 'error')::int AS errors,
+          COUNT(*) FILTER (WHERE disambiguation_issued = true)::int AS disambiguations_issued,
+          COUNT(*) FILTER (WHERE disambiguation_resolved = true)::int AS disambiguations_resolved,
+          COUNT(*) FILTER (WHERE disambiguation_expired = true)::int AS disambiguations_expired
+        FROM chat_request_logs
+      `
+    );
+
+    const row = result.rows[0] || {};
+    return {
+      totalRequests: row.total_requests || 0,
+      smartResponses: row.smart_responses || 0,
+      disambiguationsIssued: row.disambiguations_issued || 0,
+      disambiguationsResolved: row.disambiguations_resolved || 0,
+      disambiguationsExpired: row.disambiguations_expired || 0,
+      noResults: row.no_results || 0,
+      helpResponses: row.help_responses || 0,
+      errors: row.errors || 0,
+      pendingDisambiguations: pendingDisambiguations.size
+    };
+  });
+}
 
 function cleanupExpiredDisambiguations() {
   const now = Date.now();
@@ -74,6 +148,7 @@ export async function POST(req) {
   try {
     chatMetrics.totalRequests += 1;
     cleanupExpiredDisambiguations();
+    let disambiguationResolvedInRequest = false;
 
     const {
       message,
@@ -93,6 +168,7 @@ export async function POST(req) {
       const storedContext = consumeDisambiguationContext(disambiguationToken);
       if (!storedContext) {
         chatMetrics.disambiguationsExpired += 1;
+        await logChatRequest({ outcome: 'expired_disambiguation', disambiguationExpired: true });
         return NextResponse.json({
           type: 'expired_disambiguation',
           message: 'That selection has expired. Please ask your question again.',
@@ -101,6 +177,7 @@ export async function POST(req) {
       }
 
       chatMetrics.disambiguationsResolved += 1;
+      disambiguationResolvedInRequest = true;
 
       effectiveMessage = buildContextualQuery(selectedProfessor, storedContext);
     }
@@ -132,6 +209,7 @@ export async function POST(req) {
       if (results.length === 1) {
         const smartResponse = generateSmartResponse(results[0], effectiveMessage);
         chatMetrics.smartResponses += 1;
+        await logChatRequest({ outcome: 'smart_response', disambiguationResolved: disambiguationResolvedInRequest });
         
         return NextResponse.json({
           type: 'smart_response',
@@ -150,6 +228,7 @@ export async function POST(req) {
         const disambiguation = generateDisambiguationMessage(effectiveMessage, results);
         const disambiguationToken = storeDisambiguationContext(context);
         chatMetrics.disambiguationsIssued += 1;
+        await logChatRequest({ outcome: 'disambiguation', disambiguationIssued: true, disambiguationResolved: disambiguationResolvedInRequest });
         
         return NextResponse.json({
           type: 'disambiguation',
@@ -169,6 +248,7 @@ export async function POST(req) {
         const disambiguation = generateDisambiguationMessage(effectiveMessage, results);
         const disambiguationToken = storeDisambiguationContext(context);
         chatMetrics.disambiguationsIssued += 1;
+        await logChatRequest({ outcome: 'disambiguation', disambiguationIssued: true, disambiguationResolved: disambiguationResolvedInRequest });
 
         return NextResponse.json({
           type: 'disambiguation',
@@ -183,6 +263,7 @@ export async function POST(req) {
       }
       
       // Multiple results with full query - return for frontend to display as list
+      await logChatRequest({ outcome: 'office_hours', disambiguationResolved: disambiguationResolvedInRequest });
       return NextResponse.json({
         type: 'office_hours',
         results: results,
@@ -193,6 +274,7 @@ export async function POST(req) {
       });
     } else if (isOfficeHoursQuery) {
       chatMetrics.noResults += 1;
+      await logChatRequest({ outcome: 'no_results', disambiguationResolved: disambiguationResolvedInRequest });
       const suggestions = await suggestClosestProfessors(effectiveMessage, 5);
       const allProfessors = await getAllOfficeHours();
       const subject = extractQuerySubject(effectiveMessage) || effectiveMessage.trim();
@@ -238,6 +320,7 @@ export async function POST(req) {
       });
     } else {
       chatMetrics.helpResponses += 1;
+      await logChatRequest({ outcome: 'help', disambiguationResolved: disambiguationResolvedInRequest });
       return NextResponse.json({
         type: 'help',
         timestamp: new Date().toISOString()
@@ -247,6 +330,7 @@ export async function POST(req) {
   } catch (error) {
     chatMetrics.errors += 1;
     console.error('Chat API error:', error);
+    await logChatRequest({ outcome: 'error' }).catch(() => {});
     return NextResponse.json(
       { error: 'Failed to process message', details: error.message },
       { status: 500 }
@@ -259,14 +343,18 @@ export async function GET() {
   try {
     cleanupExpiredDisambiguations();
     const allData = await getAllOfficeHours();
+
+    const persistedMetrics = await getPersistedMetrics().catch(() => null);
+    const effectiveMetrics = persistedMetrics || {
+      ...chatMetrics,
+      pendingDisambiguations: pendingDisambiguations.size
+    };
+
     return NextResponse.json({
       count: allData.length,
       professors: allData.map(d => d.professor),
       lastUpdated: allData[0]?.lastUpdated || null,
-      metrics: {
-        ...chatMetrics,
-        pendingDisambiguations: pendingDisambiguations.size
-      }
+      metrics: effectiveMetrics
     });
   } catch (error) {
     return NextResponse.json(

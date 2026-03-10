@@ -35,3 +35,17 @@ CREATE TABLE
 CREATE INDEX IF NOT EXISTS idx_bot_static_responses_trigger ON bot_static_responses (trigger);
 
 CREATE INDEX IF NOT EXISTS idx_bot_static_responses_active ON bot_static_responses (is_active);
+
+CREATE TABLE
+    IF NOT EXISTS chat_request_logs (
+        id BIGSERIAL PRIMARY KEY,
+        outcome TEXT NOT NULL,
+        disambiguation_issued BOOLEAN NOT NULL DEFAULT false,
+        disambiguation_resolved BOOLEAN NOT NULL DEFAULT false,
+        disambiguation_expired BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_chat_request_logs_created_at ON chat_request_logs (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_chat_request_logs_outcome ON chat_request_logs (outcome);
