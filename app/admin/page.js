@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const Modal = ({ title, isOpen, onClose, children }) => (
   <AnimatePresence>
     {isOpen && (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-md"
@@ -18,13 +18,13 @@ const Modal = ({ title, isOpen, onClose, children }) => (
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-lg glass-surface rounded-[32px] shadow-2xl overflow-hidden border border-white/20"
+          className="relative w-full max-w-lg glass-surface rounded-t-[28px] sm:rounded-[32px] shadow-2xl overflow-hidden border border-white/20 max-h-[92dvh]"
         >
-          <div className="px-8 py-6 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between bg-white/20 dark:bg-black/20">
-            <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">{title}</h3>
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between bg-white/20 dark:bg-black/20">
+            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--text-primary)]">{title}</h3>
             <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[var(--text-tertiary)]">✕</button>
           </div>
-          <div className="px-8 py-8 overflow-y-auto max-h-[70vh] no-scrollbar">
+          <div className="px-4 sm:px-8 py-5 sm:py-8 overflow-y-auto max-h-[calc(92dvh-88px)] no-scrollbar">
             {children}
           </div>
         </motion.div>
@@ -177,7 +177,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-[#000000]">
+      <div className="min-h-dvh w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-[#000000] px-4">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-4 border-red-500/20 border-t-red-500 animate-spin" />
           <p className="text-[var(--text-secondary)] font-medium animate-pulse tracking-tight">Loading admin panel...</p>
@@ -187,25 +187,25 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] overflow-y-auto no-scrollbar relative font-sans">
+    <div className="min-h-dvh overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       {/* Premium Apple Header */}
-      <div className="sticky top-0 z-50 px-6 md:px-12 py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-12 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
             <Link href="/" className="inline-flex items-center text-[13px] font-bold text-[var(--primary)] hover:opacity-70 mb-2 transition-all group">
               <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MUBXBot
             </Link>
-            <h1 className="text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
+            <h1 className="text-[26px] sm:text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <button
               onClick={handleLogout}
-              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all"
+              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
             >
               Logout
             </button>
             <button onClick={handleOpenAdd}
-              className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all"
+              className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"
             >
               <Plus size={20} strokeWidth={2.5} /> New Instructor
             </button>
@@ -213,25 +213,28 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 md:p-12 space-y-8 pb-32">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-12 space-y-6 sm:space-y-8 pb-20 sm:pb-32">
         {/* Spotlight Search */}
-        <div className="glass-card rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
-          <div className="flex items-center gap-4 px-4">
+        <div className="glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
+          <div className="flex items-center gap-3 sm:gap-4 px-2 sm:px-4">
             <Search className="text-[var(--text-tertiary)]" size={22} />
             <input type="text" placeholder="Search directory..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-transparent border-none min-h-[48px] text-[18px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
+              className="flex-1 bg-transparent border-none min-h-[44px] sm:min-h-[48px] text-[16px] sm:text-[18px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
             />
-            <div className="px-4 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+            <div className="hidden sm:block px-4 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
               {filtered.length} FOUND
             </div>
+          </div>
+          <div className="sm:hidden px-4 pt-1 text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+            {filtered.length} found
           </div>
         </div>
 
         {/* Chat Metrics */}
-        <div className="glass-surface rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
-          <div className="px-8 py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
+        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h2 className="text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Chat Diagnostics</h2>
+              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Chat Diagnostics</h2>
               <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">
                 {metricsUpdatedAt
                   ? `Last updated ${metricsUpdatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`
@@ -250,7 +253,7 @@ export default function AdminPage() {
           {metricsError ? (
             <div className="px-8 py-6 text-[14px] text-[#DC2626]">{metricsError}</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 p-4 sm:p-6">
               {[
                 ['Total Requests', chatMetrics?.totalRequests ?? 0],
                 ['Smart Responses', chatMetrics?.smartResponses ?? 0],
@@ -263,7 +266,7 @@ export default function AdminPage() {
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
                   <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</div>
-                  <div className="text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
+                  <div className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
                 </div>
               ))}
             </div>
@@ -271,8 +274,29 @@ export default function AdminPage() {
         </div>
 
         {/* Table View */}
-        <div className="glass-surface rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
-          <div className="overflow-x-auto">
+        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="sm:hidden p-4 space-y-3">
+            {filtered.map((doc) => (
+              <div key={doc.name} className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4 space-y-3">
+                <div>
+                  <div className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
+                  <div className="flex items-center gap-2 mt-2 opacity-70 text-[var(--text-primary)] break-all">
+                    <Mail size={12} /> <span className="text-[12px] font-medium">{doc.email}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="bg-[var(--primary)]/10 text-[var(--primary)] text-[12px] font-bold px-3 py-1 rounded-full inline-flex">
+                    {doc.department}
+                  </span>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => handleOpenEdit(doc)} className="flex-1 min-h-11 rounded-2xl bg-white/60 dark:bg-white/10 hover:bg-[var(--primary)] text-[var(--text-primary)] hover:text-white flex items-center justify-center gap-2 transition-all shadow-sm"><Edit2 size={16} /> Edit</button>
+                  <button onClick={() => setIsDeleting(doc.name)} className="flex-1 min-h-11 rounded-2xl bg-white/60 dark:bg-white/10 hover:bg-[#FF3B30] text-[var(--text-primary)] hover:text-white flex items-center justify-center gap-2 transition-all shadow-sm"><Trash2 size={16} /> Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-black/5 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
@@ -307,7 +331,7 @@ export default function AdminPage() {
             </table>
           </div>
           {filtered.length === 0 && (
-            <div className="py-24 text-center">
+            <div className="py-16 sm:py-24 text-center px-4">
               <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
                 <Search size={32} className="text-[var(--text-tertiary)] opacity-30" />
               </div>
@@ -326,7 +350,7 @@ export default function AdminPage() {
             <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
               value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Name" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Department</label>
               <input required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
@@ -343,7 +367,7 @@ export default function AdminPage() {
             <input required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
               value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" />
           </div>
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 pt-4">
             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[var(--text-primary)]">Cancel</button>
             <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#DC2626] text-white shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
           </div>
@@ -361,7 +385,7 @@ export default function AdminPage() {
               Are you sure you want to remove <span className="font-bold">{isDeleting}</span> from the directory?
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
             <button onClick={() => setIsDeleting(null)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-all text-[var(--text-primary)]">Keep</button>
             <button onClick={() => handleDelete(isDeleting)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#FF3B30] text-white shadow-lg shadow-[#FF3B30]/20 hover:scale-[1.02] active:scale-95 transition-all">Delete</button>
           </div>

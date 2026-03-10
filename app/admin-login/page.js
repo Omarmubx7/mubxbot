@@ -53,9 +53,9 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="h-[100dvh] w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-black px-4">
-      <div className="w-full max-w-md rounded-[28px] border border-black/5 dark:border-white/10 bg-white/80 dark:bg-black/40 backdrop-blur-xl shadow-2xl p-8">
-        <h1 className="text-[28px] font-black tracking-tight text-[var(--text-primary)]">Admin Access</h1>
+    <main className="min-h-dvh w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-black px-4 py-6 sm:py-10">
+      <div className="w-full max-w-md rounded-[24px] sm:rounded-[28px] border border-black/5 dark:border-white/10 bg-white/80 dark:bg-black/40 backdrop-blur-xl shadow-2xl p-5 sm:p-8">
+        <h1 className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)]">Admin Access</h1>
         <p className="text-[14px] mt-2 text-[var(--text-secondary)]">
           Enter the password to continue to the admin panel.
         </p>
@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Admin password"
-            className="w-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-black/20 px-4 py-3 outline-none focus:ring-2 focus:ring-[#DC2626]/30 text-[var(--text-primary)]"
+            className="w-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-black/20 px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#DC2626]/30 text-[var(--text-primary)] text-[16px]"
           />
 
           {error && (
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-2xl px-4 py-3 font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-60 transition-all"
+            className="w-full rounded-2xl px-4 py-3.5 font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-60 transition-all min-h-12"
           >
             {submitting ? 'Signing in...' : 'Sign in'}
           </button>
