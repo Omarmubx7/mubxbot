@@ -28,6 +28,11 @@ const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:
   </div>
 );
 
+const capitalizeDay = (value) => {
+  if (!value) return '';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
@@ -226,9 +231,9 @@ export default function Page() {
     </div>
   );
 
-  const OfficeHoursCard = ({ data }) => (
+  const OfficeHoursCard = ({ data, officeHoursOverride, emptyStateMessage }) => (
     <OfficeHoursDisplay
-      officeHours={(data.officeHours || []).map(slot => ({
+      officeHours={(officeHoursOverride || data.officeHours || []).map(slot => ({
         ...slot,
         office: slot.office || data.office,
         email: slot.email || data.email,
@@ -238,6 +243,7 @@ export default function Page() {
       faculty={data.name || data.professor}
       email={data.email}
       department={normalizeDepartment(data.department)}
+      emptyStateMessage={emptyStateMessage}
     />
   );
 
@@ -246,7 +252,23 @@ export default function Page() {
     const facultyName = professor?.name || professor?.professor;
 
     if (answerType === 'hours') {
-      return <OfficeHoursCard data={professor} />;
+      const specificDay = context?.specificDay;
+
+      if (!specificDay) {
+        return <OfficeHoursCard data={professor} />;
+      }
+
+      const filteredOfficeHours = (professor?.officeHours || []).filter(slot =>
+        slot.day?.toLowerCase() === specificDay.toLowerCase()
+      );
+
+      return (
+        <OfficeHoursCard
+          data={professor}
+          officeHoursOverride={filteredOfficeHours}
+          emptyStateMessage={`No office hours listed for ${capitalizeDay(specificDay)}.`}
+        />
+      );
     }
 
     if (answerType === 'email') {

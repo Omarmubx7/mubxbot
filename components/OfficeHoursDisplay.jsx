@@ -11,12 +11,13 @@ import { MapPin, Clock, Calendar, Mail } from 'lucide-react';
  * - faculty: faculty name
  * - email: faculty email
  * - department: faculty department
+ * - emptyStateMessage: custom no-hours message
  */
-export function OfficeHoursDisplay({ officeHours, faculty, email, department }) {
+export function OfficeHoursDisplay({ officeHours, faculty, email, department, emptyStateMessage = 'No office hours available' }) {
   if (!officeHours || officeHours.length === 0) {
     return (
       <div className="bg-gradient-to-r from-[#DC2626]/5 to-[#DC2626]/2 dark:from-[#DC2626]/10 dark:to-[#DC2626]/5 rounded-lg p-4 border border-[#DC2626]/20 dark:border-[#DC2626]/30">
-        <p className="text-sm text-slate-600 dark:text-slate-400">No office hours available</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{emptyStateMessage}</p>
       </div>
     );
   }
