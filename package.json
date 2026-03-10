@@ -10,6 +10,7 @@
     "test": "node --test tests/*.test.js",
     "secrets:scan": "gitleaks detect --source . --config .gitleaks.toml",
     "hooks:install": "pwsh -File scripts/install-git-hooks.ps1",
+    "db:seed:neon": "node scripts/import-office-hours-to-neon.js",
     "parse": "node scripts/parse.js",
     "watcher": "node scripts/watcher.js"
   },
