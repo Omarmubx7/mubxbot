@@ -37,6 +37,13 @@ App Development/dist/
 # Local security scan artifacts
 gitleaks-*.json
 
+# Python cache/temp artifacts
+__pycache__/
+*.pyc
+
+# Local tool cache
+.qodo/
+
 
 # Watcher state
 data/snapshot.json
