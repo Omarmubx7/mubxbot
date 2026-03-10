@@ -4,10 +4,26 @@ import {
   suggestClosestProfessors,
   getAllOfficeHours, 
   extractQueryContext, 
+  extractQuerySubject,
   generateSmartResponse,
   isSimpleNameSearch,
   generateDisambiguationMessage 
 } from '../../../lib/getOfficeHours.js';
+
+function getIntentLabel(context) {
+  switch (context?.answerType) {
+    case 'email':
+      return 'email address';
+    case 'office':
+      return 'office location';
+    case 'department':
+      return 'department';
+    case 'hours':
+      return context?.specificDay ? `${context.specificDay} availability` : 'office hours';
+    default:
+      return 'faculty details';
+  }
+}
 
 export async function POST(req) {
   try {
@@ -35,12 +51,11 @@ export async function POST(req) {
       query.includes('eng ') ||
       query.split(' ').length <= 4;
 
+    const context = extractQueryContext(message);
     const results = await searchOfficeHours(message);
 
     // Deterministic structured responses.
     if (results.length > 0) {
-      const context = extractQueryContext(message);
-      
       // Single result - generate smart response
       if (results.length === 1) {
         const smartResponse = generateSmartResponse(results[0], message);
@@ -98,6 +113,12 @@ export async function POST(req) {
     } else if (isOfficeHoursQuery) {
       const suggestions = await suggestClosestProfessors(message, 5);
       const allProfessors = await getAllOfficeHours();
+      const subject = extractQuerySubject(message) || message.trim();
+      const requestLabel = getIntentLabel(context);
+
+      const summary = suggestions.length > 0
+        ? `I couldn't find an exact faculty match for "${subject}", so I can't confirm the ${requestLabel} yet.`
+        : `I couldn't find a faculty match for "${subject}" in the current dataset, so I can't confirm the ${requestLabel}.`;
 
       const guidance = suggestions.length > 0
         ? 'I could not find an exact match, but I found similar names you can select.'
@@ -117,6 +138,10 @@ export async function POST(req) {
       return NextResponse.json({
         type: 'no_results',
         message: message,
+        summary,
+        requestLabel,
+        subject,
+        context,
         guidance,
         hints,
         datasetCount: allProfessors.length,

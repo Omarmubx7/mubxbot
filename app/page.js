@@ -575,10 +575,12 @@ export default function Page() {
             type: 'bot',
             content: (
               <div className="space-y-3">
-                <div>
-                  {data.suggestions?.length > 0
-                    ? `I couldn't find office hours for '${data.message}'. Try checking the spelling or pick one of these close matches:`
-                    : `I couldn't find office hours for '${data.message}'. Try checking the spelling or browse by department.`}
+                <div className="text-[14px] leading-relaxed">
+                  {data.summary || (
+                    data.suggestions?.length > 0
+                      ? `I couldn't find an exact match for '${data.message}'. Try checking the spelling or pick one of these close matches:`
+                      : `I couldn't find a faculty match for '${data.message}'. Try checking the spelling or browse by department.`
+                  )}
                 </div>
                 {data.guidance && (
                   <div className="text-[13px] opacity-80 bg-[#DC2626]/5 border border-[#DC2626]/20 rounded-lg px-3 py-2">
