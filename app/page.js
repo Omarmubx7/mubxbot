@@ -12,6 +12,22 @@ import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 
+const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
+  <div className="space-y-3 py-1">
+    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8E8E93] dark:text-[#98989D]">
+      {title}
+    </div>
+    <div className={`text-[16px] font-bold break-words ${accent}`}>
+      {value}
+    </div>
+    {subtitle && (
+      <div className="text-[13px] opacity-70 break-words">
+        {subtitle}
+      </div>
+    )}
+  </div>
+);
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
@@ -34,7 +50,7 @@ export default function Page() {
             </div>
           </div>
           <div className="text-[13px] opacity-80 pt-1">
-            💡 <span className="font-medium">Quick tip:</span> Just type an instructor's name, or use the buttons below to get started!
+            💡 <span className="font-medium">Quick tip:</span> Use <strong>what</strong> for email, <strong>when</strong> for office hours, <strong>where</strong> for office code, or just type an instructor's name.
           </div>
         </div>
       ),
@@ -225,6 +241,48 @@ export default function Page() {
     />
   );
 
+  const SmartAnswerCard = ({ professor, response, context }) => {
+    const answerType = context?.answerType || 'profile';
+    const facultyName = professor?.name || professor?.professor;
+
+    if (answerType === 'hours') {
+      return <OfficeHoursCard data={professor} />;
+    }
+
+    if (answerType === 'email') {
+      return (
+        <SmartFieldCard
+          title="Email"
+          value={response}
+          subtitle={facultyName ? `${facultyName}` : null}
+        />
+      );
+    }
+
+    if (answerType === 'office') {
+      return (
+        <SmartFieldCard
+          title="Office Code"
+          value={response}
+          subtitle={facultyName ? `${facultyName}` : null}
+        />
+      );
+    }
+
+    if (answerType === 'department') {
+      return (
+        <SmartFieldCard
+          title="Department"
+          value={response}
+          subtitle={facultyName ? `${facultyName}` : null}
+          accent="text-[var(--text-primary)]"
+        />
+      );
+    }
+
+    return <OfficeHoursCard data={professor} />;
+  };
+
   const renderTextWithClickableEmails = (text) => {
     if (!text) return null;
 
@@ -384,12 +442,12 @@ export default function Page() {
 
         // Handle different response types
         if (data.type === 'ai_response' || data.type === 'smart_response') {
-          // If the API resolved one professor, always render the unified card UI.
+          // Render a focused answer card for clear intents and the full profile card otherwise.
           if (Array.isArray(data.results) && data.results.length === 1) {
             setMessages(prev => [...prev, {
               id: Date.now(),
               type: 'bot',
-              content: <OfficeHoursCard data={data.results[0]} />,
+              content: <SmartAnswerCard professor={data.results[0]} response={data.response} context={data.context} />,
               timestamp: getCurrentTime(),
               quickReplies: ['Search another', 'By department']
             }]);
@@ -541,7 +599,7 @@ export default function Page() {
           setMessages(prev => [...prev, {
             id: Date.now(),
             type: 'bot',
-            content: "I can help you find professor office hours! Try asking:\n• 'When is Dr. Ahmad available?'\n• 'Show me office hours for Murad Yaghi'\n• Or just type a professor's name",
+            content: "Try this pattern for consistent results:\n• what + name = email\n• when + name = office hours\n• where + name = office code\n• Or just type a professor's name",
             timestamp: getCurrentTime(),
             quickReplies: ['By department', 'Search name']
           }]);
@@ -775,6 +833,7 @@ export default function Page() {
           onSend={handleSendMessage}
           onChange={handleInputChange}
           inlineSuggestion={inlineSuggestion}
+          placeholder="What = email, When = hours, Where = office"
         />
       </div>
     </main>

@@ -1,5 +1,5 @@
 # MUBXBot
-**BY MUBX**
+**BY OMAR MUBAIDIN**
 
 > **Real-time Faculty Information Retrieval System**  
 > A production-grade chatbot leveraging deterministic search algorithms and hybrid fuzzy matching for the HTU School of Computing and Informatics.
