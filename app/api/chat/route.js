@@ -1,14 +1,59 @@
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { 
   searchOfficeHours, 
   suggestClosestProfessors,
   getAllOfficeHours, 
   extractQueryContext, 
   extractQuerySubject,
+  buildContextualQuery,
   generateSmartResponse,
   isSimpleNameSearch,
   generateDisambiguationMessage 
 } from '../../../lib/getOfficeHours.js';
+
+const DISAMBIGUATION_TTL_MS = 5 * 60 * 1000;
+const pendingDisambiguations = new Map();
+const chatMetrics = {
+  totalRequests: 0,
+  smartResponses: 0,
+  disambiguationsIssued: 0,
+  disambiguationsResolved: 0,
+  disambiguationsExpired: 0,
+  noResults: 0,
+  helpResponses: 0,
+  errors: 0
+};
+
+function cleanupExpiredDisambiguations() {
+  const now = Date.now();
+  for (const [token, value] of pendingDisambiguations.entries()) {
+    if ((now - value.createdAt) > DISAMBIGUATION_TTL_MS) {
+      pendingDisambiguations.delete(token);
+    }
+  }
+}
+
+function storeDisambiguationContext(context) {
+  const token = crypto.randomUUID();
+  pendingDisambiguations.set(token, {
+    context,
+    createdAt: Date.now()
+  });
+  return token;
+}
+
+function consumeDisambiguationContext(token) {
+  const entry = pendingDisambiguations.get(token);
+  if (!entry) return null;
+
+  pendingDisambiguations.delete(token);
+
+  const isExpired = (Date.now() - entry.createdAt) > DISAMBIGUATION_TTL_MS;
+  if (isExpired) return null;
+
+  return entry.context;
+}
 
 function getIntentLabel(context) {
   switch (context?.answerType) {
@@ -27,14 +72,41 @@ function getIntentLabel(context) {
 
 export async function POST(req) {
   try {
-    const { message } = await req.json();
+    chatMetrics.totalRequests += 1;
+    cleanupExpiredDisambiguations();
 
-    if (!message || message.trim().length === 0) {
+    const {
+      message,
+      disambiguationToken,
+      selectedProfessor
+    } = await req.json();
+
+    const hasMessage = message && message.trim().length > 0;
+    const hasResolutionSelection = disambiguationToken && selectedProfessor;
+
+    if (!hasMessage && !hasResolutionSelection) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    let effectiveMessage = hasMessage ? message : '';
+    if (hasResolutionSelection) {
+      const storedContext = consumeDisambiguationContext(disambiguationToken);
+      if (!storedContext) {
+        chatMetrics.disambiguationsExpired += 1;
+        return NextResponse.json({
+          type: 'expired_disambiguation',
+          message: 'That selection has expired. Please ask your question again.',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      chatMetrics.disambiguationsResolved += 1;
+
+      effectiveMessage = buildContextualQuery(selectedProfessor, storedContext);
+    }
+
     // Search for relevant office hours data
-    const query = message.toLowerCase();
+    const query = effectiveMessage.toLowerCase();
     
     // Check if the user is asking for professor information (schedule/contact/department)
     const isOfficeHoursQuery =
@@ -51,14 +123,15 @@ export async function POST(req) {
       query.includes('eng ') ||
       query.split(' ').length <= 4;
 
-    const context = extractQueryContext(message);
-    const results = await searchOfficeHours(message);
+    const context = extractQueryContext(effectiveMessage);
+    const results = await searchOfficeHours(effectiveMessage);
 
     // Deterministic structured responses.
     if (results.length > 0) {
       // Single result - generate smart response
       if (results.length === 1) {
-        const smartResponse = generateSmartResponse(results[0], message);
+        const smartResponse = generateSmartResponse(results[0], effectiveMessage);
+        chatMetrics.smartResponses += 1;
         
         return NextResponse.json({
           type: 'smart_response',
@@ -72,15 +145,18 @@ export async function POST(req) {
       }
       
       // Multiple results - check if it's a simple name search
-      if (isSimpleNameSearch(message) && results.length > 1 && results.length <= 10) {
+      if (isSimpleNameSearch(effectiveMessage) && results.length > 1 && results.length <= 10) {
         // User typed a simple name (like "razan") - ask which one they want
-        const disambiguation = generateDisambiguationMessage(message, results);
+        const disambiguation = generateDisambiguationMessage(effectiveMessage, results);
+        const disambiguationToken = storeDisambiguationContext(context);
+        chatMetrics.disambiguationsIssued += 1;
         
         return NextResponse.json({
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
           context: context,
+          disambiguationToken,
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
@@ -90,13 +166,16 @@ export async function POST(req) {
       // If user asked for a specific field (email/office/hours) but multiple similar names match,
       // force disambiguation so we return the exact requested person's answer next.
       if ((context.wantsEmail || context.wantsOffice || context.wantsHours || context.wantsDepartment) && results.length > 1 && results.length <= 10) {
-        const disambiguation = generateDisambiguationMessage(message, results);
+        const disambiguation = generateDisambiguationMessage(effectiveMessage, results);
+        const disambiguationToken = storeDisambiguationContext(context);
+        chatMetrics.disambiguationsIssued += 1;
 
         return NextResponse.json({
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
           context: context,
+          disambiguationToken,
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
@@ -113,9 +192,10 @@ export async function POST(req) {
         model: 'structured'
       });
     } else if (isOfficeHoursQuery) {
-      const suggestions = await suggestClosestProfessors(message, 5);
+      chatMetrics.noResults += 1;
+      const suggestions = await suggestClosestProfessors(effectiveMessage, 5);
       const allProfessors = await getAllOfficeHours();
-      const subject = extractQuerySubject(message) || message.trim();
+      const subject = extractQuerySubject(effectiveMessage) || effectiveMessage.trim();
       const requestLabel = getIntentLabel(context);
 
       const summary = suggestions.length > 0
@@ -139,7 +219,7 @@ export async function POST(req) {
 
       return NextResponse.json({
         type: 'no_results',
-        message: message,
+        message: effectiveMessage,
         summary,
         requestLabel,
         subject,
@@ -157,6 +237,7 @@ export async function POST(req) {
         timestamp: new Date().toISOString()
       });
     } else {
+      chatMetrics.helpResponses += 1;
       return NextResponse.json({
         type: 'help',
         timestamp: new Date().toISOString()
@@ -164,6 +245,7 @@ export async function POST(req) {
     }
 
   } catch (error) {
+    chatMetrics.errors += 1;
     console.error('Chat API error:', error);
     return NextResponse.json(
       { error: 'Failed to process message', details: error.message },
@@ -175,11 +257,16 @@ export async function POST(req) {
 // Optional: GET endpoint to retrieve all office hours
 export async function GET() {
   try {
+    cleanupExpiredDisambiguations();
     const allData = await getAllOfficeHours();
     return NextResponse.json({
       count: allData.length,
       professors: allData.map(d => d.professor),
-      lastUpdated: allData[0]?.lastUpdated || null
+      lastUpdated: allData[0]?.lastUpdated || null,
+      metrics: {
+        ...chatMetrics,
+        pendingDisambiguations: pendingDisambiguations.size
+      }
     });
   } catch (error) {
     return NextResponse.json(

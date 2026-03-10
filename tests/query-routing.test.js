@@ -5,6 +5,8 @@ const {
   getAllOfficeHours,
   searchOfficeHours,
   extractQueryContext,
+  extractQuerySubject,
+  buildContextualQuery,
   generateSmartResponse
 } = require('../lib/getOfficeHours.js');
 
@@ -69,5 +71,52 @@ test('where queries return office codes across multiple names', async () => {
 
     assert.ok(results.length >= 1, `Expected at least one match for query: ${query}`);
     assert.equal(generateSmartResponse(results[0], query), results[0].office || 'No office code available.');
+  }
+});
+
+test('query subject extraction removes question stopwords', () => {
+  assert.equal(extractQuerySubject('when is razan free on wednesday'), 'razan');
+  assert.equal(extractQuerySubject('where is asma office'), 'asma');
+  assert.equal(extractQuerySubject('what is dr murad email'), 'murad');
+});
+
+test('contextual query builder preserves original intent', () => {
+  assert.equal(
+    buildContextualQuery('Asma Ahmad', { answerType: 'office' }),
+    'where Asma Ahmad'
+  );
+
+  assert.equal(
+    buildContextualQuery('Asma Ahmad', { answerType: 'email' }),
+    'what Asma Ahmad'
+  );
+
+  assert.equal(
+    buildContextualQuery('Asma Ahmad', { answerType: 'hours', specificDay: 'wednesday' }),
+    'when Asma Ahmad on Wednesday'
+  );
+});
+
+test('day-specific when queries return only the requested day', async () => {
+  const sampleProfessors = await getSampleProfessors(20);
+  const professorWithWednesday = sampleProfessors.find(professor =>
+    professor.officeHours.some(slot => slot.day.toLowerCase() === 'wednesday')
+  );
+
+  assert.ok(professorWithWednesday, 'Expected a sample professor with Wednesday office hours');
+
+  const query = `when ${professorWithWednesday.professor} on wednesday`;
+  const response = generateSmartResponse(professorWithWednesday, query);
+
+  assert.match(response.toLowerCase(), /wednesday:/, 'Expected Wednesday office hours in response');
+
+  const lines = response
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  assert.ok(lines.length > 0, 'Expected at least one office-hour line in response');
+  for (const line of lines) {
+    assert.match(line.toLowerCase(), /^wednesday:/, `Expected only Wednesday entries, got: ${line}`);
   }
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, MapPin, Clock } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +39,10 @@ export default function AdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [chatMetrics, setChatMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState("");
+  const [metricsUpdatedAt, setMetricsUpdatedAt] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
@@ -137,6 +141,30 @@ export default function AdminPage() {
     d.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const loadChatMetrics = async () => {
+    try {
+      setMetricsLoading(true);
+      setMetricsError("");
+      const res = await fetch('/api/chat', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load metrics');
+
+      const data = await res.json();
+      setChatMetrics(data.metrics || null);
+      setMetricsUpdatedAt(new Date());
+    } catch (error) {
+      console.error(error);
+      setMetricsError('Unable to load chat metrics right now.');
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChatMetrics();
+    const timer = setInterval(loadChatMetrics, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (loading) {
     return (
       <div className="h-[100dvh] w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-[#000000]">
@@ -179,6 +207,49 @@ export default function AdminPage() {
               {filtered.length} FOUND
             </div>
           </div>
+        </div>
+
+        {/* Chat Metrics */}
+        <div className="glass-surface rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="px-8 py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Chat Diagnostics</h2>
+              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">
+                {metricsUpdatedAt
+                  ? `Last updated ${metricsUpdatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`
+                  : 'No metrics loaded yet'}
+              </p>
+            </div>
+            <button
+              onClick={loadChatMetrics}
+              disabled={metricsLoading}
+              className="px-4 py-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 disabled:opacity-50 transition-all text-[12px] font-bold uppercase tracking-widest text-[var(--text-primary)]"
+            >
+              {metricsLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+
+          {metricsError ? (
+            <div className="px-8 py-6 text-[14px] text-[#DC2626]">{metricsError}</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+              {[
+                ['Total Requests', chatMetrics?.totalRequests ?? 0],
+                ['Smart Responses', chatMetrics?.smartResponses ?? 0],
+                ['No Results', chatMetrics?.noResults ?? 0],
+                ['Errors', chatMetrics?.errors ?? 0],
+                ['Disambiguations Issued', chatMetrics?.disambiguationsIssued ?? 0],
+                ['Disambiguations Resolved', chatMetrics?.disambiguationsResolved ?? 0],
+                ['Disambiguations Expired', chatMetrics?.disambiguationsExpired ?? 0],
+                ['Pending Disambiguations', chatMetrics?.pendingDisambiguations ?? 0]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</div>
+                  <div className="text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Table View */}

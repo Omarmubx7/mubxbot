@@ -33,6 +33,19 @@ const capitalizeDay = (value) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
+const describeRequestedField = (context) => {
+  const answerType = context?.answerType;
+  if (answerType === 'email') return 'email';
+  if (answerType === 'office') return 'office location';
+  if (answerType === 'department') return 'department';
+  if (answerType === 'hours') {
+    return context?.specificDay
+      ? `${capitalizeDay(context.specificDay)} office hours`
+      : 'office hours';
+  }
+  return 'details';
+};
+
 const buildContextualFollowupQuery = (professorName, context) => {
   const normalizedName = String(professorName || '').trim();
   if (!normalizedName) return professorName;
@@ -378,7 +391,7 @@ export default function Page() {
     handleBotResponse(action);
   };
 
-  const handleSendMessage = (text, specificDoctor = null, displayText = null) => {
+  const handleSendMessage = (text, specificDoctor = null, displayText = null, apiPayload = null) => {
     if (!text.trim() && !specificDoctor) return;
 
     const userMessage = {
@@ -423,12 +436,12 @@ export default function Page() {
           }]);
         }
       } else {
-        await handleBotResponse(text);
+        await handleBotResponse(text, apiPayload);
       }
     }, 800);
   };
 
-  const handleBotResponse = async (userText) => {
+  const handleBotResponse = async (userText, apiPayload = null) => {
     let query = userText.trim();
     
     // Sanitize input first
@@ -462,7 +475,7 @@ export default function Page() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: userText })
+          body: JSON.stringify(apiPayload || { message: userText })
         });
         
         const data = await response.json();
@@ -509,8 +522,24 @@ export default function Page() {
                     <button
                       key={i}
                       onClick={() => {
-                        const followupQuery = buildContextualFollowupQuery(prof.professor, data.context);
-                        handleSendMessage(followupQuery, null, prof.professor);
+                        const requestedField = describeRequestedField(data.context);
+                        setMessages(prev => [...prev, {
+                          id: Date.now(),
+                          type: 'bot',
+                          content: `Got it. I will answer your ${requestedField} question for ${prof.professor}.`,
+                          timestamp: getCurrentTime()
+                        }]);
+
+                        handleSendMessage(
+                          prof.professor,
+                          null,
+                          prof.professor,
+                          {
+                            message: prof.professor,
+                            selectedProfessor: prof.professor,
+                            disambiguationToken: data.disambiguationToken
+                          }
+                        );
                       }}
                       className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-[#DC2626]/5 to-transparent hover:from-[#DC2626]/10 transition-all text-left group border border-[#DC2626]/20 hover:border-[#DC2626]/40"
                     >
@@ -536,6 +565,14 @@ export default function Page() {
             ),
             timestamp: getCurrentTime(),
             quickReplies: ['Search another', 'By department']
+          }]);
+        } else if (data.type === 'expired_disambiguation') {
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: data.message || 'That selection expired. Please ask your question again.',
+            timestamp: getCurrentTime(),
+            quickReplies: ['Search name', 'By department']
           }]);
         } else if (data.type === 'office_hours') {
           if (data.results.length === 1) {
