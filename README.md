@@ -18,6 +18,23 @@ MUBXBot implements a client-server architecture for faculty directory queries us
 - **Fault-Tolerant Search**: Typo correction, phonetic matching, alias expansion
 - **Disambiguation Protocol**: Multi-candidate resolution with ranked suggestions
 
+## Security Hygiene
+
+- Never commit real credentials. Use `.env.example` as a template and keep real values only in local `.env`.
+- Install local git hooks to block accidental secret commits:
+
+```powershell
+npm run hooks:install
+```
+
+- Run a manual secrets scan before pushing:
+
+```powershell
+npm run secrets:scan
+```
+
+- CI also runs `gitleaks` on pull requests via `.github/workflows/secret-scan.yml`.
+
 ---
 
 ## System Architecture

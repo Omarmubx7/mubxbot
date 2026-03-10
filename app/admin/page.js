@@ -136,6 +136,16 @@ export default function AdminPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error(error);
+    }
+
+    globalThis.location.href = '/admin-login';
+  };
+
   const filtered = instructors.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.department.toLowerCase().includes(searchTerm.toLowerCase())
@@ -187,11 +197,19 @@ export default function AdminPage() {
             </Link>
             <h1 className="text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
           </div>
-          <button onClick={handleOpenAdd}
-            className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            <Plus size={20} strokeWidth={2.5} /> New Instructor
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all"
+            >
+              Logout
+            </button>
+            <button onClick={handleOpenAdd}
+              className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              <Plus size={20} strokeWidth={2.5} /> New Instructor
+            </button>
+          </div>
         </div>
       </div>
 

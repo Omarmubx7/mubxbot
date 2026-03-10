@@ -31,6 +31,11 @@ App Development/dist/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+
+# Local security scan artifacts
+gitleaks-*.json
 
 
 # Watcher state

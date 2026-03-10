@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] gitleaks not found. Install it to enable secret scanning."
+  exit 0
+fi
+
+echo "[pre-commit] Running gitleaks staged scan..."
+gitleaks protect --staged --verbose --config .gitleaks.toml
