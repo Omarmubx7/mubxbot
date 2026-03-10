@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="admin-bg" x1="32" y1="28" x2="224" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6B5E"/>
+      <stop offset="0.55" stop-color="#DC2626"/>
+      <stop offset="1" stop-color="#7F1D1D"/>
+    </linearGradient>
+    <linearGradient id="admin-panel" x1="74" y1="72" x2="182" y2="184" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF6F5" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#FEE2E2" stop-opacity="0.92"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="20" y="20" width="216" height="216" rx="52" fill="url(#admin-bg)"/>
+  <rect x="30" y="30" width="196" height="196" rx="42" stroke="white" stroke-opacity="0.14" stroke-width="2"/>
+  <circle cx="188" cy="68" r="12" fill="#FDE68A" fill-opacity="0.95"/>
+  <path d="M76 76C76 66.0589 84.0589 58 94 58H162C171.941 58 180 66.0589 180 76V152C180 161.941 171.941 170 162 170H112.5L92 190V170H94C84.0589 170 76 161.941 76 152V76Z" fill="url(#admin-panel)"/>
+  <rect x="96" y="86" width="64" height="12" rx="6" fill="#991B1B" fill-opacity="0.9"/>
+  <rect x="96" y="112" width="50" height="10" rx="5" fill="#B91C1C" fill-opacity="0.72"/>
+  <rect x="96" y="134" width="38" height="10" rx="5" fill="#B91C1C" fill-opacity="0.48"/>
+  <path d="M146 180C166.987 180 184 162.987 184 142C184 121.013 166.987 104 146 104C125.013 104 108 121.013 108 142C108 162.987 125.013 180 146 180Z" fill="#111827" fill-opacity="0.12"/>
+  <path d="M154 112C167.255 112 178 122.745 178 136C178 149.255 167.255 160 154 160C140.745 160 130 149.255 130 136C130 122.745 140.745 112 154 112Z" fill="#111827"/>
+  <path d="M154 118C163.941 118 172 126.059 172 136C172 145.941 163.941 154 154 154C144.059 154 136 145.941 136 136C136 126.059 144.059 118 154 118Z" fill="#F8FAFC"/>
+  <rect x="150" y="125" width="8" height="22" rx="4" fill="#DC2626"/>
+  <rect x="142" y="132" width="24" height="8" rx="4" fill="#DC2626"/>
+</svg>

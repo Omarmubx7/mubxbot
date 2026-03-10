@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Modal = ({ title, isOpen, onClose, children }) => (
@@ -175,6 +176,22 @@ export default function AdminPage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const previousHtmlOverflow = globalThis.document.documentElement.style.overflow;
+    const previousBodyOverflow = globalThis.document.body.style.overflow;
+    const previousBodyOverscroll = globalThis.document.body.style.overscrollBehavior;
+
+    globalThis.document.documentElement.style.overflow = 'auto';
+    globalThis.document.body.style.overflow = 'auto';
+    globalThis.document.body.style.overscrollBehavior = 'auto';
+
+    return () => {
+      globalThis.document.documentElement.style.overflow = previousHtmlOverflow;
+      globalThis.document.body.style.overflow = previousBodyOverflow;
+      globalThis.document.body.style.overscrollBehavior = previousBodyOverscroll;
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-dvh w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-[#000000] px-4">
@@ -195,7 +212,21 @@ export default function AdminPage() {
             <Link href="/" className="inline-flex items-center text-[13px] font-bold text-[var(--primary)] hover:opacity-70 mb-2 transition-all group">
               <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MUBXBot
             </Link>
-            <h1 className="text-[26px] sm:text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] overflow-hidden shadow-lg shadow-[#DC2626]/20 shrink-0">
+                <Image
+                  src="/admin-control-logo.svg"
+                  alt="MUBX Control Center logo"
+                  fill
+                  sizes="(max-width: 640px) 48px, 56px"
+                  className="object-cover"
+                />
+              </div>
+              <div>
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] text-[#DC2626] dark:text-[#F87171]">Admin Console</div>
+                <h1 className="text-[26px] sm:text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
+              </div>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <button

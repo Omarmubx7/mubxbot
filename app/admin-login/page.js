@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
@@ -55,7 +56,21 @@ export default function AdminLoginPage() {
   return (
     <main className="min-h-dvh w-full flex items-center justify-center bg-[#F2F2F7] dark:bg-black px-4 py-6 sm:py-10">
       <div className="w-full max-w-md rounded-[24px] sm:rounded-[28px] border border-black/5 dark:border-white/10 bg-white/80 dark:bg-black/40 backdrop-blur-xl shadow-2xl p-5 sm:p-8">
-        <h1 className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)]">Admin Access</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative w-12 h-12 rounded-[16px] overflow-hidden shadow-lg shadow-[#DC2626]/20 shrink-0">
+            <Image
+              src="/admin-control-logo.svg"
+              alt="MUBX admin logo"
+              fill
+              sizes="48px"
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#DC2626] dark:text-[#F87171]">Secure Area</div>
+            <h1 className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)]">Admin Access</h1>
+          </div>
+        </div>
         <p className="text-[14px] mt-2 text-[var(--text-secondary)]">
           Enter the password to continue to the admin panel.
         </p>
