@@ -1,16 +1,25 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextPath = searchParams.get('next') || '/admin';
 
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [nextPath, setNextPath] = useState('/admin');
+
+  useEffect(() => {
+    const params = new URLSearchParams(globalThis.location.search || '');
+    const requestedNext = params.get('next') || '/admin';
+
+    // Only allow internal absolute paths to avoid open redirects.
+    if (requestedNext.startsWith('/')) {
+      setNextPath(requestedNext);
+    }
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
