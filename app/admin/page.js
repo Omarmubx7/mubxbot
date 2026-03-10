@@ -299,6 +299,12 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <Link
+              href="/admin/static"
+              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
+            >
+              Static Bot Table
+            </Link>
             <button
               onClick={handleLogout}
               className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
