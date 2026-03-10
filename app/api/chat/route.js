@@ -73,7 +73,7 @@ export async function POST(req) {
 
       // If user asked for a specific field (email/office/hours) but multiple similar names match,
       // force disambiguation so we return the exact requested person's answer next.
-      if ((context.wantsEmail || context.wantsOffice || context.wantsHours) && results.length > 1 && results.length <= 10) {
+      if ((context.wantsEmail || context.wantsOffice || context.wantsHours || context.wantsDepartment) && results.length > 1 && results.length <= 10) {
         const disambiguation = generateDisambiguationMessage(message, results);
 
         return NextResponse.json({
