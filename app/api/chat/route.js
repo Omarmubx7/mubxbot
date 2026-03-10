@@ -80,6 +80,7 @@ export async function POST(req) {
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
+          context: context,
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
@@ -95,6 +96,7 @@ export async function POST(req) {
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
+          context: context,
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'

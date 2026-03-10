@@ -33,6 +33,22 @@ const capitalizeDay = (value) => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
+const buildContextualFollowupQuery = (professorName, context) => {
+  const normalizedName = String(professorName || '').trim();
+  if (!normalizedName) return professorName;
+
+  const answerType = context?.answerType;
+  if (answerType === 'email') return `what ${normalizedName}`;
+  if (answerType === 'office') return `where ${normalizedName}`;
+  if (answerType === 'department') return `${normalizedName} department`;
+  if (answerType === 'hours') {
+    if (context?.specificDay) return `when ${normalizedName} on ${context.specificDay}`;
+    return `when ${normalizedName}`;
+  }
+
+  return normalizedName;
+};
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
@@ -252,21 +268,12 @@ export default function Page() {
     const facultyName = professor?.name || professor?.professor;
 
     if (answerType === 'hours') {
-      const specificDay = context?.specificDay;
-
-      if (!specificDay) {
-        return <OfficeHoursCard data={professor} />;
-      }
-
-      const filteredOfficeHours = (professor?.officeHours || []).filter(slot =>
-        slot.day?.toLowerCase() === specificDay.toLowerCase()
-      );
-
       return (
-        <OfficeHoursCard
-          data={professor}
-          officeHoursOverride={filteredOfficeHours}
-          emptyStateMessage={`No office hours listed for ${capitalizeDay(specificDay)}.`}
+        <SmartFieldCard
+          title={context?.specificDay ? `${capitalizeDay(context.specificDay)} Office Hours` : 'Office Hours'}
+          value={response}
+          subtitle={facultyName ? `${facultyName}` : null}
+          accent="text-[var(--text-primary)]"
         />
       );
     }
@@ -371,13 +378,13 @@ export default function Page() {
     handleBotResponse(action);
   };
 
-  const handleSendMessage = (text, specificDoctor = null) => {
+  const handleSendMessage = (text, specificDoctor = null, displayText = null) => {
     if (!text.trim() && !specificDoctor) return;
 
     const userMessage = {
       id: Date.now(),
       type: 'user',
-      content: specificDoctor ? specificDoctor.name : text,
+      content: specificDoctor ? specificDoctor.name : (displayText || text),
       timestamp: getCurrentTime(),
     };
 
@@ -501,7 +508,10 @@ export default function Page() {
                   {data.options.map((prof, i) => (
                     <button
                       key={i}
-                      onClick={() => handleSendMessage(prof.professor)}
+                      onClick={() => {
+                        const followupQuery = buildContextualFollowupQuery(prof.professor, data.context);
+                        handleSendMessage(followupQuery, null, prof.professor);
+                      }}
                       className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-[#DC2626]/5 to-transparent hover:from-[#DC2626]/10 transition-all text-left group border border-[#DC2626]/20 hover:border-[#DC2626]/40"
                     >
                       <div className="w-10 h-10 rounded-lg bg-[#DC2626]/15 text-[#DC2626] flex items-center justify-center font-bold text-[15px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors flex-shrink-0">
@@ -599,7 +609,10 @@ export default function Page() {
                     {data.suggestions.map((prof, i) => (
                       <button
                         key={i}
-                        onClick={() => handleSendMessage(prof.professor)}
+                        onClick={() => {
+                          const followupQuery = buildContextualFollowupQuery(prof.professor, data.context);
+                          handleSendMessage(followupQuery, null, prof.professor);
+                        }}
                         className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
                       >
                         <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
