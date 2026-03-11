@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, Users, Activity } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import Image from "next/image";
@@ -63,24 +63,6 @@ export default function AdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
-  const [chatMetrics, setChatMetrics] = useState(null);
-  const [metricsLoading, setMetricsLoading] = useState(false);
-  const [metricsError, setMetricsError] = useState("");
-  const [metricsUpdatedAt, setMetricsUpdatedAt] = useState(null);
-  const [staticResponsesMetrics, setStaticResponsesMetrics] = useState({
-    total: 0,
-    active: 0,
-    byAudience: {
-      user: 0,
-      admin: 0,
-      all: 0,
-      other: 0
-    }
-  });
-  const [onlineDevices, setOnlineDevices] = useState(0);
-  const [todayRequests, setTodayRequests] = useState(null);
-  const [lastHourRequests, setLastHourRequests] = useState(null);
-  const [countdownSecs, setCountdownSecs] = useState(15);
 
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
@@ -236,66 +218,14 @@ export default function AdminPage() {
     d.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalRequests = chatMetrics?.totalRequests ?? 0;
-  const safeRate = (value) => (totalRequests > 0 ? ((value / totalRequests) * 100) : 0);
-  const disambiguationIssued = chatMetrics?.disambiguationsIssued ?? 0;
-  const disambiguationResolved = chatMetrics?.disambiguationsResolved ?? 0;
-  const disambiguationResolutionRate = disambiguationIssued > 0
-    ? (disambiguationResolved / disambiguationIssued) * 100
-    : 0;
-  const uniqueDepartments = new Set(
-    instructors
-      .map((item) => String(item?.department || '').trim())
-      .filter(Boolean)
-  ).size;
-  const staticCoverageRate = staticResponsesMetrics.total > 0
-    ? (staticResponsesMetrics.active / staticResponsesMetrics.total) * 100
-    : 0;
-
-  const loadOverview = async () => {
-    try {
-      setMetricsLoading(true);
-      setMetricsError('');
-      const res = await fetch('/api/admin/overview', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load overview');
-      const data = await res.json();
-      setChatMetrics(data.chatMetrics || null);
-      setStaticResponsesMetrics({
-        total: data.staticResponses?.total ?? 0,
-        active: data.staticResponses?.active ?? 0,
-        byAudience: data.staticResponses?.byAudience ?? { user: 0, admin: 0, all: 0, other: 0 }
-      });
-      setOnlineDevices(data.onlineDevices ?? 0);
-      if (data.todayRequests != null) setTodayRequests(data.todayRequests);
-      if (data.lastHourRequests != null) setLastHourRequests(data.lastHourRequests);
-      setMetricsUpdatedAt(new Date());
-    } catch (error) {
-      console.error(error);
-      setMetricsError('Unable to load dashboard data right now.');
-    } finally {
-      setMetricsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const REFRESH_SECS = 15;
-    loadOverview();
     refreshInstructors();
-    setCountdownSecs(REFRESH_SECS);
-
     const refreshTimer = setInterval(() => {
-      loadOverview();
       refreshInstructors();
-      setCountdownSecs(REFRESH_SECS);
-    }, REFRESH_SECS * 1000);
-
-    const countdownTimer = setInterval(() => {
-      setCountdownSecs(prev => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
+    }, 15 * 1000);
 
     return () => {
       clearInterval(refreshTimer);
-      clearInterval(countdownTimer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -354,6 +284,12 @@ export default function AdminPage() {
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <Link
+              href="/admin/analytics"
+              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/admin/static"
               className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
             >
@@ -388,188 +324,6 @@ export default function AdminPage() {
           </div>
           <div className="sm:hidden px-4 pt-1 text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
             {filtered.length} found
-          </div>
-        </div>
-
-        {/* Live Status */}
-        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
-          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Live Status</h2>
-              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">Real-time system pulse — auto-refreshes every 15 seconds.</p>
-            </div>
-            <div className="flex flex-col items-end gap-1.5 min-w-[110px]">
-              <div className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Next in {countdownSecs}s</div>
-              <div className="w-28 h-1.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#DC2626] to-[#B91C1C] transition-all duration-1000"
-                  style={{ width: `${(countdownSecs / 15) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-6">
-            {/* Online Now */}
-            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse shrink-0" />
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Online Now</div>
-              </div>
-              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[#16A34A]">{onlineDevices}</div>
-              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">active devices</div>
-            </div>
-            {/* Today */}
-            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity size={12} className="text-[var(--text-tertiary)] shrink-0" />
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Today</div>
-              </div>
-              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">
-                {todayRequests ?? '—'}
-              </div>
-              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">chat requests</div>
-            </div>
-            {/* Last Hour */}
-            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity size={12} className="text-[var(--text-tertiary)] shrink-0" />
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Last Hour</div>
-              </div>
-              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">
-                {lastHourRequests ?? '—'}
-              </div>
-              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">requests</div>
-            </div>
-            {/* Instructors */}
-            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Users size={12} className="text-[var(--text-tertiary)] shrink-0" />
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Instructors</div>
-              </div>
-              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">{instructors.length}</div>
-              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">{uniqueDepartments} dept{uniqueDepartments !== 1 ? 's' : ''}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Metrics */}
-        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
-          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Chat Diagnostics</h2>
-              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">
-                {metricsUpdatedAt
-                  ? `Last updated ${metricsUpdatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`
-                  : 'No metrics loaded yet'}
-              </p>
-            </div>
-            <button
-              onClick={loadOverview}
-              disabled={metricsLoading}
-              className="px-4 py-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 disabled:opacity-50 transition-all text-[12px] font-bold uppercase tracking-widest text-[var(--text-primary)]"
-            >
-              {metricsLoading ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-
-          {metricsError ? (
-            <div className="px-8 py-6 text-[14px] text-[#DC2626]">{metricsError}</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 p-4 sm:p-6">
-              {[
-                ['Total Requests', chatMetrics?.totalRequests ?? 0],
-                ['Smart Responses', chatMetrics?.smartResponses ?? 0],
-                ['No Results', chatMetrics?.noResults ?? 0],
-                ['Errors', chatMetrics?.errors ?? 0],
-                ['Disambiguations Issued', chatMetrics?.disambiguationsIssued ?? 0],
-                ['Disambiguations Resolved', chatMetrics?.disambiguationsResolved ?? 0],
-                ['Disambiguations Expired', chatMetrics?.disambiguationsExpired ?? 0],
-                ['Pending Disambiguations', chatMetrics?.pendingDisambiguations ?? 0]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</div>
-                  <div className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Advanced KPI Suite */}
-        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
-          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Advanced KPI Suite</h2>
-              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">Operational + conversational performance indicators.</p>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                ['Smart Response Rate', `${safeRate(chatMetrics?.smartResponses ?? 0).toFixed(1)}%`],
-                ['No-Result Rate', `${safeRate(chatMetrics?.noResults ?? 0).toFixed(1)}%`],
-                ['Error Rate', `${safeRate(chatMetrics?.errors ?? 0).toFixed(1)}%`],
-                ['Disambiguation Resolution', `${disambiguationResolutionRate.toFixed(1)}%`],
-                ['Instructors Indexed', instructors.length],
-                ['Departments Covered', uniqueDepartments],
-                ['Static Responses Active', staticResponsesMetrics.active],
-                ['Static Coverage', `${staticCoverageRate.toFixed(1)}%`]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</div>
-                  <div className="text-[24px] sm:text-[28px] font-black tracking-tight text-[var(--text-primary)] mt-2">{value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4 space-y-4">
-                <div className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Conversation Funnel</div>
-                {[
-                  ['Smart Responses', safeRate(chatMetrics?.smartResponses ?? 0), '#16A34A'],
-                  ['No Results', safeRate(chatMetrics?.noResults ?? 0), '#D97706'],
-                  ['Errors', safeRate(chatMetrics?.errors ?? 0), '#DC2626'],
-                  ['Help Responses', safeRate(chatMetrics?.helpResponses ?? 0), '#2563EB']
-                ].map(([label, rate, color]) => (
-                  <div key={label} className="space-y-1.5">
-                    <div className="flex justify-between text-[12px]">
-                      <span className="font-medium text-[var(--text-secondary)]">{label}</span>
-                      <span className="font-bold text-[var(--text-primary)]">{Number(rate).toFixed(1)}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${Math.min(Number(rate), 100)}%`, backgroundColor: color }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4 space-y-4">
-                <div className="text-[12px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Static Responses Audience Mix</div>
-                {[
-                  ['User', staticResponsesMetrics.byAudience.user],
-                  ['Admin', staticResponsesMetrics.byAudience.admin],
-                  ['All', staticResponsesMetrics.byAudience.all],
-                  ['Other', staticResponsesMetrics.byAudience.other]
-                ].map(([label, count]) => {
-                  const percentage = staticResponsesMetrics.total > 0
-                    ? (Number(count) / staticResponsesMetrics.total) * 100
-                    : 0;
-
-                  return (
-                    <div key={label} className="space-y-1.5">
-                      <div className="flex justify-between text-[12px]">
-                        <span className="font-medium text-[var(--text-secondary)]">{label}</span>
-                        <span className="font-bold text-[var(--text-primary)]">{count} ({percentage.toFixed(1)}%)</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
-                        <div className="h-full rounded-full bg-[#DC2626]" style={{ width: `${Math.min(percentage, 100)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 

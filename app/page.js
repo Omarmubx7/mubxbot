@@ -100,6 +100,22 @@ export default function Page() {
   const [inputValue, setInputValue] = useState('');
   
   const messagesEndRef = useRef(null);
+  const conversationIdRef = useRef('');
+  const analyticsUserIdRef = useRef('');
+
+  useEffect(() => {
+    const storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
+    const storedConversationId = globalThis.localStorage.getItem('mubx_analytics_conversation_id') || '';
+
+    const userId = storedUserId || crypto.randomUUID();
+    const conversationId = storedConversationId || crypto.randomUUID();
+
+    analyticsUserIdRef.current = userId;
+    conversationIdRef.current = conversationId;
+
+    if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
+    if (!storedConversationId) globalThis.localStorage.setItem('mubx_analytics_conversation_id', conversationId);
+  }, []);
 
   useEffect(() => {
     if (instructors && instructors.length > 0) {
@@ -126,6 +142,12 @@ export default function Page() {
     const now = new Date();
     return now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
+
+  const withAnalyticsMeta = (payload) => ({
+    ...payload,
+    userId: analyticsUserIdRef.current || crypto.randomUUID(),
+    conversationId: conversationIdRef.current || crypto.randomUUID()
+  });
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
@@ -477,7 +499,7 @@ export default function Page() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(apiPayload || { message: userText })
+          body: JSON.stringify(withAnalyticsMeta(apiPayload || { message: userText }))
         });
         
         const data = await response.json();

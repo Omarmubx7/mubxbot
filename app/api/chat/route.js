@@ -134,8 +134,171 @@ function getIntentLabel(context) {
   }
 }
 
+async function ensureConversation({ conversationId, userId, environment = 'prod' }) {
+  if (!DATABASE_URL || !conversationId) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO conversations (id, user_id, started_at, environment)
+        VALUES ($1, $2, NOW(), $3)
+        ON CONFLICT (id)
+        DO UPDATE SET
+          user_id = COALESCE(conversations.user_id, EXCLUDED.user_id)
+      `,
+      [conversationId, userId || null, environment]
+    );
+  });
+}
+
+async function logMessageEvent({ id, conversationId, sender, text, isErrorTrigger = false, tags = {} }) {
+  if (!DATABASE_URL || !conversationId || !id || !sender) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO messages (id, conversation_id, sender, text, is_error_trigger, tags)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      `,
+      [id, conversationId, sender, String(text || ''), isErrorTrigger, JSON.stringify(tags || {})]
+    );
+  });
+}
+
+async function logSearchEvent({
+  conversationId,
+  userId,
+  searchType,
+  query,
+  normalizedName,
+  resultCount,
+  success,
+  environment = 'prod'
+}) {
+  if (!DATABASE_URL || !conversationId || !searchType || !query) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO search_events (
+          id, conversation_id, user_id, search_type, query, normalized_name, result_count, success, environment
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `,
+      [
+        crypto.randomUUID(),
+        conversationId,
+        userId || null,
+        searchType,
+        String(query || ''),
+        normalizedName || null,
+        Number(resultCount || 0),
+        Boolean(success),
+        environment
+      ]
+    );
+  });
+}
+
+async function logErrorEvent({
+  conversationId,
+  messageId,
+  userId,
+  errorType,
+  triggerSource = 'auto_detection',
+  userTextAtError,
+  botReplySnippet,
+  environment = 'prod'
+}) {
+  if (!DATABASE_URL || !conversationId || !errorType) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO error_events (
+          id,
+          conversation_id,
+          message_id,
+          user_id,
+          error_type,
+          trigger_source,
+          user_text_at_error,
+          bot_reply_snippet,
+          environment
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `,
+      [
+        crypto.randomUUID(),
+        conversationId,
+        messageId || null,
+        userId || null,
+        errorType,
+        triggerSource,
+        userTextAtError || null,
+        botReplySnippet || null,
+        environment
+      ]
+    );
+  });
+}
+
+async function logPerformanceEvent({
+  conversationId,
+  messageId,
+  totalLatencyMs,
+  modelLatencyMs,
+  environment = 'prod'
+}) {
+  if (!DATABASE_URL || !conversationId) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        INSERT INTO performance_events (
+          id, conversation_id, message_id, model_latency_ms, total_latency_ms, environment
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+      `,
+      [
+        crypto.randomUUID(),
+        conversationId,
+        messageId || null,
+        Number(modelLatencyMs || totalLatencyMs || 0),
+        Number(totalLatencyMs || 0),
+        environment
+      ]
+    );
+  });
+}
+
+async function updateConversationAggregate({
+  conversationId,
+  incrementMessages = 0,
+  hasSmartSearch = false,
+  hasError = false,
+  success = null
+}) {
+  if (!DATABASE_URL || !conversationId) return;
+
+  await withDb(async (client) => {
+    await client.query(
+      `
+        UPDATE conversations
+        SET
+          ended_at = NOW(),
+          message_count = message_count + $2,
+          has_smart_search = has_smart_search OR $3,
+          has_error = has_error OR $4,
+          success = COALESCE($5, success)
+        WHERE id = $1
+      `,
+      [conversationId, Number(incrementMessages || 0), Boolean(hasSmartSearch), Boolean(hasError), success]
+    );
+  });
+}
+
 export async function POST(req) {
   try {
+    const requestStartedAt = Date.now();
+    const environment = process.env.NODE_ENV === 'production' ? 'prod' : 'staging';
     chatMetrics.totalRequests += 1;
     cleanupExpiredDisambiguations();
     let disambiguationResolvedInRequest = false;
@@ -143,8 +306,13 @@ export async function POST(req) {
     const {
       message,
       disambiguationToken,
-      selectedProfessor
+      selectedProfessor,
+      conversationId,
+      userId
     } = await req.json();
+
+    const analyticsConversationId = String(conversationId || crypto.randomUUID());
+    const analyticsUserId = userId ? String(userId) : null;
 
     const hasMessage = message && message.trim().length > 0;
     const hasResolutionSelection = disambiguationToken && selectedProfessor;
@@ -153,24 +321,137 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    await ensureConversation({
+      conversationId: analyticsConversationId,
+      userId: analyticsUserId,
+      environment
+    }).catch(() => {});
+
     let effectiveMessage = hasMessage ? message : '';
+    let normalizedNameForSearch = null;
     if (hasResolutionSelection) {
       const storedContext = consumeDisambiguationContext(disambiguationToken);
       if (!storedContext) {
         chatMetrics.disambiguationsExpired += 1;
         await logChatRequest({ outcome: 'expired_disambiguation', disambiguationExpired: true });
+        const expiredBotId = crypto.randomUUID();
+        await logMessageEvent({
+          id: expiredBotId,
+          conversationId: analyticsConversationId,
+          sender: 'bot',
+          text: 'That selection has expired. Please ask your question again.',
+          tags: { type: 'expired_disambiguation' }
+        }).catch(() => {});
+        await logErrorEvent({
+          conversationId: analyticsConversationId,
+          messageId: expiredBotId,
+          userId: analyticsUserId,
+          errorType: 'expired_disambiguation',
+          userTextAtError: String(message || selectedProfessor || ''),
+          botReplySnippet: 'That selection has expired. Please ask your question again.',
+          environment
+        }).catch(() => {});
+        await updateConversationAggregate({
+          conversationId: analyticsConversationId,
+          incrementMessages: 1,
+          hasError: true,
+          success: false
+        }).catch(() => {});
+        await logPerformanceEvent({
+          conversationId: analyticsConversationId,
+          messageId: expiredBotId,
+          totalLatencyMs: Date.now() - requestStartedAt,
+          environment
+        }).catch(() => {});
+
         return NextResponse.json({
           type: 'expired_disambiguation',
           message: 'That selection has expired. Please ask your question again.',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          conversationId: analyticsConversationId
         });
       }
 
       chatMetrics.disambiguationsResolved += 1;
       disambiguationResolvedInRequest = true;
+      normalizedNameForSearch = String(selectedProfessor || '').trim().toLowerCase() || null;
 
       effectiveMessage = buildContextualQuery(selectedProfessor, storedContext);
     }
+
+    const userMessageId = crypto.randomUUID();
+    await logMessageEvent({
+      id: userMessageId,
+      conversationId: analyticsConversationId,
+      sender: 'user',
+      text: effectiveMessage,
+      tags: { hasResolutionSelection: Boolean(hasResolutionSelection) }
+    }).catch(() => {});
+
+    const sendStructuredResponse = async (payload, options = {}) => {
+      const botMessageId = crypto.randomUUID();
+      const botText = String(
+        options.botText
+          || payload.response
+          || payload.summary
+          || payload.message
+          || payload.type
+      );
+
+      await logMessageEvent({
+        id: botMessageId,
+        conversationId: analyticsConversationId,
+        sender: 'bot',
+        text: botText,
+        isErrorTrigger: Boolean(options.isErrorMessage),
+        tags: { type: payload.type || options.type || 'unknown' }
+      }).catch(() => {});
+
+      if (options.searchType) {
+        await logSearchEvent({
+          conversationId: analyticsConversationId,
+          userId: analyticsUserId,
+          searchType: options.searchType,
+          query: effectiveMessage,
+          normalizedName: options.normalizedName || normalizedNameForSearch,
+          resultCount: options.resultCount,
+          success: options.searchSuccess,
+          environment
+        }).catch(() => {});
+      }
+
+      if (options.errorType) {
+        await logErrorEvent({
+          conversationId: analyticsConversationId,
+          messageId: botMessageId,
+          userId: analyticsUserId,
+          errorType: options.errorType,
+          userTextAtError: effectiveMessage,
+          botReplySnippet: botText,
+          environment
+        }).catch(() => {});
+      }
+
+      await updateConversationAggregate({
+        conversationId: analyticsConversationId,
+        incrementMessages: 2,
+        hasSmartSearch: Boolean(options.hasSmartSearch),
+        hasError: Boolean(options.errorType),
+        success: options.success
+      }).catch(() => {});
+
+      await logPerformanceEvent({
+        conversationId: analyticsConversationId,
+        messageId: botMessageId,
+        totalLatencyMs: Date.now() - requestStartedAt,
+        environment
+      }).catch(() => {});
+
+      return NextResponse.json({
+        ...payload,
+        conversationId: analyticsConversationId
+      });
+    };
 
     // Search for relevant office hours data
     const query = effectiveMessage.toLowerCase();
@@ -201,7 +482,7 @@ export async function POST(req) {
         chatMetrics.smartResponses += 1;
         await logChatRequest({ outcome: 'smart_response', disambiguationResolved: disambiguationResolvedInRequest });
         
-        return NextResponse.json({
+        return sendStructuredResponse({
           type: 'smart_response',
           response: smartResponse,
           results: results,
@@ -209,6 +490,14 @@ export async function POST(req) {
           context: context,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
+        }, {
+          searchType: isSimpleNameSearch(effectiveMessage) ? 'name' : 'smart',
+          normalizedName: String(results[0]?.professor || results[0]?.name || '').trim().toLowerCase() || null,
+          resultCount: 1,
+          searchSuccess: true,
+          hasSmartSearch: true,
+          success: true,
+          botText: smartResponse
         });
       }
       
@@ -220,7 +509,7 @@ export async function POST(req) {
         chatMetrics.disambiguationsIssued += 1;
         await logChatRequest({ outcome: 'disambiguation', disambiguationIssued: true, disambiguationResolved: disambiguationResolvedInRequest });
         
-        return NextResponse.json({
+        return sendStructuredResponse({
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
@@ -229,6 +518,14 @@ export async function POST(req) {
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
+        }, {
+          searchType: 'name',
+          normalizedName: String(effectiveMessage || '').trim().toLowerCase() || null,
+          resultCount: results.length,
+          searchSuccess: false,
+          hasSmartSearch: true,
+          success: null,
+          botText: disambiguation.message
         });
       }
 
@@ -240,7 +537,7 @@ export async function POST(req) {
         chatMetrics.disambiguationsIssued += 1;
         await logChatRequest({ outcome: 'disambiguation', disambiguationIssued: true, disambiguationResolved: disambiguationResolvedInRequest });
 
-        return NextResponse.json({
+        return sendStructuredResponse({
           type: 'disambiguation',
           message: disambiguation.message,
           options: disambiguation.options,
@@ -249,18 +546,34 @@ export async function POST(req) {
           count: results.length,
           timestamp: new Date().toISOString(),
           model: 'smart_structured'
+        }, {
+          searchType: 'smart',
+          normalizedName: String(effectiveMessage || '').trim().toLowerCase() || null,
+          resultCount: results.length,
+          searchSuccess: false,
+          hasSmartSearch: true,
+          success: null,
+          botText: disambiguation.message
         });
       }
       
       // Multiple results with full query - return for frontend to display as list
       await logChatRequest({ outcome: 'office_hours', disambiguationResolved: disambiguationResolvedInRequest });
-      return NextResponse.json({
+      return sendStructuredResponse({
         type: 'office_hours',
         results: results,
         count: results.length,
         context: context,
         timestamp: new Date().toISOString(),
         model: 'structured'
+      }, {
+        searchType: isSimpleNameSearch(effectiveMessage) ? 'name' : 'other',
+        normalizedName: String(effectiveMessage || '').trim().toLowerCase() || null,
+        resultCount: results.length,
+        searchSuccess: results.length > 0,
+        hasSmartSearch: false,
+        success: true,
+        botText: `Found ${results.length} matching result(s)`
       });
     } else if (isOfficeHoursQuery) {
       chatMetrics.noResults += 1;
@@ -289,7 +602,7 @@ export async function POST(req) {
             'Use "By department" to browse all available records.'
           ];
 
-      return NextResponse.json({
+      return sendStructuredResponse({
         type: 'no_results',
         message: effectiveMessage,
         summary,
@@ -307,13 +620,31 @@ export async function POST(req) {
           office: item.office
         })),
         timestamp: new Date().toISOString()
+      }, {
+        searchType: isSimpleNameSearch(effectiveMessage) ? 'name' : 'other',
+        normalizedName: String(effectiveMessage || '').trim().toLowerCase() || null,
+        resultCount: 0,
+        searchSuccess: false,
+        hasSmartSearch: false,
+        errorType: 'no_results',
+        success: false,
+        isErrorMessage: true,
+        botText: summary
       });
     } else {
       chatMetrics.helpResponses += 1;
       await logChatRequest({ outcome: 'help', disambiguationResolved: disambiguationResolvedInRequest });
-      return NextResponse.json({
+      return sendStructuredResponse({
         type: 'help',
         timestamp: new Date().toISOString()
+      }, {
+        searchType: 'other',
+        normalizedName: null,
+        resultCount: 0,
+        searchSuccess: false,
+        hasSmartSearch: false,
+        success: true,
+        botText: 'Help response'
       });
     }
 
@@ -347,6 +678,7 @@ export async function GET() {
       metrics: effectiveMetrics
     });
   } catch (error) {
+    console.error('Chat GET failed:', error);
     return NextResponse.json(
       { error: 'Failed to fetch office hours' },
       { status: 500 }
