@@ -1,8 +1,0 @@
-1. Download the new PDF folder from OneDrive
-2. Drop the files into  data/raw/
-3. Run:
-   python scripts/parse_office_hours.py
-   python scripts/generate_doctors_json.py
-   git add public/doctors.json data/office_hours.json
-   git commit -m "update: new semester office hours"
-   git push

@@ -1,22 +1,186 @@
-# MUBXBot
-**BY OMAR MUBAIDIN**
+# MUBXBot - Faculty Information Chatbot
 
-> **Real-time Faculty Information Retrieval System**  
-> A production-grade chatbot leveraging deterministic search algorithms and hybrid fuzzy matching for the HTU School of Computing and Informatics.
+**Made by Omar Mubaidin**
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.2.0-black)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue)](https://reactjs.org/)
-[![License](https://img.shields.io/badge/license-Educational-green)](LICENSE)
+A smart chatbot that helps students instantly find faculty contact information, office hours, and other details at HTU School of Computing and Informatics.
 
-## Abstract
+---
 
-MUBXBot implements a client-server architecture for faculty directory queries using a two-phase search strategy: exact string matching with O(n) complexity followed by fuzzy Levenshtein-based ranking with O(n log n) sort overhead. The system achieves sub-100ms query response times by eliminating external API dependencies and maintaining an in-memory JSON data structure with HashMap-based lookups.
+## ✨ What It Does
 
-**Core Capabilities:**
-- **Multi-field Information Retrieval**: Contact details, office locations, availability schedules
-- **Intelligent Query Resolution**: Intent classification, entity extraction, context-aware response generation
-- **Fault-Tolerant Search**: Typo correction, phonetic matching, alias expansion
-- **Disambiguation Protocol**: Multi-candidate resolution with ranked suggestions
+MUBXBot is a chatbot that answers questions like:
+- **"Who is Dr. Ahmed?"** → Instantly shows contact & office details
+- **"When is Dr. Smith's office hours?"** → Displays availability schedule
+- **"What's the phone number for Professor Johnson?"** → Provides contact info
+- **"I need help finding a professor"** → Guides you and suggests closest matches
+
+**The bot is smart:**
+- 🎯 Understands typos and misspellings
+- 🔍 Searches across all faculty names and departments
+- 💬 Learns from what people ask
+- ⚡ Responds in under 100 milliseconds (super fast!)
+
+---
+
+## 🚀 Quick Start
+
+### For Regular Users
+1. Go to [bot.mubx.dev](https://bot.mubx.dev)
+2. Type your question in the chat
+3. Get instant answers!
+
+### For Developers/Administrators
+
+#### Step 1: Install Dependencies
+```bash
+npm install
+```
+
+#### Step 2: Set Up Environment
+Create a `.env.local` file in the project root:
+```
+DATABASE_URL=your_database_url_here
+AZURE_AD_CLIENT_ID=your_client_id
+AZURE_AD_CLIENT_SECRET=your_secret
+```
+
+#### Step 3: Set Up Database (Optional)
+If you want to store admin changes and analytics:
+1. Create a free account at [Neon.tech](https://neon.tech)
+2. Copy your connection string to `.env.local` as `DATABASE_URL`
+3. Run the database setup:
+   ```bash
+   npm run db:seed:neon
+   ```
+
+#### Step 4: Run Locally
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+---
+
+## 📁 What's Inside (Folder Explanation)
+
+```
+mubxbot/
+├── app/                    # Web browser app
+│   ├── page.js            # Main chat page
+│   ├── admin/            # Admin dashboard
+│   └── api/              # APIs (backend logic)
+│
+├── components/            # Reusable UI pieces
+│   ├── ChatWindow.jsx     # Chat box
+│   └── ChatMessage.jsx    # Individual message
+│
+├── lib/                   # Helper functions
+│   ├── getOfficeHours.js  # Search logic
+│   └── adminAuth.js       # Login system
+│
+├── data/                  # Faculty information
+│   ├── office_hours.json  # Schedule data
+│   └── doctors.json       # Faculty list
+│
+├── public/                # Images, icons, etc.
+└── scripts/               # Helper scripts
+```
+
+---
+
+## 🔐 Keeping Passwords Safe
+
+⚠️ **IMPORTANT**: Never put real passwords in code!
+
+1. Create `.env.local` file (git ignores this automatically)
+2. Put real secrets ONLY in `.env.local`
+3. Always use `.env.example` as a template
+4. Before pushing code, run:
+   ```bash
+   npm run secrets:scan
+   ```
+
+---
+
+## 📊 Admin Dashboard
+
+Administrators can log in to see:
+- 📈 How many questions the bot got right/wrong
+- 👥 Student usage patterns
+- 🔍 Popular searches
+- ⚡ System performance metrics
+
+**Access:** Go to `/admin` and log in with your credentials.
+
+---
+
+## 🛠️ For Administrators
+
+### Add/Update Faculty Information
+
+#### Option 1: Direct Upload
+1. Go to Admin Dashboard
+2. Upload new faculty list
+3. Changes save immediately
+
+#### Option 2: Manual Updates
+1. Edit `data/office_hours.json`
+2. Restart the app
+3. Data updates automatically
+
+---
+
+## 🐛 Troubleshooting
+
+### Bot isn't responding?
+- Check internet connection
+- Refresh the page
+- Try a simpler question
+
+### Can't log into admin panel?
+- Check your username/password
+- Make sure `DATABASE_URL` is set in `.env.local`
+- Restart the server: `npm run dev`
+
+### Faculty info outdated?
+- Update `data/office_hours.json`
+- Or use the admin dashboard
+- Changes take effect immediately
+
+---
+
+## 📚 Need More Info?
+
+### For Technical Users
+See [TECHNICAL.md](TECHNICAL.md) for:
+- System architecture
+- API documentation
+- Database schema
+- Performance details
+
+### For Faculty/Staff
+Contact: [contact_email@htu.edu.jo](mailto:contact_email@htu.edu.jo)
+
+---
+
+## 📜 License
+
+Educational use only. Created for HTU School of Computing and Informatics.
+
+---
+
+## 🙋 Questions?
+
+**General Users:** Use the chat or visit the admin page  
+**Technical Issues:** Check [TECHNICAL.md](TECHNICAL.md) or open an issue  
+**Feedback:** Contact the development team
+
+---
+
+**Last Updated:** March 2026  
+**Version:** 2.0.0  
+**Status:** Production Ready ✅
 
 ## Security Hygiene
 
