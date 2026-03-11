@@ -81,6 +81,28 @@ export default function Providers({ children }) {
       });
   }, []);
 
+  // Presence heartbeat — tells the admin dashboard how many devices are online
+  useEffect(() => {
+    let sessionId = sessionStorage.getItem('mubx_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('mubx_session_id', sessionId);
+    }
+
+    const sendHeartbeat = () => {
+      fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+        keepalive: true
+      }).catch(() => {});
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <DoctorsContext.Provider value={{ instructors, setInstructors, officeHours, setOfficeHours, loading, theme, setTheme }}>
       {children}

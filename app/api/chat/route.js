@@ -12,21 +12,11 @@ import {
   isSimpleNameSearch,
   generateDisambiguationMessage 
 } from '../../../lib/getOfficeHours.js';
+import { chatMetricsStore as chatMetrics, pendingDisambiguationsStore as pendingDisambiguations } from '../../../lib/chatMetricsStore.js';
 
 const DISAMBIGUATION_TTL_MS = 5 * 60 * 1000;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const { Client } = pg;
-const pendingDisambiguations = new Map();
-const chatMetrics = {
-  totalRequests: 0,
-  smartResponses: 0,
-  disambiguationsIssued: 0,
-  disambiguationsResolved: 0,
-  disambiguationsExpired: 0,
-  noResults: 0,
-  helpResponses: 0,
-  errors: 0
-};
 
 async function withDb(fn) {
   const client = new Client({

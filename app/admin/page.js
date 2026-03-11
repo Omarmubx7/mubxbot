@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, Users, Activity } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import Image from "next/image";
@@ -77,6 +77,10 @@ export default function AdminPage() {
       other: 0
     }
   });
+  const [onlineDevices, setOnlineDevices] = useState(0);
+  const [todayRequests, setTodayRequests] = useState(null);
+  const [lastHourRequests, setLastHourRequests] = useState(null);
+  const [countdownSecs, setCountdownSecs] = useState(15);
 
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
@@ -248,67 +252,52 @@ export default function AdminPage() {
     ? (staticResponsesMetrics.active / staticResponsesMetrics.total) * 100
     : 0;
 
-  const loadChatMetrics = async () => {
+  const loadOverview = async () => {
     try {
       setMetricsLoading(true);
-      setMetricsError("");
-      const res = await fetch('/api/chat', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load metrics');
-
+      setMetricsError('');
+      const res = await fetch('/api/admin/overview', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load overview');
       const data = await res.json();
-      setChatMetrics(data.metrics || null);
+      setChatMetrics(data.chatMetrics || null);
+      setStaticResponsesMetrics({
+        total: data.staticResponses?.total ?? 0,
+        active: data.staticResponses?.active ?? 0,
+        byAudience: data.staticResponses?.byAudience ?? { user: 0, admin: 0, all: 0, other: 0 }
+      });
+      setOnlineDevices(data.onlineDevices ?? 0);
+      if (data.todayRequests != null) setTodayRequests(data.todayRequests);
+      if (data.lastHourRequests != null) setLastHourRequests(data.lastHourRequests);
       setMetricsUpdatedAt(new Date());
     } catch (error) {
       console.error(error);
-      setMetricsError('Unable to load chat metrics right now.');
+      setMetricsError('Unable to load dashboard data right now.');
     } finally {
       setMetricsLoading(false);
     }
   };
 
-  const loadStaticResponsesMetrics = async () => {
-    try {
-      const response = await fetch('/api/admin/static-responses', { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to load static responses metrics');
-
-      const rows = await response.json();
-      const safeRows = Array.isArray(rows) ? rows : [];
-
-      const byAudience = {
-        user: 0,
-        admin: 0,
-        all: 0,
-        other: 0
-      };
-
-      for (const row of safeRows) {
-        const audience = String(row?.audience || '').toLowerCase();
-        if (audience === 'user') byAudience.user += 1;
-        else if (audience === 'admin') byAudience.admin += 1;
-        else if (audience === 'all') byAudience.all += 1;
-        else byAudience.other += 1;
-      }
-
-      setStaticResponsesMetrics({
-        total: safeRows.length,
-        active: safeRows.filter((row) => row?.is_active !== false).length,
-        byAudience
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
-    loadChatMetrics();
-    loadStaticResponsesMetrics();
+    const REFRESH_SECS = 15;
+    loadOverview();
+    refreshInstructors();
+    setCountdownSecs(REFRESH_SECS);
 
-    const timer = setInterval(() => {
-      loadChatMetrics();
-      loadStaticResponsesMetrics();
-    }, 30000);
+    const refreshTimer = setInterval(() => {
+      loadOverview();
+      refreshInstructors();
+      setCountdownSecs(REFRESH_SECS);
+    }, REFRESH_SECS * 1000);
 
-    return () => clearInterval(timer);
+    const countdownTimer = setInterval(() => {
+      setCountdownSecs(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(refreshTimer);
+      clearInterval(countdownTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -402,6 +391,67 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Live Status */}
+        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--text-primary)]">Live Status</h2>
+              <p className="text-[12px] font-medium text-[var(--text-secondary)] mt-1">Real-time system pulse — auto-refreshes every 15 seconds.</p>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 min-w-[110px]">
+              <div className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Next in {countdownSecs}s</div>
+              <div className="w-28 h-1.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#DC2626] to-[#B91C1C] transition-all duration-1000"
+                  style={{ width: `${(countdownSecs / 15) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-6">
+            {/* Online Now */}
+            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse shrink-0" />
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Online Now</div>
+              </div>
+              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[#16A34A]">{onlineDevices}</div>
+              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">active devices</div>
+            </div>
+            {/* Today */}
+            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Today</div>
+              </div>
+              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">
+                {todayRequests ?? '—'}
+              </div>
+              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">chat requests</div>
+            </div>
+            {/* Last Hour */}
+            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Last Hour</div>
+              </div>
+              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">
+                {lastHourRequests ?? '—'}
+              </div>
+              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">requests</div>
+            </div>
+            {/* Instructors */}
+            <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-white/40 dark:bg-black/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Instructors</div>
+              </div>
+              <div className="text-[28px] sm:text-[32px] font-black tracking-tight text-[var(--text-primary)]">{instructors.length}</div>
+              <div className="text-[11px] text-[var(--text-tertiary)] mt-1 font-medium">{uniqueDepartments} dept{uniqueDepartments !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Chat Metrics */}
         <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
           <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-black/[0.03] dark:border-white/[0.05] flex items-center justify-between gap-4 flex-wrap">
@@ -414,7 +464,7 @@ export default function AdminPage() {
               </p>
             </div>
             <button
-              onClick={loadChatMetrics}
+              onClick={loadOverview}
               disabled={metricsLoading}
               className="px-4 py-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 disabled:opacity-50 transition-all text-[12px] font-bold uppercase tracking-widest text-[var(--text-primary)]"
             >
