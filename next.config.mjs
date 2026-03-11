@@ -4,18 +4,12 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Production optimizations
-  swcMinify: true,
+  // Production optimizations (swcMinify removed as it is default and the flag is deprecated)
   
   // Image optimization
   images: {
     unoptimized: false,
     minimumCacheTTL: 31536000, // 1 year for static images
-  },
-
-  // Enable experimental features for better performance
-  experimental: {
-    isrMemoryCacheSize: 50 * 1024 * 1024, // 50MB ISR cache
   },
 
   // Headers for performance

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
 import { Search, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatMessage } from '../components/ChatMessage';
 import { QuickReplies } from '../components/QuickReplies';
@@ -13,7 +15,11 @@ import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 
 const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
-  <div className="space-y-3 py-1">
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="space-y-3 py-2 px-3 rounded-xl bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/10"
+  >
     <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8E8E93] dark:text-[#98989D]">
       {title}
     </div>
@@ -27,8 +33,15 @@ const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:
         {subtitle}
       </div>
     )}
-  </div>
+  </motion.div>
 );
+
+SmartFieldCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
+  subtitle: PropTypes.string,
+  accent: PropTypes.string,
+};
 
 const capitalizeDay = (value) => {
   if (!value) return '';
@@ -262,7 +275,11 @@ export default function Page() {
   };
 
   const InstructorCard = ({ doctor }) => (
-    <div className="space-y-3 py-1">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="space-y-4 p-4 rounded-2xl bg-white/30 dark:bg-black/20 border border-white/40 dark:border-white/10 shadow-sm"
+    >
       <div className="font-semibold text-[16px]">👤 {doctor.name}</div>
       {doctor.school && <div className="text-[13px] opacity-70">🎓 {doctor.school}</div>}
       <div className="text-[14px] opacity-90">🏫 {normalizeDepartment(doctor.department)}</div>
@@ -281,8 +298,19 @@ export default function Page() {
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
+
+  InstructorCard.propTypes = {
+    doctor: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      school: PropTypes.string,
+      department: PropTypes.string.isRequired,
+      office: PropTypes.string,
+      email: PropTypes.string.isRequired,
+      office_hours: PropTypes.object,
+    }).isRequired,
+  };
 
   const OfficeHoursCard = ({ data, officeHoursOverride, emptyStateMessage }) => (
     <OfficeHoursDisplay
@@ -299,6 +327,19 @@ export default function Page() {
       emptyStateMessage={emptyStateMessage}
     />
   );
+
+  OfficeHoursCard.propTypes = {
+    data: PropTypes.shape({
+      officeHours: PropTypes.array,
+      office: PropTypes.string,
+      email: PropTypes.string,
+      department: PropTypes.string,
+      name: PropTypes.string,
+      professor: PropTypes.string,
+    }).isRequired,
+    officeHoursOverride: PropTypes.array,
+    emptyStateMessage: PropTypes.string,
+  };
 
   const SmartAnswerCard = ({ professor, response, context }) => {
     const answerType = context?.answerType || 'profile';
@@ -349,6 +390,18 @@ export default function Page() {
     return <OfficeHoursCard data={professor} />;
   };
 
+  SmartAnswerCard.propTypes = {
+    professor: PropTypes.shape({
+      name: PropTypes.string,
+      professor: PropTypes.string,
+    }).isRequired,
+    response: PropTypes.string.isRequired,
+    context: PropTypes.shape({
+      answerType: PropTypes.string,
+      specificDay: PropTypes.string,
+    }).isRequired,
+  };
+
   const renderTextWithClickableEmails = (text) => {
     if (!text) return null;
 
@@ -391,7 +444,7 @@ export default function Page() {
     if (action === 'Search name') {
       // Just show a prompt, don't search
       setMessages(prev => [...prev, {
-        id: Date.now(),
+        id: `msg-${Date.now()}`,
         type: 'bot',
         content: "Please type an instructor's name in the search box below.",
         timestamp: getCurrentTime()
@@ -404,7 +457,7 @@ export default function Page() {
     } else if (action === 'Office hours') {
       // Ask for name
       setMessages(prev => [...prev, {
-        id: Date.now(),
+        id: `msg-${Date.now()}`,
         type: 'bot',
         content: "Whose office hours would you like to see? Please type an instructor's name.",
         timestamp: getCurrentTime()
@@ -419,7 +472,7 @@ export default function Page() {
     if (!text.trim() && !specificDoctor) return;
 
     const userMessage = {
-      id: Date.now(),
+      id: `msg-${Date.now()}`,
       type: 'user',
       content: specificDoctor ? specificDoctor.name : (displayText || text),
       timestamp: getCurrentTime(),
@@ -544,7 +597,7 @@ export default function Page() {
                 <div className="grid gap-2">
                   {data.options.map((prof, i) => (
                     <button
-                      key={i}
+                      key={`${prof.professor}-${i}`}
                       onClick={() => {
                         const requestedField = describeRequestedField(data.context);
                         setMessages(prev => [...prev, {
@@ -619,7 +672,7 @@ export default function Page() {
                   <div className="grid gap-2">
                     {data.results.slice(0, 5).map((prof, i) => (
                       <button
-                        key={i}
+                        key={`${prof.professor}-${i}`}
                         onClick={() => handleSendMessage(prof.professor)}
                         className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
                       >
@@ -669,7 +722,7 @@ export default function Page() {
                   <div className="grid gap-2">
                     {data.suggestions.map((prof, i) => (
                       <button
-                        key={i}
+                        key={`sugg-${prof.professor}-${i}`}
                         onClick={() => {
                           const followupQuery = buildContextualFollowupQuery(prof.professor, data.context);
                           handleSendMessage(followupQuery, null, prof.professor);
@@ -723,7 +776,7 @@ export default function Page() {
             <div className="flex flex-wrap gap-2 pt-1">
               {departments.map(dept => (
                 <button
-                  key={dept}
+                  key={`dept-${dept}`}
                   onClick={() => handleSendMessage(dept)}
                   className="px-3 py-1.5 rounded-full border border-[#DC2626] text-[#DC2626] dark:text-[#EF4444] text-[13px] font-medium hover:bg-[#DC2626]/5 active:scale-95 transition-all"
                 >
@@ -851,7 +904,7 @@ export default function Page() {
   })();
 
   return (
-    <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative font-sans">
+    <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative">
       {/* Background Mesh */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{ 
         backgroundImage: 'radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(185, 28, 28, 0.15) 0px, transparent 50%)' 

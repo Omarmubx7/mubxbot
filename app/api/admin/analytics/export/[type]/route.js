@@ -7,7 +7,7 @@ function unauthorized(req) {
   return !verifyAdminSessionToken(token);
 }
 
-export async function GET(req, ctx) {
+export async function GET(req, { params }) {
   if (unauthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -16,8 +16,8 @@ export async function GET(req, ctx) {
     return NextResponse.json({ error: 'Database is not configured' }, { status: 400 });
   }
 
-  const params = await ctx.params;
-  const type = String(params?.type || '').toLowerCase();
+  const resolvedParams = await params;
+  const type = String(resolvedParams?.type || '').toLowerCase();
   const url = new URL(req.url);
   const range = parseDateRange(url.searchParams);
 

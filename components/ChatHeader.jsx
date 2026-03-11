@@ -2,6 +2,8 @@
 
 import { Moon, Sun, GraduationCap } from 'lucide-react';
 
+import PropTypes from 'prop-types';
+
 export function ChatHeader({ theme, onToggleTheme }) {
   return (
     <div className="flex items-center justify-between px-3 sm:px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
@@ -12,10 +14,10 @@ export function ChatHeader({ theme, onToggleTheme }) {
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex flex-col">
-            <span className="text-[15px] font-semibold leading-tight text-[#1C1C1E] dark:text-white truncate">
+            <span className="text-[15px] leading-tight text-[#1C1C1E] dark:text-white truncate">
               MUBXBot
             </span>
-            <span className="text-[10px] font-medium leading-tight text-red-500 dark:text-red-400 tracking-wide">
+            <span className="text-[10px] leading-tight text-red-500 dark:text-red-400 tracking-wide">
               BY OMAR MUBAIDIN
             </span>
           </div>
@@ -40,3 +42,8 @@ export function ChatHeader({ theme, onToggleTheme }) {
     </div>
   );
 }
+
+ChatHeader.propTypes = {
+  theme: PropTypes.oneOf(['light', 'dark']).isRequired,
+  onToggleTheme: PropTypes.func.isRequired,
+};

@@ -1,9 +1,10 @@
 import React from "react";
+import PropTypes from "prop-types";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Providers from "../components/Providers.jsx";
 
-const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
+const OG_IMAGE_URL = "/og-image.png?v=" + Date.now();
 
 export const metadata = {
   metadataBase: new URL("https://bot.mubx.dev"),
@@ -38,7 +39,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body>
+      <body className="bungee-regular">
         <Providers>
           {children}
         </Providers>
@@ -47,3 +48,7 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
+RootLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+};

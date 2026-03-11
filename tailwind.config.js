@@ -7,7 +7,11 @@ module.exports = {
   ],
   darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ["Bungee", "SF Pro Text", "SF Pro Display", "-apple-system", "BlinkMacSystemFont"],
+      },
+    },
   },
   plugins: [],
 };

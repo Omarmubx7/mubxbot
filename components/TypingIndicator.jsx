@@ -1,24 +1,33 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 export function TypingIndicator() {
   return (
-    <div className="flex justify-start px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="rounded-[18px] px-[14px] py-[10px] bg-[#E9ECEF] dark:bg-[#2C2C2E]">
-        <div className="flex gap-1 items-center h-5">
-          <span 
-            className="w-2 h-2 rounded-full bg-[#8E8E93] dark:bg-[#98989D] animate-bounce" 
-            style={{ animationDelay: '0ms', animationDuration: '1s' }}
-          ></span>
-          <span 
-            className="w-2 h-2 rounded-full bg-[#8E8E93] dark:bg-[#98989D] animate-bounce" 
-            style={{ animationDelay: '150ms', animationDuration: '1s' }}
-          ></span>
-          <span 
-            className="w-2 h-2 rounded-full bg-[#8E8E93] dark:bg-[#98989D] animate-bounce" 
-            style={{ animationDelay: '300ms', animationDuration: '1s' }}
-          ></span>
+    <motion.div 
+      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="flex justify-start px-4 mb-2"
+    >
+      <div className="rounded-2xl px-4 py-3 glass-surface border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-center h-[42px]">
+        <div className="flex gap-1.5 items-center">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="w-2.5 h-2.5 rounded-full bg-black/40 dark:bg-white/50"
+              animate={{ y: [0, -6, 0] }}
+              transition={{
+                duration: 0.6,
+                repeat: Infinity,
+                delay: i * 0.15,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

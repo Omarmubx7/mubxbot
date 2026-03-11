@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Bungee&display=swap');
+/* @tailwindcss v4 directives - ignore IDE warnings */
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
@@ -92,6 +94,7 @@
 }
 
 @theme inline {
+  --font-sans: "Bungee", "SF Pro Text", -apple-system, BlinkMacSystemFont;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -141,7 +144,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     color: var(--foreground);
     background-color: var(--background);
     -webkit-font-smoothing: antialiased;
@@ -174,6 +177,7 @@
 }
 
 @layer components {
+
   .glass-surface {
     background: rgba(255, 255, 255, 0.4) !important;
     backdrop-filter: blur(30px) saturate(190%) !important;
@@ -184,5 +188,11 @@
   .dark .glass-surface {
     background: rgba(28, 28, 30, 0.45) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .bungee-regular {
+    font-family: "Bungee", sans-serif;
+    font-weight: 400;
+    font-style: normal;
   }
 }
