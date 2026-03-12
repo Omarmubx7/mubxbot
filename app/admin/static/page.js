@@ -112,7 +112,7 @@ export default function AdminStaticResponsesPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-[#F2F2F7] dark:bg-black p-4 sm:p-6 md:p-10">
+    <main className="h-dvh w-full overflow-y-auto bg-[#F2F2F7] dark:bg-black p-4 sm:p-6 md:p-10">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>

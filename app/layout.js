@@ -4,7 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Providers from "../components/Providers.jsx";
 
-const OG_IMAGE_URL = "/og-image.png?v=" + Date.now();
+const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
 
 export const metadata = {
   metadataBase: new URL("https://bot.mubx.dev"),
@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className="bungee-regular">
+      <body>
         <Providers>
           {children}
         </Providers>

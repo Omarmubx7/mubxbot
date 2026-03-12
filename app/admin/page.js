@@ -230,21 +230,7 @@ export default function AdminPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const previousHtmlOverflow = globalThis.document.documentElement.style.overflow;
-    const previousBodyOverflow = globalThis.document.body.style.overflow;
-    const previousBodyOverscroll = globalThis.document.body.style.overscrollBehavior;
 
-    globalThis.document.documentElement.style.overflow = 'auto';
-    globalThis.document.body.style.overflow = 'auto';
-    globalThis.document.body.style.overscrollBehavior = 'auto';
-
-    return () => {
-      globalThis.document.documentElement.style.overflow = previousHtmlOverflow;
-      globalThis.document.body.style.overflow = previousBodyOverflow;
-      globalThis.document.body.style.overscrollBehavior = previousBodyOverscroll;
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -258,7 +244,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-dvh overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
+    <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       {/* Premium Apple Header */}
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-12 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">

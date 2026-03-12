@@ -1,7 +1,7 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Bungee&display=swap');
-/* @tailwindcss v4 directives - ignore IDE warnings */
+@import url("https://fonts.googleapis.com/css2?family=Bitcount+Prop+Double+Ink:wght@100..900&display=swap");
 @plugin "tailwindcss-animate";
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -94,7 +94,7 @@
 }
 
 @theme inline {
-  --font-sans: "Bungee", "SF Pro Text", -apple-system, BlinkMacSystemFont;
+  --font-sans: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -177,6 +177,22 @@
 }
 
 @layer components {
+  .font-bitcount {
+    font-family: "Bitcount Prop Double Ink", system-ui;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings:
+      "slnt" 0,
+      "CRSV" 0.5,
+      "ELSH" 0,
+      "ELXP" 0,
+      "SZP1" 0,
+      "SZP2" 0,
+      "XPN1" 0,
+      "XPN2" 0,
+      "YPN1" 0,
+      "YPN2" 0;
+  }
 
   .glass-surface {
     background: rgba(255, 255, 255, 0.4) !important;
@@ -188,11 +204,5 @@
   .dark .glass-surface {
     background: rgba(28, 28, 30, 0.45) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .bungee-regular {
-    font-family: "Bungee", sans-serif;
-    font-weight: 400;
-    font-style: normal;
   }
 }

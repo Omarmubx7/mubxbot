@@ -225,7 +225,7 @@ export default function AdminAnalyticsPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-[#F8F9FA] dark:bg-[#1C1C1E] text-[var(--text-primary)]">
+    <div className="h-dvh w-full overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] text-[var(--text-primary)]">
       <div className="max-w-[1280px] mx-auto p-4 sm:p-6 md:p-8">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           <aside className="w-full lg:w-64 rounded-3xl border border-[#E9ECEF] dark:border-[#2C2C2E] bg-white/70 dark:bg-black/20 p-4 h-fit">
