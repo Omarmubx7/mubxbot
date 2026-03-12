@@ -94,7 +94,7 @@
 }
 
 @theme inline {
-  --font-sans: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;
+  --font-sans: var(--font-roboto), "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

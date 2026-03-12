@@ -2,7 +2,15 @@ import React from "react";
 import PropTypes from "prop-types";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { Roboto } from "next/font/google";
 import Providers from "../components/Providers.jsx";
+
+const roboto = Roboto({
+  weight: ['100', '300', '400', '500', '700', '900'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto',
+});
 
 const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
 
@@ -33,7 +41,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${roboto.variable} font-sans`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
         <link rel="icon" href="/favicon.ico" sizes="any" />

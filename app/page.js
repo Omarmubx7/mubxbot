@@ -129,8 +129,16 @@ export default function Page() {
   const analyticsUserIdRef = useRef('');
 
   useEffect(() => {
-    const storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
-    const storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
+    let storedUserId = '';
+    let storedConversationId = '';
+
+    try {
+      storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
+      storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
+    } catch (e) {
+      // Storage access might be denied in strict privacy modes
+      console.warn('Storage access is disabled');
+    }
 
     const userId = storedUserId || generateUUID();
     const conversationId = storedConversationId || generateUUID();
@@ -138,8 +146,12 @@ export default function Page() {
     analyticsUserIdRef.current = userId;
     conversationIdRef.current = conversationId;
 
-    if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
-    if (!storedConversationId) globalThis.sessionStorage.setItem('mubx_analytics_conversation_id', conversationId);
+    try {
+      if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
+      if (!storedConversationId) globalThis.sessionStorage.setItem('mubx_analytics_conversation_id', conversationId);
+    } catch (e) {
+      // Safe fallback if write fails
+    }
   }, []);
 
   useEffect(() => {
