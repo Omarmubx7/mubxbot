@@ -206,9 +206,6 @@ export default function AdminAnalyticsPage() {
           setSelectedConversation(await res.json());
         }
       }
-
-      setLastSyncedAt(new Date());
-      setSyncCountdown(syncIntervalSec);
     } catch (e) {
       setError(e.message || 'Failed to load analytics data');
     } finally {
