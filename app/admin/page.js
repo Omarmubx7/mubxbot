@@ -86,6 +86,7 @@ export default function AdminPage() {
     setSyncIntervalSec,
     syncCountdown,
     lastSyncedAt,
+    syncing,
     performSync
   } = useAutoSync(refreshInstructors, 15);
 
@@ -293,6 +294,7 @@ export default function AdminPage() {
           setSyncIntervalSec={setSyncIntervalSec}
           syncCountdown={syncCountdown}
           lastSyncedAt={lastSyncedAt}
+          syncing={syncing}
           onRefresh={performSync}
         />
 

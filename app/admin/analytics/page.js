@@ -216,6 +216,7 @@ export default function AdminAnalyticsPage() {
     setSyncIntervalSec,
     syncCountdown,
     lastSyncedAt,
+    syncing,
     performSync
   } = useAutoSync(async () => await fetchTabData({ silent: true, withDetail: true }), 15);
 
@@ -329,6 +330,7 @@ export default function AdminAnalyticsPage() {
                   setSyncIntervalSec={setSyncIntervalSec}
                   syncCountdown={syncCountdown}
                   lastSyncedAt={lastSyncedAt}
+                  syncing={syncing}
                   onRefresh={performSync}
                 />
               </div>

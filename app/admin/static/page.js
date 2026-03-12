@@ -44,6 +44,7 @@ export default function AdminStaticResponsesPage() {
     setSyncIntervalSec,
     syncCountdown,
     lastSyncedAt,
+    syncing,
     performSync
   } = useAutoSync(async () => await loadRows(true), 15);
 
@@ -212,6 +213,7 @@ export default function AdminStaticResponsesPage() {
               setSyncIntervalSec={setSyncIntervalSec}
               syncCountdown={syncCountdown}
               lastSyncedAt={lastSyncedAt}
+              syncing={syncing}
               onRefresh={performSync}
             />
           </div>

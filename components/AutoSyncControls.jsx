@@ -7,19 +7,26 @@ export function useAutoSync(onSync, defaultInterval = 15) {
   const [syncIntervalSec, setSyncIntervalSec] = useState(defaultInterval);
   const [syncCountdown, setSyncCountdown] = useState(defaultInterval);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
-  // Store onSync in a ref so it's always up-to-date without
-  // needing the function to exist at hook call-time (avoids TDZ).
   const onSyncRef = useRef(onSync);
   useEffect(() => { onSyncRef.current = onSync; }, [onSync]);
 
   const performSync = useCallback(async (...args) => {
-    if (typeof onSyncRef.current === 'function') {
-      await onSyncRef.current(...args);
+    if (syncing) return;           // prevent double-click overlap
+    setSyncing(true);
+    try {
+      if (typeof onSyncRef.current === 'function') {
+        await onSyncRef.current(...args);
+      }
+      setLastSyncedAt(new Date());
+    } catch (err) {
+      console.error('[AutoSync] refresh failed:', err);
+    } finally {
+      setSyncing(false);
+      setSyncCountdown(syncIntervalSec);
     }
-    setLastSyncedAt(new Date());
-    setSyncCountdown(syncIntervalSec);
-  }, [syncIntervalSec]);
+  }, [syncIntervalSec, syncing]);
 
   useEffect(() => {
     if (!autoSyncEnabled) {
@@ -50,6 +57,7 @@ export function useAutoSync(onSync, defaultInterval = 15) {
     setSyncIntervalSec,
     syncCountdown,
     lastSyncedAt,
+    syncing,
     performSync
   };
 }
@@ -61,15 +69,18 @@ export function AutoSyncControls({
   setSyncIntervalSec,
   syncCountdown,
   lastSyncedAt,
+  syncing = false,
   onRefresh
 }) {
   return (
     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm">
       <button 
-        onClick={onRefresh} 
-        className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 text-[var(--text-primary)] transition-all"
+        onClick={onRefresh}
+        disabled={syncing}
+        className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 text-[var(--text-primary)] transition-all disabled:opacity-60"
       >
-        <RefreshCw size={14} /> Refresh
+        <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+        {syncing ? 'Refreshing...' : 'Refresh'}
       </button>
       
       <button
@@ -97,7 +108,9 @@ export function AutoSyncControls({
       </div>
       
       <div className="text-[12px] font-medium text-[var(--text-secondary)] sm:ml-auto px-2 text-center sm:text-right">
-        {autoSyncEnabled ? `Next sync in ${syncCountdown}s.` : 'Live sync paused.'}
+        {syncing && 'Syncing now...'}
+        {!syncing && autoSyncEnabled && `Next sync in ${syncCountdown}s.`}
+        {!syncing && !autoSyncEnabled && 'Live sync paused.'}
         {lastSyncedAt ? <br className="sm:hidden" /> : ''}
         {lastSyncedAt ? ` Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
       </div>
@@ -112,5 +125,7 @@ AutoSyncControls.propTypes = {
   setSyncIntervalSec: PropTypes.func.isRequired,
   syncCountdown: PropTypes.number.isRequired,
   lastSyncedAt: PropTypes.instanceOf(Date),
+  syncing: PropTypes.bool,
   onRefresh: PropTypes.func.isRequired
 };
+
