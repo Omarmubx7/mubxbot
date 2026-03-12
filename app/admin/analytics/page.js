@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Download } from 'lucide-react';
-import { AdminHeader } from '../../components/AdminHeader.jsx';
-import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
+import { AdminHeader } from '../../../components/AdminHeader.jsx';
+import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },

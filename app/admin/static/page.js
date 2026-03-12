@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Save, Plus, Trash2, Edit2 } from 'lucide-react';
-import { AdminHeader } from '../../components/AdminHeader.jsx';
-import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
+import { AdminHeader } from '../../../components/AdminHeader.jsx';
+import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
 
 const emptyForm = {
   id: null,
@@ -179,7 +178,7 @@ export default function AdminStaticResponsesPage() {
                   checked={form.is_active}
                   onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
                 />
-                Active
+                <span>Active</span>
               </label>
               <button
                 type="submit"
@@ -187,7 +186,7 @@ export default function AdminStaticResponsesPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#DC2626] px-4 py-2 text-white font-bold disabled:opacity-60"
               >
                 {form.id ? <Save size={16} /> : <Plus size={16} />}
-                {saving ? 'Saving...' : form.id ? 'Update' : 'Create'}
+                {saving ? 'Saving...' : (form.id ? 'Update' : 'Create')}
               </button>
               {form.id && (
                 <button
@@ -215,11 +214,13 @@ export default function AdminStaticResponsesPage() {
               onRefresh={performSync}
             />
           </div>
-          {loading ? (
+          {loading && (
             <div className="text-sm text-[var(--text-secondary)]">Loading...</div>
-          ) : rows.length === 0 ? (
+          )}
+          {!loading && rows.length === 0 && (
             <div className="text-sm text-[var(--text-secondary)]">No static responses yet.</div>
-          ) : (
+          )}
+          {!loading && rows.length > 0 && (
             <div className="space-y-3">
               {rows.map((row) => (
                 <div key={row.id} className="rounded-xl border border-black/10 dark:border-white/10 p-4 bg-white/70 dark:bg-black/20">
