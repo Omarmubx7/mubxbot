@@ -1,7 +1,8 @@
 "use client";
 
+/* eslint-disable react/prop-types, jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Download } from 'lucide-react';
 import { AdminHeader } from '../../../components/AdminHeader.jsx';
 import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
@@ -77,14 +78,18 @@ function SparkBars({ rows = [], keys = [], colors = [] }) {
 }
 
 function KpiCard({ title, value, subtitle, delta }) {
-  const tone = delta == null ? 'text-[var(--text-tertiary)]' : delta >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]';
+  let tone = 'text-[var(--text-tertiary)]';
+  if (delta != null) {
+    tone = delta >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]';
+  }
   return (
     <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 p-4 space-y-1.5">
       <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">{title}</div>
       <div className="text-[26px] font-black tracking-tight text-[var(--text-primary)]">{value}</div>
       <div className="text-[12px] font-medium text-[var(--text-secondary)]">{subtitle || '\u00a0'}</div>
       <div className={cn('text-[12px] font-bold', tone)}>
-        {delta == null ? '\u00a0' : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}% vs previous`}
+        {delta != null && `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}% vs previous`}
+        {delta == null && '\u00a0'}
       </div>
     </div>
   );

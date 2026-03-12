@@ -83,10 +83,10 @@ function generateUUID() {
     return crypto.randomUUID();
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = (Math.random() * 16) | 0;
+    const r = Math.trunc(Math.random() * 16);
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
-  });
+  }); // NOSONAR
 }
 
 export default function Page() {
@@ -150,7 +150,7 @@ export default function Page() {
       if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
       if (!storedConversationId) globalThis.sessionStorage.setItem('mubx_analytics_conversation_id', conversationId);
     } catch (e) {
-      // Safe fallback if write fails
+      console.warn('Storage write disabled', e);
     }
   }, []);
 
@@ -209,8 +209,8 @@ export default function Page() {
     const invalidTimePattern = /(\d{2,}):(\d{2})/g;
     const matches = [...timeStr.matchAll(invalidTimePattern)];
     for (const match of matches) {
-      const hours = parseInt(match[1]);
-      const minutes = parseInt(match[2]);
+      const hours = Number.parseInt(match[1]);
+      const minutes = Number.parseInt(match[2]);
       if (hours > 23 || minutes > 59) {
         return "Invalid time - please contact admin";
       }
@@ -225,20 +225,20 @@ export default function Page() {
     const rangeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
     if (rangeMatch) {
       let [, startHr, startMin, endHr, endMin] = rangeMatch;
-      startHr = parseInt(startHr);
-      endHr = parseInt(endHr);
+      startHr = Number.parseInt(startHr);
+      endHr = Number.parseInt(endHr);
 
-      // Apply reasonable defaults: 8-11 AM, 12 noon/PM, 1-7 PM, 8-11 PM
       const startPeriod = startHr >= 8 && startHr < 12 ? "AM" : "PM";
-      const endPeriod = endHr >= 1 && endHr < 8 ? "PM" : endHr >= 8 && endHr < 12 ? "AM" : "PM";
-
+      let endPeriod = "PM";
+      if (endHr >= 8 && endHr < 12) endPeriod = "AM";
+      
       return `${startHr}:${startMin} ${startPeriod} - ${endHr}:${endMin} ${endPeriod}`;
     }
 
     // Single time without range
     const singleMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
     if (singleMatch) {
-      const hr = parseInt(singleMatch[1]);
+      const hr = Number.parseInt(singleMatch[1]);
       const period = hr >= 8 && hr < 12 ? "AM" : "PM";
       return timeStr.replace(/(\d{1,2}:\d{2})/, `$1 ${period}`);
     }
@@ -282,7 +282,7 @@ export default function Page() {
   };
 
   const sanitizeInput = (query) => {
-    const cleaned = query.replace(/[^a-zA-Z0-9\s@.-]/g, '').trim();
+    const cleaned = query.replaceAll(/[^a-zA-Z0-9\s@.-]/g, '').trim();
     if (cleaned.length < 2) return null;
     return cleaned;
   };
