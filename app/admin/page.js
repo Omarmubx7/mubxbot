@@ -7,6 +7,8 @@ import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { AdminHeader } from '../../components/AdminHeader.jsx';
+import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
 
 const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v1';
 
@@ -64,10 +66,15 @@ export default function AdminPage() {
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
 
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncIntervalSec, setSyncIntervalSec] = useState(15);
-  const [syncCountdown, setSyncCountdown] = useState(15);
-  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const {
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncIntervalSec,
+    setSyncIntervalSec,
+    syncCountdown,
+    lastSyncedAt,
+    performSync
+  } = useAutoSync(refreshInstructors, 15);
 
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
@@ -96,8 +103,6 @@ export default function AdminPage() {
     const data = await response.json();
     setInstructors(data);
     globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
-    setLastSyncedAt(new Date());
-    setSyncCountdown(syncIntervalSec);
   };
 
   const persistInstructorsLocally = (nextInstructors) => {
@@ -226,29 +231,9 @@ export default function AdminPage() {
   );
 
   useEffect(() => {
-    refreshInstructors();
+    performSync();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!autoSyncEnabled) {
-      setSyncCountdown(syncIntervalSec);
-      return;
-    }
-    setSyncCountdown(syncIntervalSec);
-    const timer = setInterval(() => {
-      if (globalThis.document.hidden) return;
-      setSyncCountdown((prev) => {
-        if (prev <= 1) {
-          refreshInstructors();
-          return syncIntervalSec;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSyncEnabled, syncIntervalSec]);
 
 
 
@@ -266,107 +251,46 @@ export default function AdminPage() {
   return (
     <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       {/* Premium Apple Header */}
-      <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-12 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-          <div>
-            <Link href="/" className="inline-flex items-center text-[13px] font-bold text-[var(--primary)] hover:opacity-70 mb-2 transition-all group">
-              <ArrowLeft size={16} className="mr-1 group-hover:-translate-x-1 transition-transform" /> Back to MUBXBot
-            </Link>
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] overflow-hidden shadow-lg shadow-[#DC2626]/20 shrink-0">
-                <Image
-                  src="/admin-control-logo.svg"
-                  alt="MUBX Control Center logo"
-                  fill
-                  sizes="(max-width: 640px) 48px, 56px"
-                  className="object-cover"
-                />
-              </div>
-              <div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.24em] text-[#DC2626] dark:text-[#F87171]">Admin Console</div>
-                <h1 className="text-[26px] sm:text-[32px] font-black tracking-tighter leading-tight text-[var(--text-primary)]">Control Center</h1>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <Link
-              href="/admin/analytics"
-              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
-            >
-              Analytics
-            </Link>
-            <Link
-              href="/admin/static"
-              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
-            >
-              Static Bot Table
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center gap-2 bg-black/5 dark:bg-white/10 text-[var(--text-primary)] px-5 py-3 rounded-full font-bold hover:bg-black/10 dark:hover:bg-white/15 transition-all w-full sm:w-auto"
-            >
-              Logout
-            </button>
-            <button onClick={handleOpenAdd}
-              className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"
-            >
-              <Plus size={20} strokeWidth={2.5} /> New Instructor
-            </button>
-          </div>
+      <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
+        <div className="max-w-6xl mx-auto">
+          <AdminHeader title="Control Center" onLogout={handleLogout} />
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-12 space-y-6 sm:space-y-8 pb-20 sm:pb-32">
-        {/* Spotlight Search */}
-        <div className="glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
-          <div className="flex items-center gap-3 sm:gap-4 px-2 sm:px-4">
-            <Search className="text-[var(--text-tertiary)]" size={22} />
-            <input type="text" placeholder="Search directory..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-transparent border-none min-h-[44px] sm:min-h-[48px] text-[16px] sm:text-[18px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
-            />
-            <div className="hidden sm:block px-4 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
-              {filtered.length} FOUND
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 pb-20 sm:pb-32">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            {/* Spotlight Search */}
+            <div className="glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
+              <div className="flex items-center gap-3 px-3">
+                <Search className="text-[var(--text-tertiary)]" size={20} />
+                <input type="text" placeholder="Search directory..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 bg-transparent border-none min-h-[40px] text-[15px] font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none"
+                />
+                <div className="px-3 py-1.5 bg-black/5 dark:bg-white/10 rounded-full text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest hidden sm:block">
+                  {filtered.length}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="sm:hidden px-4 pt-1 text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-            {filtered.length} found
-          </div>
+          
+          <button onClick={handleOpenAdd}
+            className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white px-6 py-4 rounded-[24px] sm:rounded-[28px] font-bold shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"
+          >
+            <Plus size={20} strokeWidth={2.5} /> New Instructor
+          </button>
         </div>
 
         {/* Sync Controls */}
-        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm">
-          <button onClick={refreshInstructors} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 text-[var(--text-primary)] transition-all">
-            <RefreshCw size={14} /> Refresh
-          </button>
-          
-          <button
-            onClick={() => setAutoSyncEnabled((prev) => !prev)}
-            className={`rounded-xl px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 transition-all ${autoSyncEnabled ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[var(--text-primary)]'}`}
-          >
-            {autoSyncEnabled ? 'Live Sync On' : 'Live Sync Off'}
-          </button>
-
-          <div className="flex items-center gap-2">
-            <label htmlFor="admin-sync-interval" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] hidden sm:block">Interval</label>
-            <select
-              id="admin-sync-interval"
-              value={syncIntervalSec}
-              onChange={(e) => setSyncIntervalSec(Number.parseInt(e.target.value, 10) || 15)}
-              className="block rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-3 text-[13px] text-[var(--text-primary)] font-bold outline-none hover:bg-black/10 dark:hover:bg-white/15 transition-all text-center"
-            >
-              <option value="5" className="text-black">5s</option>
-              <option value="10" className="text-black">10s</option>
-              <option value="15" className="text-black">15s</option>
-              <option value="30" className="text-black">30s</option>
-            </select>
-          </div>
-          
-          <div className="text-[12px] font-medium text-[var(--text-secondary)] sm:ml-auto px-2 text-center sm:text-right">
-            {autoSyncEnabled ? `Next sync in ${syncCountdown}s.` : 'Live sync paused.'}
-            {lastSyncedAt ? <br className="sm:hidden" /> : ''}
-            {lastSyncedAt ? ` Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
-          </div>
-        </div>
+        <AutoSyncControls
+          autoSyncEnabled={autoSyncEnabled}
+          setAutoSyncEnabled={setAutoSyncEnabled}
+          syncIntervalSec={syncIntervalSec}
+          setSyncIntervalSec={setSyncIntervalSec}
+          syncCountdown={syncCountdown}
+          lastSyncedAt={lastSyncedAt}
+          onRefresh={performSync}
+        />
 
         {/* Table View */}
         <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">

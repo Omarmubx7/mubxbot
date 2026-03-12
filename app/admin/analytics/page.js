@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { AdminHeader } from '../../components/AdminHeader.jsx';
+import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
@@ -127,10 +129,15 @@ export default function AdminAnalyticsPage() {
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncIntervalSec, setSyncIntervalSec] = useState(15);
-  const [syncCountdown, setSyncCountdown] = useState(15);
-  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const {
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncIntervalSec,
+    setSyncIntervalSec,
+    syncCountdown,
+    lastSyncedAt,
+    performSync
+  } = useAutoSync(async () => await fetchTabData({ silent: true, withDetail: true }), 15);
 
   const [overview, setOverview] = useState(null);
   const [conversations, setConversations] = useState({ rows: [], total: 0 });
@@ -211,29 +218,8 @@ export default function AdminAnalyticsPage() {
 
   useEffect(() => {
     fetchTabData();
-  }, [fetchTabData]);
-
-  useEffect(() => {
-    if (!autoSyncEnabled) {
-      setSyncCountdown(syncIntervalSec);
-      return;
-    }
-
-    setSyncCountdown(syncIntervalSec);
-    const timer = setInterval(() => {
-      if (globalThis.document.hidden) return;
-
-      setSyncCountdown((prev) => {
-        if (prev <= 1) {
-          fetchTabData({ silent: true, withDetail: true });
-          return syncIntervalSec;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [autoSyncEnabled, syncIntervalSec, fetchTabData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadConversationDetail = async (id) => {
     try {
@@ -246,14 +232,23 @@ export default function AdminAnalyticsPage() {
   };
 
   return (
-    <div className="h-dvh w-full overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] text-[var(--text-primary)]">
-      <div className="max-w-[1280px] mx-auto p-4 sm:p-6 md:p-8">
+    <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000] text-[var(--text-primary)]">
+      <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
+        <div className="max-w-[1280px] mx-auto">
+          <AdminHeader 
+            title="Analytics & Quality" 
+            onLogout={async () => {
+              await fetch('/api/admin/auth/logout', { method: 'POST' });
+              globalThis.location.href = '/admin-login';
+            }} 
+          />
+        </div>
+      </div>
+
+      <div className="max-w-[1280px] mx-auto p-4 sm:p-6 md:p-8 pb-20 sm:pb-32">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-          <aside className="w-full lg:w-64 rounded-3xl border border-[#E9ECEF] dark:border-[#2C2C2E] bg-white/70 dark:bg-black/20 p-4 h-fit">
-            <Link href="/admin" className="inline-flex items-center gap-2 text-[13px] font-bold text-[#DC2626] mb-4">
-              <ArrowLeft size={15} /> Back to Admin
-            </Link>
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)] mb-2">Analytics</div>
+          <aside className="w-full lg:w-48 xl:w-64 rounded-3xl border border-black/5 dark:border-white/10 glass-card p-3 sm:p-4 h-fit sticky top-28 z-40 hidden md:block">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)] mb-2 px-3">Views</div>
             <div className="space-y-1.5">
               {TABS.map((tab) => (
                 <button
@@ -272,72 +267,70 @@ export default function AdminAnalyticsPage() {
             </div>
           </aside>
 
-          <main className="flex-1 space-y-4">
-            <div className="rounded-3xl border border-[#E9ECEF] dark:border-[#2C2C2E] bg-white/70 dark:bg-black/20 p-4 sm:p-5">
-              <div className="flex flex-wrap items-end gap-3">
-                <div>
-                  <label htmlFor="analytics-date-range" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Date range</label>
-                  <select
-                    id="analytics-date-range"
-                    className="mt-1 block rounded-xl bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-3 py-2 text-[13px]"
-                    value={preset}
-                    onChange={(e) => setPreset(e.target.value)}
-                  >
-                    {PRESETS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                  </select>
-                </div>
-
-                {preset === 'custom' && (
-                  <>
-                    <div>
-                      <label htmlFor="analytics-date-from" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">From</label>
-                      <input id="analytics-date-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block rounded-xl bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-3 py-2 text-[13px]" />
-                    </div>
-                    <div>
-                      <label htmlFor="analytics-date-to" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">To</label>
-                      <input id="analytics-date-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block rounded-xl bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-3 py-2 text-[13px]" />
-                    </div>
-                  </>
+          {/* Mobile Tabs */}
+          <div className="md:hidden flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 chat-scroll">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  'whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-bold transition-all shrink-0',
+                  activeTab === tab.key
+                    ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]'
+                    : 'bg-black/5 dark:bg-white/10 text-[var(--text-secondary)]'
                 )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-                <button onClick={fetchTabData} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-2 text-[13px] font-bold inline-flex items-center gap-2">
-                  <RefreshCw size={14} /> Refresh
-                </button>
+          <main className="flex-1 space-y-4">
+            <div className="rounded-[24px] sm:rounded-[32px] border border-black/5 dark:border-white/10 glass-card p-4 sm:p-6">
+              <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center w-full">
+                <div className="flex flex-wrap items-end gap-3 flex-1">
+                  <div>
+                    <label htmlFor="analytics-date-range" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Date range</label>
+                    <select
+                      id="analytics-date-range"
+                      className="mt-1 block rounded-xl bg-black/5 dark:bg-white/10 border border-transparent hover:border-black/5 dark:hover:border-white/10 px-3 py-[10px] text-[13px] font-bold outline-none transition-all"
+                      value={preset}
+                      onChange={(e) => setPreset(e.target.value)}
+                    >
+                      {PRESETS.map((item) => <option key={item.value} value={item.value} className="text-black">{item.label}</option>)}
+                    </select>
+                  </div>
 
-                <button
-                  onClick={() => setAutoSyncEnabled((prev) => !prev)}
-                  className={cn(
-                    'rounded-xl px-4 py-2 text-[13px] font-bold inline-flex items-center gap-2 transition-all',
-                    autoSyncEnabled
-                      ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]'
-                      : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15'
+                  {preset === 'custom' && (
+                    <>
+                      <div>
+                        <label htmlFor="analytics-date-from" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">From</label>
+                        <input id="analytics-date-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2 text-[13px] font-bold outline-none font-mono" />
+                      </div>
+                      <div>
+                        <label htmlFor="analytics-date-to" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">To</label>
+                        <input id="analytics-date-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2 text-[13px] font-bold outline-none font-mono" />
+                      </div>
+                    </>
                   )}
-                >
-                  {autoSyncEnabled ? 'Live Sync On' : 'Live Sync Off'}
-                </button>
 
-                <div>
-                  <label htmlFor="analytics-sync-interval" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Sync every</label>
-                  <select
-                    id="analytics-sync-interval"
-                    value={syncIntervalSec}
-                    onChange={(e) => setSyncIntervalSec(Number.parseInt(e.target.value, 10) || 15)}
-                    className="mt-1 block rounded-xl bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-3 py-2 text-[13px]"
-                  >
-                    <option value="5">5s</option>
-                    <option value="10">10s</option>
-                    <option value="15">15s</option>
-                    <option value="30">30s</option>
-                  </select>
+                  <a href={`/api/admin/analytics/export/conversations?${queryString}`} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-[10px] text-[13px] font-bold inline-flex items-center gap-2 transition-all">
+                    <Download size={14} /> <span className="hidden sm:inline">Export CSV</span>
+                  </a>
                 </div>
 
-                <a href={`/api/admin/analytics/export/conversations?${queryString}`} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-2 text-[13px] font-bold inline-flex items-center gap-2">
-                  <Download size={14} /> Export CSV
-                </a>
+                <AutoSyncControls
+                  autoSyncEnabled={autoSyncEnabled}
+                  setAutoSyncEnabled={setAutoSyncEnabled}
+                  syncIntervalSec={syncIntervalSec}
+                  setSyncIntervalSec={setSyncIntervalSec}
+                  syncCountdown={syncCountdown}
+                  lastSyncedAt={lastSyncedAt}
+                  onRefresh={performSync}
+                />
               </div>
-              <div className="text-[12px] text-[var(--text-secondary)] mt-2">
-                All charts and tables respect this date range. {autoSyncEnabled ? `Next sync in ${syncCountdown}s.` : 'Live sync is paused.'}
-                {lastSyncedAt ? ` Last synced at ${formatTimeOnly(lastSyncedAt)}.` : ''}
+              <div className="text-[12px] text-[var(--text-secondary)] mt-4 font-medium">
+                All charts and tables respect this date range. Your changes apply immediately.
               </div>
             </div>
 

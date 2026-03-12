@@ -77,6 +77,18 @@ const buildContextualFollowupQuery = (professorName, context) => {
   return normalizedName;
 };
 
+// Robust UUID generator for insecure contexts (e.g., HTTP LAN testing) where crypto.randomUUID is undefined
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
@@ -118,16 +130,16 @@ export default function Page() {
 
   useEffect(() => {
     const storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
-    const storedConversationId = globalThis.localStorage.getItem('mubx_analytics_conversation_id') || '';
+    const storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
 
-    const userId = storedUserId || crypto.randomUUID();
-    const conversationId = storedConversationId || crypto.randomUUID();
+    const userId = storedUserId || generateUUID();
+    const conversationId = storedConversationId || generateUUID();
 
     analyticsUserIdRef.current = userId;
     conversationIdRef.current = conversationId;
 
     if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
-    if (!storedConversationId) globalThis.localStorage.setItem('mubx_analytics_conversation_id', conversationId);
+    if (!storedConversationId) globalThis.sessionStorage.setItem('mubx_analytics_conversation_id', conversationId);
   }, []);
 
   useEffect(() => {
@@ -158,8 +170,8 @@ export default function Page() {
 
   const withAnalyticsMeta = (payload) => ({
     ...payload,
-    userId: analyticsUserIdRef.current || crypto.randomUUID(),
-    conversationId: conversationIdRef.current || crypto.randomUUID()
+    userId: analyticsUserIdRef.current || generateUUID(),
+    conversationId: conversationIdRef.current || generateUUID()
   });
 
   const toggleTheme = () => {

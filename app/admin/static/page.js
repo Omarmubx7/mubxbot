@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2 } from 'lucide-react';
+import { AdminHeader } from '../../components/AdminHeader.jsx';
+import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
 
 const emptyForm = {
   id: null,
@@ -19,10 +21,15 @@ export default function AdminStaticResponsesPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(emptyForm);
 
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncIntervalSec, setSyncIntervalSec] = useState(15);
-  const [syncCountdown, setSyncCountdown] = useState(15);
-  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const {
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncIntervalSec,
+    setSyncIntervalSec,
+    syncCountdown,
+    lastSyncedAt,
+    performSync
+  } = useAutoSync(async () => await loadRows(true), 15);
 
   const loadRows = async (silent = false) => {
     try {
@@ -34,39 +41,16 @@ export default function AdminStaticResponsesPage() {
 
       const data = await response.json();
       setRows(Array.isArray(data) ? data : []);
-      setLastSyncedAt(new Date());
-      setSyncCountdown(syncIntervalSec);
     } catch (err) {
       if (!silent) setError(err.message || 'Failed to load static responses');
     } finally {
       if (!silent) setLoading(false);
     }
   };
-
   useEffect(() => {
     loadRows();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!autoSyncEnabled) {
-      setSyncCountdown(syncIntervalSec);
-      return;
-    }
-    setSyncCountdown(syncIntervalSec);
-    const timer = setInterval(() => {
-      if (globalThis.document.hidden) return;
-      setSyncCountdown((prev) => {
-        if (prev <= 1) {
-          loadRows(true);
-          return syncIntervalSec;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSyncEnabled, syncIntervalSec]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -140,15 +124,24 @@ export default function AdminStaticResponsesPage() {
   };
 
   return (
-    <main className="h-dvh w-full overflow-y-auto bg-[#F2F2F7] dark:bg-black p-4 sm:p-6 md:p-10">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-4">
+    <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
+      <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
+        <div className="max-w-6xl mx-auto">
+          <AdminHeader 
+            title="Static Responses" 
+            onLogout={async () => {
+              await fetch('/api/admin/auth/logout', { method: 'POST' });
+              globalThis.location.href = '/admin-login';
+            }} 
+          />
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 pb-20 sm:pb-32">
+        <div className="flex items-center justify-between gap-4 mb-2">
           <div>
-            <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-[#DC2626] hover:opacity-80 mb-2">
-              <ArrowLeft size={16} /> Back to Admin
-            </Link>
-            <h1 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">Bot Static Responses</h1>
-            <p className="text-sm mt-1 text-[var(--text-secondary)]">Manage fixed bot replies for users, saved to database.</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Response Templates</h2>
+            <p className="text-sm mt-1 text-[var(--text-secondary)]">Manage fixed bot replies for exact trigger phrases.</p>
           </div>
         </div>
 
@@ -210,35 +203,17 @@ export default function AdminStaticResponsesPage() {
         </section>
 
         <section className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/30 p-4 sm:p-6">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-0 sm:mr-auto">Current Rows</h2>
-            
-            <button onClick={() => loadRows(false)} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-3 py-2 text-[12px] font-bold inline-flex items-center gap-1.5 text-[var(--text-primary)] transition-all">
-              <RefreshCw size={14} /> Refresh
-            </button>
-            
-            <button
-              onClick={() => setAutoSyncEnabled((prev) => !prev)}
-              className={`rounded-xl px-3 py-2 text-[12px] font-bold inline-flex items-center gap-1.5 transition-all ${autoSyncEnabled ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[var(--text-primary)]'}`}
-            >
-              {autoSyncEnabled ? 'Live Sync On' : 'Live Sync Off'}
-            </button>
-
-            <select
-              value={syncIntervalSec}
-              onChange={(e) => setSyncIntervalSec(Number.parseInt(e.target.value, 10) || 15)}
-              className="rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-2 py-2 text-[12px] text-[var(--text-primary)] font-bold outline-none hover:bg-black/10 dark:hover:bg-white/15 transition-all w-[70px] text-center"
-            >
-              <option value="5" className="text-black">5s</option>
-              <option value="10" className="text-black">10s</option>
-              <option value="15" className="text-black">15s</option>
-              <option value="30" className="text-black">30s</option>
-            </select>
-            
-            <div className="text-[11px] font-medium text-[var(--text-secondary)] w-full sm:w-auto text-right">
-              {autoSyncEnabled ? `Next: ${syncCountdown}s` : 'Paused'}
-              {lastSyncedAt ? ` • Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">Current Rows</h2>
+            <AutoSyncControls
+              autoSyncEnabled={autoSyncEnabled}
+              setAutoSyncEnabled={setAutoSyncEnabled}
+              syncIntervalSec={syncIntervalSec}
+              setSyncIntervalSec={setSyncIntervalSec}
+              syncCountdown={syncCountdown}
+              lastSyncedAt={lastSyncedAt}
+              onRefresh={performSync}
+            />
           </div>
           {loading ? (
             <div className="text-sm text-[var(--text-secondary)]">Loading...</div>
@@ -271,6 +246,6 @@ export default function AdminStaticResponsesPage() {
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
