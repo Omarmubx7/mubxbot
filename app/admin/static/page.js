@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
 
 const emptyForm = {
   id: null,
@@ -19,9 +19,14 @@ export default function AdminStaticResponsesPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(emptyForm);
 
-  const loadRows = async () => {
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [syncIntervalSec, setSyncIntervalSec] = useState(15);
+  const [syncCountdown, setSyncCountdown] = useState(15);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+
+  const loadRows = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError('');
 
       const response = await fetch('/api/admin/static-responses', { cache: 'no-store' });
@@ -29,16 +34,39 @@ export default function AdminStaticResponsesPage() {
 
       const data = await response.json();
       setRows(Array.isArray(data) ? data : []);
+      setLastSyncedAt(new Date());
+      setSyncCountdown(syncIntervalSec);
     } catch (err) {
-      setError(err.message || 'Failed to load static responses');
+      if (!silent) setError(err.message || 'Failed to load static responses');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadRows();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!autoSyncEnabled) {
+      setSyncCountdown(syncIntervalSec);
+      return;
+    }
+    setSyncCountdown(syncIntervalSec);
+    const timer = setInterval(() => {
+      if (globalThis.document.hidden) return;
+      setSyncCountdown((prev) => {
+        if (prev <= 1) {
+          loadRows(true);
+          return syncIntervalSec;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSyncEnabled, syncIntervalSec]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -182,7 +210,36 @@ export default function AdminStaticResponsesPage() {
         </section>
 
         <section className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/30 p-4 sm:p-6">
-          <h2 className="text-lg font-bold mb-4 text-[var(--text-primary)]">Current Rows</h2>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-0 sm:mr-auto">Current Rows</h2>
+            
+            <button onClick={() => loadRows(false)} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-3 py-2 text-[12px] font-bold inline-flex items-center gap-1.5 text-[var(--text-primary)] transition-all">
+              <RefreshCw size={14} /> Refresh
+            </button>
+            
+            <button
+              onClick={() => setAutoSyncEnabled((prev) => !prev)}
+              className={`rounded-xl px-3 py-2 text-[12px] font-bold inline-flex items-center gap-1.5 transition-all ${autoSyncEnabled ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[var(--text-primary)]'}`}
+            >
+              {autoSyncEnabled ? 'Live Sync On' : 'Live Sync Off'}
+            </button>
+
+            <select
+              value={syncIntervalSec}
+              onChange={(e) => setSyncIntervalSec(Number.parseInt(e.target.value, 10) || 15)}
+              className="rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-2 py-2 text-[12px] text-[var(--text-primary)] font-bold outline-none hover:bg-black/10 dark:hover:bg-white/15 transition-all w-[70px] text-center"
+            >
+              <option value="5" className="text-black">5s</option>
+              <option value="10" className="text-black">10s</option>
+              <option value="15" className="text-black">15s</option>
+              <option value="30" className="text-black">30s</option>
+            </select>
+            
+            <div className="text-[11px] font-medium text-[var(--text-secondary)] w-full sm:w-auto text-right">
+              {autoSyncEnabled ? `Next: ${syncCountdown}s` : 'Paused'}
+              {lastSyncedAt ? ` • Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
+            </div>
+          </div>
           {loading ? (
             <div className="text-sm text-[var(--text-secondary)]">Loading...</div>
           ) : rows.length === 0 ? (

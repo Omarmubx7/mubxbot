@@ -31,6 +31,27 @@ function toDateInputValue(value) {
   return d.toISOString().slice(0, 10);
 }
 
+function formatDateTime(v) {
+  if (!v) return '-';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', second: '2-digit',
+    hour12: true
+  });
+}
+
+function formatTimeOnly(v) {
+  if (!v) return '-';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', second: '2-digit',
+    hour12: true
+  });
+}
+
 function SparkBars({ rows = [], keys = [], colors = [] }) {
   const max = rows.reduce((m, row) => Math.max(m, ...keys.map((k) => Number(row[k] || 0))), 0);
   return (
@@ -316,7 +337,7 @@ export default function AdminAnalyticsPage() {
               </div>
               <div className="text-[12px] text-[var(--text-secondary)] mt-2">
                 All charts and tables respect this date range. {autoSyncEnabled ? `Next sync in ${syncCountdown}s.` : 'Live sync is paused.'}
-                {lastSyncedAt ? ` Last synced at ${lastSyncedAt.toLocaleTimeString()}.` : ''}
+                {lastSyncedAt ? ` Last synced at ${formatTimeOnly(lastSyncedAt)}.` : ''}
               </div>
             </div>
 
@@ -357,7 +378,7 @@ export default function AdminAnalyticsPage() {
                   columns={[
                     { key: 'id', label: 'Conversation ID', render: (v, row) => <button className="underline text-[#DC2626]" onClick={() => loadConversationDetail(row.id)}>{v}</button> },
                     { key: 'user_id', label: 'User ID' },
-                    { key: 'started_at', label: 'Started At', render: (v) => new Date(v).toLocaleString() },
+                    { key: 'started_at', label: 'Started At', render: (v) => formatDateTime(v) },
                     { key: 'success', label: 'Success' },
                     { key: 'has_error', label: 'Has Error' },
                     { key: 'message_count', label: 'Messages' }
@@ -374,7 +395,7 @@ export default function AdminAnalyticsPage() {
                   columns={[
                     { key: 'id', label: 'Conversation ID', render: (v, row) => <button className="underline text-[#DC2626]" onClick={() => loadConversationDetail(row.id)}>{v}</button> },
                     { key: 'user_id', label: 'User ID' },
-                    { key: 'started_at', label: 'Started', render: (v) => new Date(v).toLocaleString() },
+                    { key: 'started_at', label: 'Started', render: (v) => formatDateTime(v) },
                     { key: 'duration_seconds', label: 'Duration (s)' },
                     { key: 'message_count', label: 'Messages' },
                     { key: 'has_smart_search', label: 'Smart Search' },
@@ -451,7 +472,7 @@ export default function AdminAnalyticsPage() {
 
                 <Table
                   columns={[
-                    { key: 'created_at', label: 'Created', render: (v) => new Date(v).toLocaleString() },
+                    { key: 'created_at', label: 'Created', render: (v) => formatDateTime(v) },
                     { key: 'conversation_id', label: 'Conversation', render: (v) => <button className="underline text-[#DC2626]" onClick={() => loadConversationDetail(v)}>{v}</button> },
                     { key: 'error_type', label: 'Type' },
                     { key: 'user_text_at_error', label: 'User Text' },
@@ -464,7 +485,7 @@ export default function AdminAnalyticsPage() {
                   columns={[
                     { key: 'user_text_at_error', label: 'Repeated User Text' },
                     { key: 'count', label: 'Count' },
-                    { key: 'last_occurrence', label: 'Last Seen', render: (v) => new Date(v).toLocaleString() },
+                    { key: 'last_occurrence', label: 'Last Seen', render: (v) => formatDateTime(v) },
                     { key: 'most_recent_error_type', label: 'Common Type' }
                   ]}
                   rows={quality.topErrorMessages || []}
@@ -520,7 +541,7 @@ export default function AdminAnalyticsPage() {
               <div className="space-y-2 max-h-[40dvh] overflow-y-auto">
                 {(selectedConversation.messages || []).map((m) => (
                   <div key={m.id} className={cn('rounded-xl px-3 py-2 text-[13px] border', m.sender === 'user' ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100')}>
-                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">{m.sender} • {new Date(m.created_at).toLocaleTimeString()}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">{m.sender} • {formatTimeOnly(m.created_at)}</div>
                     <div className="mt-1 whitespace-pre-wrap font-medium">{m.text}</div>
                   </div>
                 ))}
@@ -541,7 +562,7 @@ export default function AdminAnalyticsPage() {
                   columns={[
                     { key: 'error_type', label: 'Error Type' },
                     { key: 'user_text_at_error', label: 'User Text' },
-                    { key: 'created_at', label: 'At', render: (v) => new Date(v).toLocaleString() }
+                    { key: 'created_at', label: 'At', render: (v) => formatDateTime(v) }
                   ]}
                   rows={selectedConversation.errorEvents || []}
                   empty="No errors"

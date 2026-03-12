@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, RefreshCw } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import Image from "next/image";
@@ -64,6 +64,11 @@ export default function AdminPage() {
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
 
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [syncIntervalSec, setSyncIntervalSec] = useState(15);
+  const [syncCountdown, setSyncCountdown] = useState(15);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
     office_hours: { Monday: "", Tuesday: "", Wednesday: "", Thursday: "", Friday: "" }
@@ -91,6 +96,8 @@ export default function AdminPage() {
     const data = await response.json();
     setInstructors(data);
     globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
+    setLastSyncedAt(new Date());
+    setSyncCountdown(syncIntervalSec);
   };
 
   const persistInstructorsLocally = (nextInstructors) => {
@@ -220,15 +227,28 @@ export default function AdminPage() {
 
   useEffect(() => {
     refreshInstructors();
-    const refreshTimer = setInterval(() => {
-      refreshInstructors();
-    }, 15 * 1000);
-
-    return () => {
-      clearInterval(refreshTimer);
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!autoSyncEnabled) {
+      setSyncCountdown(syncIntervalSec);
+      return;
+    }
+    setSyncCountdown(syncIntervalSec);
+    const timer = setInterval(() => {
+      if (globalThis.document.hidden) return;
+      setSyncCountdown((prev) => {
+        if (prev <= 1) {
+          refreshInstructors();
+          return syncIntervalSec;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSyncEnabled, syncIntervalSec]);
 
 
 
@@ -310,6 +330,41 @@ export default function AdminPage() {
           </div>
           <div className="sm:hidden px-4 pt-1 text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
             {filtered.length} found
+          </div>
+        </div>
+
+        {/* Sync Controls */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm">
+          <button onClick={refreshInstructors} className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 text-[var(--text-primary)] transition-all">
+            <RefreshCw size={14} /> Refresh
+          </button>
+          
+          <button
+            onClick={() => setAutoSyncEnabled((prev) => !prev)}
+            className={`rounded-xl px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 transition-all ${autoSyncEnabled ? 'bg-[#DC2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)]' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[var(--text-primary)]'}`}
+          >
+            {autoSyncEnabled ? 'Live Sync On' : 'Live Sync Off'}
+          </button>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="admin-sync-interval" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] hidden sm:block">Interval</label>
+            <select
+              id="admin-sync-interval"
+              value={syncIntervalSec}
+              onChange={(e) => setSyncIntervalSec(Number.parseInt(e.target.value, 10) || 15)}
+              className="block rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-3 text-[13px] text-[var(--text-primary)] font-bold outline-none hover:bg-black/10 dark:hover:bg-white/15 transition-all text-center"
+            >
+              <option value="5" className="text-black">5s</option>
+              <option value="10" className="text-black">10s</option>
+              <option value="15" className="text-black">15s</option>
+              <option value="30" className="text-black">30s</option>
+            </select>
+          </div>
+          
+          <div className="text-[12px] font-medium text-[var(--text-secondary)] sm:ml-auto px-2 text-center sm:text-right">
+            {autoSyncEnabled ? `Next sync in ${syncCountdown}s.` : 'Live sync paused.'}
+            {lastSyncedAt ? <br className="sm:hidden" /> : ''}
+            {lastSyncedAt ? ` Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
           </div>
         </div>
 
