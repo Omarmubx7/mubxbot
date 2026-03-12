@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import PropTypes from 'prop-types';
 
@@ -8,11 +8,18 @@ export function useAutoSync(onSync, defaultInterval = 15) {
   const [syncCountdown, setSyncCountdown] = useState(defaultInterval);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
 
-  const performSync = async (...args) => {
-    await onSync(...args);
+  // Store onSync in a ref so it's always up-to-date without
+  // needing the function to exist at hook call-time (avoids TDZ).
+  const onSyncRef = useRef(onSync);
+  useEffect(() => { onSyncRef.current = onSync; }, [onSync]);
+
+  const performSync = useCallback(async (...args) => {
+    if (typeof onSyncRef.current === 'function') {
+      await onSyncRef.current(...args);
+    }
     setLastSyncedAt(new Date());
     setSyncCountdown(syncIntervalSec);
-  };
+  }, [syncIntervalSec]);
 
   useEffect(() => {
     if (!autoSyncEnabled) {
@@ -34,8 +41,7 @@ export function useAutoSync(onSync, defaultInterval = 15) {
     }, 1000);
 
     return () => clearInterval(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSyncEnabled, syncIntervalSec, onSync]);
+  }, [autoSyncEnabled, syncIntervalSec, performSync]);
 
   return {
     autoSyncEnabled,

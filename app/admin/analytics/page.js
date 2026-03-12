@@ -134,15 +134,6 @@ export default function AdminAnalyticsPage() {
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const {
-    autoSyncEnabled,
-    setAutoSyncEnabled,
-    syncIntervalSec,
-    setSyncIntervalSec,
-    syncCountdown,
-    lastSyncedAt,
-    performSync
-  } = useAutoSync(async () => await fetchTabData({ silent: true, withDetail: true }), 15);
 
   const [overview, setOverview] = useState(null);
   const [conversations, setConversations] = useState({ rows: [], total: 0 });
@@ -216,7 +207,17 @@ export default function AdminAnalyticsPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [activeTab, queryString, selectedConversation?.conversation?.id, syncIntervalSec, tabRequestConfig]);
+  }, [activeTab, queryString, selectedConversation?.conversation?.id, tabRequestConfig]);
+
+  const {
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncIntervalSec,
+    setSyncIntervalSec,
+    syncCountdown,
+    lastSyncedAt,
+    performSync
+  } = useAutoSync(async () => await fetchTabData({ silent: true, withDetail: true }), 15);
 
   useEffect(() => {
     fetchTabData();

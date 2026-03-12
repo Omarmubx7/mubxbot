@@ -20,16 +20,6 @@ export default function AdminStaticResponsesPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(emptyForm);
 
-  const {
-    autoSyncEnabled,
-    setAutoSyncEnabled,
-    syncIntervalSec,
-    setSyncIntervalSec,
-    syncCountdown,
-    lastSyncedAt,
-    performSync
-  } = useAutoSync(async () => await loadRows(true), 15);
-
   const loadRows = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -46,6 +36,17 @@ export default function AdminStaticResponsesPage() {
       if (!silent) setLoading(false);
     }
   };
+
+  const {
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncIntervalSec,
+    setSyncIntervalSec,
+    syncCountdown,
+    lastSyncedAt,
+    performSync
+  } = useAutoSync(async () => await loadRows(true), 15);
+
   useEffect(() => {
     loadRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps

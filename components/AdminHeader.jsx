@@ -22,7 +22,7 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
           <div className="flex items-center gap-4">
             <div className="relative w-12 h-12 flex-shrink-0 bg-white/50 dark:bg-white/5 p-2 rounded-2xl shadow-sm border border-black/5 dark:border-white/10 hidden sm:block">
               <Image 
-                src="/mubx-icon.png" 
+                src="/logo.png" 
                 alt="Logo" 
                 fill 
                 sizes="(max-width: 48px) 100vw, 48px"

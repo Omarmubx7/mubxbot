@@ -66,6 +66,19 @@ export default function AdminPage() {
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
 
+  const refreshInstructors = async () => {
+    const response = await fetch('/api/doctors');
+    if (!response.ok) return;
+
+    const data = await response.json();
+    setInstructors(data);
+    try {
+      globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Storage write disabled', e);
+    }
+  };
+
   const {
     autoSyncEnabled,
     setAutoSyncEnabled,
@@ -94,15 +107,6 @@ export default function AdminPage() {
     setCurrentDoctor(doc);
     setFormData({ ...doc });
     setIsModalOpen(true);
-  };
-
-  const refreshInstructors = async () => {
-    const response = await fetch('/api/doctors');
-    if (!response.ok) return;
-
-    const data = await response.json();
-    setInstructors(data);
-    globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
   };
 
   const persistInstructorsLocally = (nextInstructors) => {

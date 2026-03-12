@@ -1,0 +1,44 @@
+[dotenv@17.3.1] injecting env (15) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+========================================
+  STEP 1: Sending test chat requests
+========================================
+
+  [Test A] type=smart_response convId=e2e-test-1773351565095-A
+  [Test A] response="Name: Razan Alquraan
+Department: Computer Science
+Email: razan.alquran@htu.edu.j..."
+  [Test B] type=smart_response convId=e2e-test-1773351565095-B
+  [Test B] response="Saturday: 11:30 - 2:30
+Sunday: 2:30 - 4:00
+Monday: 2:30 - 4:00
+Tuesday: 4:00 - 5..."
+
+========================================
+  STEP 2: Verifying in PostgreSQL DB
+========================================
+
+  Conversations found: 2
+    Γ£ô e2e-test-1773351565095-A | user=e2e-user-A msgs=2 smart=true success=true
+    Γ£ô e2e-test-1773351565095-B | user=e2e-user-B msgs=2 smart=true success=true
+
+  Messages found: 4
+    Γ£ô [A] user: dr razan
+    Γ£ô [A] bot: Name: Razan Alquraan
+Department: Computer Science
+Email: raz
+    Γ£ô [B] user: when is dr murad available
+    Γ£ô [B] bot: Saturday: 11:30 - 2:30
+Sunday: 2:30 - 4:00
+Monday: 2:30 - 4:
+
+  Search events found: 2
+    Γ£ô type=name query="dr razan" results=1 ok=true
+    Γ£ô type=smart query="when is dr murad available" results=1 ok=true
+
+  Performance events found: 2
+    Γ£ô A latency=9809ms
+    Γ£ô B latency=7243ms
+
+========================================
+  Γ£à ALL TESTS PASSED ΓÇö Data cleaned up
+========================================
