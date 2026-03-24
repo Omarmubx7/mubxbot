@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 
 const DoctorsContext = createContext();
-const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v1';
+const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v2';
 
 function safeParseDoctorsCache(raw) {
   try {
