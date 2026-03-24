@@ -1171,12 +1171,42 @@
   },
   {
     "faculty": "Eng Malakfraihat",
-    "department": "Unknown",
-    "email": "",
-    "office": "",
-    "day": "",
-    "start": "",
-    "end": "",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Saturday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+    {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Sunday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+    {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Tuesday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+    {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Wednesday",
+    "start": "11:30",
+    "end": "12:00",
     "type": "In-Person"
   },
   {

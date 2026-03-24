@@ -132,4 +132,8 @@ INSERT INTO office_hours_entries (faculty, department, email, office, day, start
 ('Banan Mohammad Khanfar', 'Cyber Security', 'banan.khanfar@htu.edu.jo', 'S-315', 'Monday', '10:00', '11:30', 'In-Person'),
 ('Banan Mohammad Khanfar', 'Cyber Security', 'banan.khanfar@htu.edu.jo', 'S-315', 'Tuesday', '11:30', '13:00', 'In-Person'),
 ('Banan Mohammad Khanfar', 'Cyber Security', 'banan.khanfar@htu.edu.jo', 'S-315', 'Wednesday', '13:00', '14:30', 'In-Person'),
-('Banan Mohammad Khanfar', 'Cyber Security', 'banan.khanfar@htu.edu.jo', 'S-315', 'Thursday', '14:30', '16:00', 'In-Person');
+('Banan Mohammad Khanfar', 'Cyber Security', 'banan.khanfar@htu.edu.jo', 'S-315', 'Thursday', '14:30', '16:00', 'In-Person'),
+('Eng Malakfraihat', 'Data Science and Artificial Intelligence', 'Malak.fraihat@htu.edu.jo', 'contact them', 'Saturday', '11:30', '12:00', 'In-Person'),
+('Eng Malakfraihat', 'Data Science and Artificial Intelligence', 'Malak.fraihat@htu.edu.jo', 'contact them', 'Sunday', '11:30', '12:00', 'In-Person'),
+('Eng Malakfraihat', 'Data Science and Artificial Intelligence', 'Malak.fraihat@htu.edu.jo', 'contact them', 'Tuesday', '11:30', '12:00', 'In-Person'),
+('Eng Malakfraihat', 'Data Science and Artificial Intelligence', 'Malak.fraihat@htu.edu.jo', 'contact them', 'Wednesday', '11:30', '12:00', 'In-Person');
