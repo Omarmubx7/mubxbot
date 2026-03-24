@@ -298,43 +298,6 @@ export default function Page() {
     return aliases[query.toLowerCase()] || query;
   };
 
-  const InstructorCard = ({ doctor }) => (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="space-y-4 p-4 rounded-2xl bg-white/30 dark:bg-black/20 border border-white/40 dark:border-white/10 shadow-sm"
-    >
-      <div className="font-semibold text-[16px]">👤 {doctor.name}</div>
-      {doctor.school && <div className="text-[13px] opacity-70">🎓 {doctor.school}</div>}
-      <div className="text-[14px] opacity-90">🏫 {normalizeDepartment(doctor.department)}</div>
-      <div className="text-[14px] opacity-90">🏢 {doctor.office || "TBD"}</div>
-      <div className="text-[14px]">
-        ✉️ <a href={`mailto:${doctor.email}`} className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30">{doctor.email}</a>
-      </div>
-      <div className="pt-2 mt-2 border-t border-black/5 dark:border-white/5">
-        <div className="text-[13px] font-semibold mb-1">🕐 Office Hours:</div>
-        <div className="space-y-1">
-          {Object.entries(doctor.office_hours || {}).map(([day, hours]) => (
-            <div key={day} className="flex justify-between text-[13px]">
-              <span className="opacity-70">{day}:</span>
-              <span className="font-medium">{formatTimeRange(hours)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  InstructorCard.propTypes = {
-    doctor: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      school: PropTypes.string,
-      department: PropTypes.string.isRequired,
-      office: PropTypes.string,
-      email: PropTypes.string.isRequired,
-      office_hours: PropTypes.object,
-    }).isRequired,
-  };
 
   const OfficeHoursCard = ({ data, officeHoursOverride, emptyStateMessage }) => (
     <OfficeHoursDisplay
@@ -348,6 +311,7 @@ export default function Page() {
       faculty={data.name || data.professor}
       email={data.email}
       department={normalizeDepartment(data.department)}
+      office={data.office}
       emptyStateMessage={emptyStateMessage}
     />
   );
@@ -523,16 +487,23 @@ export default function Page() {
               faculty={hoursData[0].faculty || specificDoctor.name}
               email={hoursData[0].email}
               department={hoursData[0].department || specificDoctor.department}
+              office={hoursData[0].office || specificDoctor.office}
             />,
             timestamp: getCurrentTime(),
             quickReplies: ['Search another', 'By department']
           }]);
         } else {
-          // Fallback to InstructorCard if no office hours found
+          // Fallback to OfficeHoursDisplay with empty hours
           setMessages(prev => [...prev, {
             id: Date.now() + 1,
             type: 'bot',
-            content: <InstructorCard doctor={specificDoctor} />,
+            content: <OfficeHoursDisplay 
+              officeHours={[]}
+              faculty={specificDoctor.name}
+              email={specificDoctor.email}
+              department={normalizeDepartment(specificDoctor.department)}
+              office={specificDoctor.office}
+            />,
             timestamp: getCurrentTime()
           }]);
         }
@@ -864,16 +835,23 @@ export default function Page() {
             faculty={hoursData[0].faculty || doctor.name}
             email={hoursData[0].email}
             department={hoursData[0].department || doctor.department}
+            office={hoursData[0].office || doctor.office}
           />,
           timestamp: getCurrentTime(),
           quickReplies: ['Search another', 'By department']
         }]);
       } else {
-        // No office hours - show regular card
+        // No office hours - show regular card with new UI
         setMessages(prev => [...prev, {
           id: Date.now(),
           type: 'bot',
-          content: <InstructorCard doctor={doctor} />,
+          content: <OfficeHoursDisplay 
+            officeHours={[]}
+            faculty={doctor.name || doctor.professor}
+            email={doctor.email}
+            department={normalizeDepartment(doctor.department)}
+            office={doctor.office}
+          />,
           timestamp: getCurrentTime(),
           quickReplies: ['Search another', 'By department']
         }]);

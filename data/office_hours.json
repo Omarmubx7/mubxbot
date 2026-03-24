@@ -1170,46 +1170,6 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Saturday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-    {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Sunday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-    {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Tuesday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-    {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Wednesday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-  {
     "faculty": "Mohammad Nooraldeen Alkhateeb",
     "department": "Computer Science",
     "email": "mohammad.alkhateeb@htu.edu.jo",
@@ -1357,6 +1317,46 @@
     "day": "Thursday",
     "start": "14:30",
     "end": "16:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Saturday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Sunday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Tuesday",
+    "start": "11:30",
+    "end": "12:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Eng Malakfraihat",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "day": "Wednesday",
+    "start": "11:30",
+    "end": "12:00",
     "type": "In-Person"
   }
 ]

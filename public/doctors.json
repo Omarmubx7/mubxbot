@@ -137,10 +137,23 @@
   {
     "name": "Eng Malakfraihat",
     "school": "School of Computing and Informatics",
-    "department": "Unknown",
-    "email": "",
-    "office": "",
-    "office_hours": {}
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Malak.fraihat@htu.edu.jo",
+    "office": "contact them",
+    "office_hours": {
+      "Saturday": [
+        "11:30 - 12:00"
+      ],
+      "Sunday": [
+        "11:30 - 12:00"
+      ],
+      "Tuesday": [
+        "11:30 - 12:00"
+      ],
+      "Wednesday": [
+        "11:30 - 12:00"
+      ]
+    }
   },
   {
     "name": "Eng. Asmaa Lafi",
