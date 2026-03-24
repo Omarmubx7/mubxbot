@@ -1,13 +1,53 @@
 [
   {
+    "name": "Abdulrahman Abu Alfoul",
+    "school": "School of Computing and Informatics",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "Abdulrahman.aboalfoul@HTU.EDU.JO",
+    "office": "W-214",
+    "office_hours": {
+      "Saturday": "10:00 – 11:00",
+      "Sunday": "12:00 – 1:00",
+      "Monday": "1:00 – 2:00"
+    }
+  },
+  {
+    "name": "Aman Aloudat",
+    "school": "School of Computing and Informatics",
+    "department": "Cyber Security",
+    "email": "aman.aloudat@htu.edu.jo",
+    "office": "S-321",
+    "office_hours": {
+      "Saturday": "10:00 – 11:00",
+      "Sunday": "10:00 – 11:00",
+      "Monday": "10:00 – 11:00",
+      "Tuesday": "10:00 – 11:00"
+    }
+  },
+  {
     "name": "Ashraf Alsmadi",
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
     "email": "ashraf.al-smadi@htu.edu.jo",
     "office": "S310",
     "office_hours": {
-      "Saturday": "1:30 – 2:30",
-      "Monday": "2:00 – 5:00"
+      "Saturday": "13:00 – 14:30",
+      "Sunday": "14:00 – 17:00",
+      "Tuesday": "14:30 – 16:00",
+      "Wednesday": "16:00 – 17:30"
+    }
+  },
+  {
+    "name": "Asma Al-Fakhore",
+    "school": "School of Computing and Informatics",
+    "department": "Data Science and Artificial Intelligence",
+    "email": "asma.alfakhore@htu.edu.jo",
+    "office": "IJC-04",
+    "office_hours": {
+      "Saturday": "10:00 – 11:30",
+      "Sunday": "11:30 – 1:00",
+      "Monday": "1:00 – 2:30",
+      "Tuesday": "2:30 – 4:00"
     }
   },
   {
@@ -17,35 +57,19 @@
     "email": "asma.sabbah@htu.edu.jo",
     "office": "S-311",
     "office_hours": {
+      "Saturday": "11:30 – 1:00, 01:00 – 2:30, 2:30 – 4:00",
       "Sunday": "8:30 – 10:00",
-      "Wednesday": "10:00 – 11:30",
-      "Thursday": "11:30 – 1:00, 01:30 – 2:30, 2:30 – 4:00"
+      "Wednesday": "10:00 – 11:30"
     }
   },
   {
-    "name": "As’har Khamaiseh- أسحار",
+    "name": "As’har Khamaiseh (أسحار)",
     "school": "School of Computing and Informatics",
     "department": "Cyber Security",
     "email": "ashar.khamaiseh@htu.edu.jo",
     "office": "S-311",
     "office_hours": {
-      "Saturday": "8:30 – 10:00",
-      "Sunday": "10:00 – 11:00",
-      "Monday": "11:00 – 1:00",
-      "Tuesday": "1:00 – 2:30"
-    }
-  },
-  {
-    "name": "Aya Sate’ Jaradat",
-    "school": "School of Computing and Informatics",
-    "department": "Cyber Security",
-    "email": "aya.jaradat@htu.edu.jo",
-    "office": "ijc-05",
-    "office_hours": {
-      "Saturday": "8:30 – 10:00",
-      "Sunday": "11:30 – 1:00",
-      "Monday": "1:00 – 2:30",
-      "Tuesday": "2:30 – 3:00"
+      "Saturday": "1:00 – 2:00"
     }
   },
   {
@@ -55,23 +79,24 @@
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "office_hours": {
-      "Saturday": "10:00 – 11:00",
-      "Sunday": "10:30 – 11:30",
-      "Monday": "10:00 – 11:00",
-      "Tuesday": "10:30 – 11:30"
+      "Saturday": "10:00 – 11:30, 10:00 – 11:30",
+      "Sunday": "1:00 – 1:30, 1:00 – 1:30",
+      "Monday": "10:00 – 11:30, 10:00 – 11:30",
+      "Tuesday": "1:00 – 1:30, 1:00 – 1:30"
     }
   },
   {
-    "name": "Balqees Aldabaibeh",
+    "name": "Banan Mohammad Khanfar",
     "school": "School of Computing and Informatics",
-    "department": "Computer Science",
-    "email": "Balqis.aldabaibeh@htu.edu.jo",
-    "office": "S320",
+    "department": "Cyber Security",
+    "email": "banan.khanfar@htu.edu.jo",
+    "office": "S-315",
     "office_hours": {
-      "Saturday": "10:00 – 11:00",
-      "Sunday": "10:00 – 11:30",
-      "Monday": "11:30 – 1:00",
-      "Tuesday": "1:00 – 2:30"
+      "Sunday": "8:30 – 10:00",
+      "Monday": "10:00 – 11:30",
+      "Tuesday": "11:30 – 13:00",
+      "Wednesday": "13:00 – 14:30",
+      "Thursday": "14:30 – 16:00"
     }
   },
   {
@@ -81,8 +106,9 @@
     "email": "bassam.alkasasbeh@htu.edu.jo",
     "office": "S-310",
     "office_hours": {
-      "Saturday": "8:30 – 11:30",
-      "Wednesday": "11:30 – 14:30, 8:30 – 10:00, 10:00 – 13:00, 11:30 – 12:30"
+      "Saturday": "9:00 – 10:00",
+      "Sunday": "10:00 – 11:30",
+      "Wednesday": "11:30 – 13:00, 13:00 – 14:30, 14:30 – 15:30"
     }
   },
   {
@@ -93,20 +119,8 @@
     "office": "S-320",
     "office_hours": {
       "Saturday": "08:30 – 10:00",
-      "Tuesday": "10:00 – 11:00",
+      "Tuesday": "10:00 – 11:30",
       "Thursday": "11:30 – 01:00, 01:00 – 02:30, 02:30 – 04:00"
-    }
-  },
-  {
-    "name": "Bushra Alzeirah",
-    "school": "School of Computing and Informatics",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Bushra.Alzeirah@htu.edu.jo",
-    "office": "S-315",
-    "office_hours": {
-      "Saturday": "9:00 – 11:00",
-      "Sunday": "10:00 – 12:00",
-      "Monday": "1:00 – 2:00"
     }
   },
   {
@@ -116,31 +130,26 @@
     "email": "Elham.derbas@htu.edu.jo",
     "office": "S321",
     "office_hours": {
-      "Saturday": "11:30 – 1:00",
-      "Sunday": "11:30 – 1:00"
+      "Saturday": "9:00 – 10:00",
+      "Sunday": "12:00 – 1:00"
     }
   },
   {
-    "name": "Eng Shatha Hawawsheh",
+    "name": "Eng Malakfraihat",
     "school": "School of Computing and Informatics",
-    "department": "Computer Science",
+    "department": "Unknown",
     "email": "",
-    "office": "S-2013",
-    "office_hours": {
-      "Saturday": "8:30 – 11:30",
-      "Thursday": "11:30 – 1:00"
-    }
+    "office": "",
+    "office_hours": {}
   },
   {
     "name": "Eng. Asmaa Lafi",
     "school": "School of Computing and Informatics",
     "department": "Cyber Security",
     "email": "asmaa.lafi@htu.edu.jo",
-    "office": "S-321",
+    "office": "S-313",
     "office_hours": {
-      "Saturday": "9:00 – 10:00",
-      "Sunday": "12:00 – 1:00",
-      "Monday": "1:00 – 2:00"
+      "Saturday": "12:00 – 1:00"
     }
   },
   {
@@ -150,107 +159,60 @@
     "email": "Ibrahim.ghanem@htu.edu.jo",
     "office": "Eiman Building | IJC-07",
     "office_hours": {
-      "Saturday": "12:00 – 2:00",
-      "Monday": "10:00 – 4:00",
-      "Tuesday": "3:00 – 4:00"
-    }
-  },
-  {
-    "name": "Eng. Suhaib Al-Obeidallah",
-    "school": "School of Computing and Informatics",
-    "department": "Computer Science",
-    "email": "suhaib.alobeidallah@htu.edu.jo",
-    "office": "IJC-07 - Iman",
-    "office_hours": {
-      "Saturday": "09:00 – 10:00",
-      "Sunday": "10:00 – 13:00"
+      "Saturday": "2:30 – 4:00",
+      "Thursday": "1:00 – 2:30"
     }
   },
   {
     "name": "Eng. Weaam Alrbeiqi",
     "school": "School of Computing and Informatics",
     "department": "Cyber Security",
-    "email": "weaam.alrbeiqi@htu.edu.jo",
-    "office": "S - 320",
+    "email": "Weaam.Alrbeiqi@htu.edu.jo",
+    "office": "s-320",
     "office_hours": {
-      "Sunday": "11:00 – 12:30",
-      "Monday": "11:00 – 12:30",
-      "Wednesday": "11:00 – 12:30",
-      "Thursday": "11:00 – 12:30"
+      "Saturday": "8:30 – 10:00",
+      "Thursday": "11:30 – 1:00, 2:30 – 4:00"
     }
   },
   {
-    "name": "Eyad Taqieddin",
-    "school": "School of Computing and Informatics",
-    "department": "Cyber Security",
-    "email": "eyad.taqieddin@htu.edu.jo",
-    "office": "S-314",
-    "office_hours": {
-      "Saturday": "2:30 – 4:00",
-      "Monday": "10:00 – 11:30",
-      "Tuesday": "2:30 – 4:00",
-      "Thursday": "10:00 – 11:30"
-    }
-  },
-  {
-    "name": "Fadia Sami Nu’man Ala’eddin",
+    "name": "Hana Alrasheed",
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
-    "email": "fadia.alaeddin@htu.edu.jo",
-    "office": "S-320",
+    "email": "hana.alrasheed@htu.edu.jo",
+    "office": "S312",
     "office_hours": {
-      "Monday": "11:30 – 1:00",
-      "Tuesday": "11:30 – 12:00",
-      "Thursday": "12:00 – 1:00"
+      "Saturday": "11:00 – 12:00",
+      "Monday": "10:00 – 11:00",
+      "Tuesday": "11:00 – 12:00",
+      "Thursday": "10:00 – 11:00"
     }
   },
   {
-    "name": "Huthaifa Al-Omari",
-    "school": "School of Computing and Informatics",
-    "department": "Computer Science",
-    "email": "huthaifa.alomari@htu.edu.jo",
-    "office": "S-322",
-    "office_hours": {
-      "Saturday": "11:30 – 13:00",
-      "Sunday": "13:00 – 14:30",
-      "Thursday": "14:30 – 16:00"
-    }
-  },
-  {
-    "name": "Islam Al Omari",
-    "school": "School of Computing and Informatics",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Islam.Alomari@htu.edu.jo",
-    "office": "S-312",
-    "office_hours": {
-      "Monday": "13:00 – 15:00",
-      "Thursday": "13:00 – 15:00"
-    }
-  },
-  {
-    "name": "Israa Ibrahim Saadeh",
+    "name": "Israa Ibrahim Ismael Hasan",
     "school": "School of Computing and Informatics",
     "department": "Cyber Security",
-    "email": "israa.hasan@htu.edu.jo",
-    "office": "S-321",
+    "email": "Israa.hasan@htu.edu.jo",
+    "office": "321",
     "office_hours": {
-      "Sunday": "11:30 – 12:30",
-      "Monday": "11:30 – 1:00",
-      "Tuesday": "11:30 – 12:30",
-      "Thursday": "11:30 – 1:00"
+      "Sunday": "10:30 – 11:30",
+      "Monday": "10:30 – 11:30",
+      "Wednesday": "10:30 – 11:30",
+      "Thursday": "10:30 – 11:30"
     }
   },
   {
     "name": "Malek Allouzi",
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
-    "email": "malik.louzi@htu.edu.jo",
+    "email": "Malik.Louzi@htu.edu.jo",
     "office": "S-310",
     "office_hours": {
-      "Saturday": "11:30 – 13:30, 14:30 – 15:00",
-      "Monday": "8:30 – 13:00",
-      "Tuesday": "11:30 – 13:30, 14:30 – 15:00",
-      "Thursday": "8:30 – 13:00"
+      "Saturday": "10:00 – 11:30",
+      "Sunday": "1:00 – 1:30",
+      "Monday": "10:00 – 11:30",
+      "Tuesday": "10:00 – 11:30",
+      "Wednesday": "1:00 – 1:30",
+      "Thursday": "10:00 – 11:30"
     }
   },
   {
@@ -260,11 +222,32 @@
     "email": "mariam.biltawi@htu.edu.jo",
     "office": "S-309",
     "office_hours": {
-      "Saturday": "1:00 PM – 2:00 PM",
-      "Sunday": "2:30 PM – 4:00 PM",
-      "Monday": "12:00 PM – 1:00 PM",
-      "Tuesday": "1:00 PM – 2:30 PM",
-      "Wednesday": "2:30 PM – 4:00 PM"
+      "Saturday": "10:00 – 11:30",
+      "Sunday": "11:30 – 01:00, 01:00 – 02:00"
+    }
+  },
+  {
+    "name": "Mohammad Nooraldeen Alkhateeb",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "mohammad.alkhateeb@htu.edu.jo",
+    "office": "W-214",
+    "office_hours": {
+      "Saturday": "11:30 – 12:30",
+      "Thursday": "10:30 – 11:30"
+    }
+  },
+  {
+    "name": "Mohammad Yahia",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "mohammad.yahia@htu.edu.jo",
+    "office": "S-318",
+    "office_hours": {
+      "Sunday": "11:30 – 12:30",
+      "Monday": "11:30 – 12:30",
+      "Tuesday": "11:30 – 12:30",
+      "Wednesday": "11:30 – 12:30"
     }
   },
   {
@@ -274,33 +257,31 @@
     "email": "murad.yaghi@htu.edu.jo",
     "office": "S-322",
     "office_hours": {
-      "Saturday": "11:30 – 2:30",
-      "Sunday": "2:30 – 4:00",
-      "Monday": "2:30 – 4:00",
-      "Tuesday": "4:00 – 5:00"
+      "Saturday": "14:30 – 15:30",
+      "Sunday": "17:30 – 18:30"
     }
   },
   {
-    "name": "Orwah Mohammed Aladaileh",
+    "name": "Orwah Mohammad Aladaileh",
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
     "email": "orwa.aladaileh@htu.edu.jo",
-    "office": "S-308",
+    "office": "Time/Day:",
     "office_hours": {
-      "Tuesday": "10:00 Am – 11:30 Am",
-      "Thursday": "10:00 Am – 11:30 Am"
+      "Monday": "01:00 – 02:00",
+      "Tuesday": "11:30 – 02:00",
+      "Thursday": "01:00 – 02:00"
     }
   },
   {
-    "name": "Rahmeh Fawaz Mostafa Ibrahim",
+    "name": "Qutaiba Albluwi",
     "school": "School of Computing and Informatics",
     "department": "Cyber Security",
-    "email": "Rahmeh.ibrahim@htu.edu.jo",
-    "office": "S-321",
+    "email": "qutaiba.albluwi@htu.edu.jo",
+    "office": "Dean's Office (S-319)",
     "office_hours": {
-      "Saturday": "10:00 AM – 11:00 AM",
-      "Sunday": "13:00 PM – 14:00 PM",
-      "Monday": "09:00 AM – 15:00 PM"
+      "Tuesday": "10:00 – 10:30",
+      "Wednesday": "10:00 – 10:30"
     }
   },
   {
@@ -310,10 +291,10 @@
     "email": "rami.alouran@htu.edu.jo",
     "office": "S-314",
     "office_hours": {
-      "Sunday": "1:00 PM – 2:00 PM",
-      "Monday": "12:00 PM – 1:00 PM",
-      "Wednesday": "1:00 PM – 2:00 PM",
-      "Thursday": "12:00 PM – 1:00 PM"
+      "Sunday": "11:30 AM – 12:30 PM",
+      "Monday": "11:30 AM – 12:30 PM",
+      "Wednesday": "11:30 AM – 12:30 PM",
+      "Thursday": "11:30 AM – 12:30 PM"
     }
   },
   {
@@ -326,7 +307,8 @@
       "Saturday": "8:30 – 10:00",
       "Sunday": "10:00 – 11:30",
       "Monday": "11:30 – 13:00",
-      "Thursday": "13:00 – 14:30, 14:30 – 16:00, 16:30 – 17:30"
+      "Tuesday": "13:00 – 14:30",
+      "Thursday": "14:30 – 16:00, 16:30 – 17:30"
     }
   },
   {
@@ -334,11 +316,33 @@
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
     "email": "razan.alquran@htu.edu.jo",
-    "office": "S-320",
+    "office": "S-313",
     "office_hours": {
       "Saturday": "12:00 – 1:00",
       "Tuesday": "1:00 – 2:30",
       "Thursday": "2:30 – 4:00, 4:00 – 5:00"
+    }
+  },
+  {
+    "name": "Reem Banihani",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "reem.banihani@htu.edu.jo",
+    "office": "S-311",
+    "office_hours": {
+      "Thursday": "12:30 – 1:30, 1:30 – 2:30"
+    }
+  },
+  {
+    "name": "Ro’aa Almomani",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "Roaa.Almomani@HTU.EDU.JO",
+    "office": "4",
+    "office_hours": {
+      "Saturday": "10:00 – 11:00",
+      "Sunday": "10:00 – 11:00",
+      "Monday": "1:00 – 2:00"
     }
   },
   {
@@ -348,9 +352,9 @@
     "email": "salem.alemaishat@htu.edu.jo",
     "office": "S-323",
     "office_hours": {
-      "Monday": "1:00 PM – 1:30 PM, 4:00 PM – 4:30 PM",
-      "Wednesday": "4:00 PM – 4:30 PM",
-      "Thursday": "1:00 PM – 1:30 PM"
+      "Sunday": "1:00 PM – 1:30 PM",
+      "Wednesday": "1:00 PM – 1:30 PM",
+      "Thursday": "2:30 PM – 3:00 PM"
     }
   },
   {
@@ -360,22 +364,9 @@
     "email": "sama.hamza@htu.edu.jo",
     "office": "S-315",
     "office_hours": {
-      "Saturday": "12:00 – 2:00",
-      "Sunday": "12:00 – 2:00",
-      "Monday": "12:00 – 1:00"
-    }
-  },
-  {
-    "name": "Samer Suleiman",
-    "school": "School of Computing and Informatics",
-    "department": "Computer Science",
-    "email": "samer.suleiman@htu.edu.jo",
-    "office": "",
-    "office_hours": {
-      "Saturday": "8:30 – 10:00",
-      "Sunday": "10:00 – 11:30",
-      "Wednesday": "11:30 – 13:00",
-      "Thursday": "13:00 – 16:00"
+      "Saturday": "12:00 – 13:00",
+      "Sunday": "10:00 – 11:00",
+      "Monday": "13:00 – 14:00"
     }
   },
   {
@@ -386,8 +377,20 @@
     "office": "S-310",
     "office_hours": {
       "Saturday": "8:30 – 10:00",
-      "Monday": "10:00 – 11:30",
-      "Thursday": "11:30 – 01:00, 01:00 – 2:00, 02:00 – 17:59"
+      "Thursday": "10:00 – 11:30, 11:30 – 01:00, 01:00 – 2:30, 02:30 – 17:59"
+    }
+  },
+  {
+    "name": "Samir Tartir",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "samir.tartir@gmail.com",
+    "office": "S-324",
+    "office_hours": {
+      "Saturday": "12:00 – 1:00",
+      "Monday": "2:00 – 2:30",
+      "Tuesday": "12:00 – 1:00, 4:00 – 4:30",
+      "Thursday": "13:30 – 15:30"
     }
   },
   {
@@ -397,57 +400,47 @@
     "email": "Sara.Abdo@htu.edu.jo",
     "office": "S-315",
     "office_hours": {
-      "Saturday": "8:30 – 10:00",
-      "Thursday": "10:00 – 11:30, 11:30 – 1:00, 1:00 – 2:30, 2:30 – 4:00"
+      "Saturday": "11:00 – 1:00",
+      "Monday": "12:00 – 1:00"
     }
   },
   {
-    "name": "Sultan M. Alrushdan",
+    "name": "Shatha Ali Al Hawawsheh",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "shatha.alhawawsheh@htu.edu.jo",
+    "office": "S-213",
+    "office_hours": {
+      "Saturday": "8:30 – 10:00",
+      "Sunday": "10:00 – 11:30",
+      "Monday": "11:30 – 12:30",
+      "Tuesday": "11:30 – 01:30",
+      "Wednesday": "2:30 – 4:00"
+    }
+  },
+  {
+    "name": "Suhaib Ghazi Al-Obeidallah",
+    "school": "School of Computing and Informatics",
+    "department": "Computer Science",
+    "email": "suhaib.alobeidallah@htu.edu.jo",
+    "office": "W-214",
+    "office_hours": {
+      "Saturday": "13:00 – 14:00",
+      "Sunday": "10:00 – 11:00",
+      "Monday": "10:00 – 11:00",
+      "Tuesday": "10:00 – 11:00"
+    }
+  },
+  {
+    "name": "Sultan Alrushdan",
     "school": "School of Computing and Informatics",
     "department": "Computer Science",
     "email": "sultan.alrushdan@htu.edu.jo",
     "office": "S-308",
     "office_hours": {
       "Saturday": "08:30 – 10:00",
-      "Sunday": "10:00 – 11:30",
-      "Monday": "11:30 – 13:00",
-      "Tuesday": "13:00 – 14:30"
-    }
-  },
-  {
-    "name": "Tasnim Mohammad Adel Aziz Al-Harasis",
-    "school": "School of Computing and Informatics",
-    "department": "Cyber Security",
-    "email": "Tasnim.alharasis@htu.edu.jo",
-    "office": "S-311",
-    "office_hours": {
-      "Saturday": "10:00 – 11:00",
-      "Thursday": "12:00 – 1:00, 1:00 – 2:00"
-    }
-  },
-  {
-    "name": "Wa’ed Alsawareah",
-    "school": "School of Computing and Informatics",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "waed.alsawareah@htu.edu.jo",
-    "office": "IJC",
-    "office_hours": {
-      "Sunday": "8:30 – 10:00",
-      "Monday": "10:00 – 11:30",
-      "Wednesday": "11:30 – 13:00",
-      "Thursday": "1:00 – 2:30, 10:30 – 12:00, 12:00 – 13:00"
-    }
-  },
-  {
-    "name": "Yara Alharahsheh",
-    "school": "School of Computing and Informatics",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Yara.Alharahsheh@htu.edu.jo",
-    "office": "IJC-05",
-    "office_hours": {
-      "Sunday": "11:00 – 13:00",
-      "Monday": "13:00 – 14:30",
-      "Thursday": "14:30 – 16:00, 16:00 – 17:00"
+      "Tuesday": "10:00 – 11:30",
+      "Thursday": "11:30 – 01:00, 01:00 – 02:30"
     }
   }
 ]

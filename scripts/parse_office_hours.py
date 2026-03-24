@@ -482,10 +482,20 @@ def main():
         faculty_fallback = os.path.splitext(filename)[0]
         faculty_fallback = re.sub(r'Office\s*hours', '', faculty_fallback, flags=re.IGNORECASE)
         faculty_fallback = faculty_fallback.replace('_', ' ').replace('-', ' ').strip()
-        if records:
-            for r in records:
-                if not r.get('faculty'):
-                    r['faculty'] = faculty_fallback
+        if not records:
+            records.append({
+                "faculty": faculty_fallback,
+                "department": "Unknown",
+                "email": "",
+                "office": "",
+                "day": "",
+                "start": "",
+                "end": "",
+                "type": "In-Person"
+            })
+        for r in records:
+            if not r.get('faculty'):
+                r['faculty'] = faculty_fallback
         all_records.extend(records)
         status = f"→ {len(records)} slots" if records else "→ ⚠️  0 slots (needs check)"
         print(f"✓ {filename} {status}")

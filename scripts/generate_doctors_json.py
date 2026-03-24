@@ -21,10 +21,12 @@ for faculty, records in by_faculty.items():
     # If multiple slots on same day, join them with ", "
     day_slots = defaultdict(list)
     for r in records:
+        if not r.get("start") or not r.get("end"):
+            continue
         time_str = f"{r['start']} – {r['end']}"
         if r["type"] == "Online (Teams)":
             time_str += " (Online)"
-        day_slots[r["day"]].append(time_str)
+        day_slots[r.get("day") or ""].append(time_str)
 
     office_hours = {
         day: ", ".join(times)
