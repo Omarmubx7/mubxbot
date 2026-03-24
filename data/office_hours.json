@@ -670,6 +670,46 @@
     "type": "In-Person"
   },
   {
+    "faculty": "Yazan Al-Shannik",
+    "department": "Cyber Security",
+    "email": "Yazan.alshannik@htu.edu.jo",
+    "office": "W-B05",
+    "day": "Monday",
+    "start": "09:00",
+    "end": "10:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Yazan Al-Shannik",
+    "department": "Cyber Security",
+    "email": "Yazan.alshannik@htu.edu.jo",
+    "office": "W-B05",
+    "day": "Thursday",
+    "start": "09:00",
+    "end": "10:00",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Yazan Al-Shannik",
+    "department": "Cyber Security",
+    "email": "Yazan.alshannik@htu.edu.jo",
+    "office": "W-B05",
+    "day": "Wednesday",
+    "start": "01:30",
+    "end": "02:30",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Yazan Al-Shannik",
+    "department": "Cyber Security",
+    "email": "Yazan.alshannik@htu.edu.jo",
+    "office": "W-B05",
+    "day": "Sunday",
+    "start": "01:30",
+    "end": "02:30",
+    "type": "In-Person"
+  },
+  {
     "faculty": "Batool Alarmouti",
     "department": "Data Science and Artificial Intelligence",
     "email": "batool.alarmouti@htu.edu.jo",
@@ -907,46 +947,6 @@
     "day": "Saturday",
     "start": "1:00",
     "end": "2:00",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Ayah.karajeh@htu.edu.jo",
-    "office": "S312",
-    "day": "Saturday",
-    "start": "10:00",
-    "end": "11:30",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Ayah.karajeh@htu.edu.jo",
-    "office": "S312",
-    "day": "Sunday",
-    "start": "1:00",
-    "end": "1:30",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Ayah.karajeh@htu.edu.jo",
-    "office": "S312",
-    "day": "Monday",
-    "start": "10:00",
-    "end": "11:30",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Ayah.karajeh@htu.edu.jo",
-    "office": "S312",
-    "day": "Tuesday",
-    "start": "1:00",
-    "end": "1:30",
     "type": "In-Person"
   },
   {

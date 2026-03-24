@@ -79,10 +79,10 @@
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "office_hours": {
-      "Saturday": "10:00 – 11:30, 10:00 – 11:30",
-      "Sunday": "1:00 – 1:30, 1:00 – 1:30",
-      "Monday": "10:00 – 11:30, 10:00 – 11:30",
-      "Tuesday": "1:00 – 1:30, 1:00 – 1:30"
+      "Saturday": "10:00 – 11:30",
+      "Sunday": "1:00 – 1:30",
+      "Monday": "10:00 – 11:30",
+      "Tuesday": "1:00 – 1:30"
     }
   },
   {
@@ -441,6 +441,19 @@
       "Saturday": "08:30 – 10:00",
       "Tuesday": "10:00 – 11:30",
       "Thursday": "11:30 – 01:00, 01:00 – 02:30"
+    }
+  },
+  {
+    "name": "Yazan Al-Shannik",
+    "school": "School of Computing and Informatics",
+    "department": "Cyber Security",
+    "email": "Yazan.alshannik@htu.edu.jo",
+    "office": "W-B05",
+    "office_hours": {
+      "Sunday": "01:30 – 02:30",
+      "Monday": "09:00 – 10:00",
+      "Wednesday": "01:30 – 02:30",
+      "Thursday": "09:00 – 10:00"
     }
   }
 ]
