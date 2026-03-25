@@ -9,18 +9,18 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_UR
 const { Client } = pg;
 
 const DAY_ORDER = {
-  Saturday: 0,
-  Sunday: 1,
-  Monday: 2,
-  Tuesday: 3,
-  Wednesday: 4,
-  Thursday: 5,
-  Friday: 6
+  saturday: 0,
+  sunday: 1,
+  monday: 2,
+  tuesday: 3,
+  wednesday: 4,
+  thursday: 5,
+  friday: 6
 };
 
 function toMinutes(timeString = '') {
   const raw = String(timeString).trim().toLowerCase();
-  const match = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  const match = raw.match(/^(\d{1,2})(?:[:.](\d{2})(?:[:.]\d{2})?)?\s*(am|pm)?$/i);
   if (!match) return Number.MAX_SAFE_INTEGER;
 
   let hours = Number(match[1]);
@@ -69,9 +69,10 @@ function aggregate(rows) {
 
   return Array.from(map.values()).map(item => {
     const orderedEntries = Object.entries(item.office_hours)
-      .sort((a, b) => (DAY_ORDER[a[0]] ?? 99) - (DAY_ORDER[b[0]] ?? 99))
+      .sort((a, b) => (DAY_ORDER[a[0].toLowerCase()] ?? 99) - (DAY_ORDER[b[0].toLowerCase()] ?? 99))
       .map(([day, slots]) => {
-        const sorted = [...slots].sort((aSlot, bSlot) => {
+        const uniqueSlots = [...new Set(slots)];
+        const sorted = uniqueSlots.sort((aSlot, bSlot) => {
           const aStart = aSlot.split('-')[0]?.trim() || '';
           const bStart = bSlot.split('-')[0]?.trim() || '';
           return toMinutes(aStart) - toMinutes(bStart);
