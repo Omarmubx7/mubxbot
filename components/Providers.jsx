@@ -66,7 +66,7 @@ export default function Providers({ children }) {
 
     Promise.all([
       fetch("/api/doctors").then(res => res.json()),
-      fetch("/office_hours.json").then(res => res.json()).catch(() => [])
+      fetch("/api/office-hours").then(res => res.json()).catch(() => [])
     ])
       .then(([doctorsData, officeHoursData]) => {
         const mergedDoctors = mergeDoctors(doctorsData, cachedDoctors);

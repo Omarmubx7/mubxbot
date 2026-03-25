@@ -1,6 +1,6 @@
 [
   {
-    "faculty": "Mariam Biltawi",
+    "faculty": "Dr. Mariam Biltawi",
     "department": "Computer Science",
     "email": "mariam.biltawi@htu.edu.jo",
     "office": "S-309",
@@ -10,7 +10,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Mariam Biltawi",
+    "faculty": "Dr. Mariam Biltawi",
     "department": "Computer Science",
     "email": "mariam.biltawi@htu.edu.jo",
     "office": "S-309",
@@ -20,7 +20,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Mariam Biltawi",
+    "faculty": "Dr. Mariam Biltawi",
     "department": "Computer Science",
     "email": "mariam.biltawi@htu.edu.jo",
     "office": "S-309",
@@ -30,9 +30,9 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Samir Tartir",
+    "faculty": "Dr. Samir Tartir",
     "department": "Computer Science",
-    "email": "Samir.Tartir@htu.edu.jo",
+    "email": "samir.tartir@gmail.com",
     "office": "S-324",
     "day": "Monday",
     "start": "2:00",
@@ -40,9 +40,9 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Samir Tartir",
+    "faculty": "Dr. Samir Tartir",
     "department": "Computer Science",
-    "email": "Samir.Tartir@htu.edu.jo",
+    "email": "samir.tartir@gmail.com",
     "office": "S-324",
     "day": "Tuesday",
     "start": "12:00",
@@ -50,9 +50,9 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Samir Tartir",
+    "faculty": "Dr. Samir Tartir",
     "department": "Computer Science",
-    "email": "Samir.Tartir@htu.edu.jo",
+    "email": "samir.tartir@gmail.com",
     "office": "S-324",
     "day": "Thursday",
     "start": "13:30",
@@ -60,9 +60,9 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Samir Tartir",
+    "faculty": "Dr. Samir Tartir",
     "department": "Computer Science",
-    "email": "Samir.Tartir@htu.edu.jo",
+    "email": "samir.tartir@gmail.com",
     "office": "S-324",
     "day": "Saturday",
     "start": "12:00",
@@ -70,9 +70,9 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Samir Tartir",
+    "faculty": "Dr. Samir Tartir",
     "department": "Computer Science",
-    "email": "Samir.Tartir@htu.edu.jo",
+    "email": "samir.tartir@gmail.com",
     "office": "S-324",
     "day": "Tuesday",
     "start": "4:00",
@@ -80,47 +80,47 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Rami Al-Ouran",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Dr. Rami Al-Ouran",
+    "department": "Data Science and AI",
     "email": "rami.alouran@htu.edu.jo",
     "office": "S-314",
     "day": "Sunday",
-    "start": "11:30 AM",
-    "end": "12:30 PM",
+    "start": "11:30am",
+    "end": "12:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Rami Al-Ouran",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Dr. Rami Al-Ouran",
+    "department": "Data Science and AI",
     "email": "rami.alouran@htu.edu.jo",
     "office": "S-314",
     "day": "Monday",
-    "start": "11:30 AM",
-    "end": "12:30 PM",
+    "start": "11:30am",
+    "end": "12:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Rami Al-Ouran",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Dr. Rami Al-Ouran",
+    "department": "Data Science and AI",
     "email": "rami.alouran@htu.edu.jo",
     "office": "S-314",
     "day": "Wednesday",
-    "start": "11:30 AM",
-    "end": "12:30 PM",
+    "start": "11:30am",
+    "end": "12:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Rami Al-Ouran",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Dr. Rami Al-Ouran",
+    "department": "Data Science and AI",
     "email": "rami.alouran@htu.edu.jo",
     "office": "S-314",
     "day": "Thursday",
-    "start": "11:30 AM",
-    "end": "12:30 PM",
+    "start": "11:30am",
+    "end": "12:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -130,7 +130,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -140,7 +140,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -150,7 +150,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -160,7 +160,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -170,7 +170,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Raneem Qaddoura",
+    "faculty": "Dr. Raneem Qaddoura",
     "department": "Data Science and Artificial Intelligence",
     "email": "raneem.qaddoura@htu.edu.jo",
     "office": "S-309",
@@ -200,38 +200,38 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Salem Alemaishat",
+    "faculty": "Dr. Salem Alemaishat - Spring 2026 Office Hours",
     "department": "Computer Science",
     "email": "salem.alemaishat@htu.edu.jo",
     "office": "S-323",
     "day": "Sunday",
-    "start": "1:00 PM",
-    "end": "1:30 PM",
+    "start": "1:00pm",
+    "end": "1:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Salem Alemaishat",
+    "faculty": "Dr. Salem Alemaishat - Spring 2026 Office Hours",
     "department": "Computer Science",
     "email": "salem.alemaishat@htu.edu.jo",
     "office": "S-323",
     "day": "Wednesday",
-    "start": "1:00 PM",
-    "end": "1:30 PM",
+    "start": "1:00pm",
+    "end": "1:30pm",
     "type": "In-Person"
   },
   {
-    "faculty": "Salem Alemaishat",
+    "faculty": "Dr. Salem Alemaishat - Spring 2026 Office Hours",
     "department": "Computer Science",
     "email": "salem.alemaishat@htu.edu.jo",
     "office": "S-323",
     "day": "Thursday",
-    "start": "2:30 PM",
-    "end": "3:00 PM",
+    "start": "2:30pm",
+    "end": "3:00pm",
     "type": "In-Person"
   },
   {
     "faculty": "Abdulrahman Abu Alfoul",
-    "department": "Data Science and Artificial Intelligence",
+    "department": "AI & Data Science",
     "email": "Abdulrahman.aboalfoul@HTU.EDU.JO",
     "office": "W-214",
     "day": "Saturday",
@@ -241,7 +241,7 @@
   },
   {
     "faculty": "Abdulrahman Abu Alfoul",
-    "department": "Data Science and Artificial Intelligence",
+    "department": "AI & Data Science",
     "email": "Abdulrahman.aboalfoul@HTU.EDU.JO",
     "office": "W-214",
     "day": "Sunday",
@@ -251,7 +251,7 @@
   },
   {
     "faculty": "Abdulrahman Abu Alfoul",
-    "department": "Data Science and Artificial Intelligence",
+    "department": "AI & Data Science",
     "email": "Abdulrahman.aboalfoul@HTU.EDU.JO",
     "office": "W-214",
     "day": "Monday",
@@ -261,7 +261,7 @@
   },
   {
     "faculty": "Ashraf Alsmadi",
-    "department": "Computer Science",
+    "department": "computer science",
     "email": "ashraf.al-smadi@htu.edu.jo",
     "office": "S310",
     "day": "Saturday",
@@ -271,7 +271,7 @@
   },
   {
     "faculty": "Ashraf Alsmadi",
-    "department": "Computer Science",
+    "department": "computer science",
     "email": "ashraf.al-smadi@htu.edu.jo",
     "office": "S310",
     "day": "Sunday",
@@ -281,7 +281,7 @@
   },
   {
     "faculty": "Ashraf Alsmadi",
-    "department": "Computer Science",
+    "department": "computer science",
     "email": "ashraf.al-smadi@htu.edu.jo",
     "office": "S310",
     "day": "Tuesday",
@@ -291,7 +291,7 @@
   },
   {
     "faculty": "Ashraf Alsmadi",
-    "department": "Computer Science",
+    "department": "computer science",
     "email": "ashraf.al-smadi@htu.edu.jo",
     "office": "S310",
     "day": "Wednesday",
@@ -350,8 +350,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Ayah karajah",
+    "department": "Data science and Artificial intelligence",
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "day": "Saturday",
@@ -360,8 +360,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Ayah karajah",
+    "department": "Data science and Artificial intelligence",
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "day": "Sunday",
@@ -370,8 +370,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Ayah karajah",
+    "department": "Data science and Artificial intelligence",
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "day": "Monday",
@@ -380,8 +380,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Ayah Karajah",
-    "department": "Data Science and Artificial Intelligence",
+    "faculty": "Ayah karajah",
+    "department": "Data science and Artificial intelligence",
     "email": "Ayah.karajeh@htu.edu.jo",
     "office": "S312",
     "day": "Tuesday",
@@ -391,7 +391,7 @@
   },
   {
     "faculty": "Israa Ibrahim Ismael Hasan",
-    "department": "Cyber Security",
+    "department": "Cyber security",
     "email": "Israa.hasan@htu.edu.jo",
     "office": "321",
     "day": "Sunday",
@@ -401,7 +401,7 @@
   },
   {
     "faculty": "Israa Ibrahim Ismael Hasan",
-    "department": "Cyber Security",
+    "department": "Cyber security",
     "email": "Israa.hasan@htu.edu.jo",
     "office": "321",
     "day": "Monday",
@@ -411,7 +411,7 @@
   },
   {
     "faculty": "Israa Ibrahim Ismael Hasan",
-    "department": "Cyber Security",
+    "department": "Cyber security",
     "email": "Israa.hasan@htu.edu.jo",
     "office": "321",
     "day": "Wednesday",
@@ -421,7 +421,7 @@
   },
   {
     "faculty": "Israa Ibrahim Ismael Hasan",
-    "department": "Cyber Security",
+    "department": "Cyber security",
     "email": "Israa.hasan@htu.edu.jo",
     "office": "321",
     "day": "Thursday",
@@ -490,8 +490,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Reem Banihani",
-    "department": "Computer Science",
+    "faculty": "Reem BaniHani",
+    "department": "CS",
     "email": "reem.banihani@htu.edu.jo",
     "office": "S-311",
     "day": "Thursday",
@@ -500,8 +500,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Reem Banihani",
-    "department": "Computer Science",
+    "faculty": "Reem BaniHani",
+    "department": "CS",
     "email": "reem.banihani@htu.edu.jo",
     "office": "S-311",
     "day": "Thursday",
@@ -761,7 +761,7 @@
   },
   {
     "faculty": "Aman Aloudat",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "aman.aloudat@htu.edu.jo",
     "office": "S-321",
     "day": "Saturday",
@@ -771,7 +771,7 @@
   },
   {
     "faculty": "Aman Aloudat",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "aman.aloudat@htu.edu.jo",
     "office": "S-321",
     "day": "Sunday",
@@ -781,7 +781,7 @@
   },
   {
     "faculty": "Aman Aloudat",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "aman.aloudat@htu.edu.jo",
     "office": "S-321",
     "day": "Monday",
@@ -791,7 +791,7 @@
   },
   {
     "faculty": "Aman Aloudat",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "aman.aloudat@htu.edu.jo",
     "office": "S-321",
     "day": "Tuesday",
@@ -850,7 +850,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Razan Alquraan",
+    "faculty": "Razan AlQuraan",
     "department": "Computer Science",
     "email": "razan.alquran@htu.edu.jo",
     "office": "S-313",
@@ -860,7 +860,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Razan Alquraan",
+    "faculty": "Razan AlQuraan",
     "department": "Computer Science",
     "email": "razan.alquran@htu.edu.jo",
     "office": "S-313",
@@ -870,7 +870,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Razan Alquraan",
+    "faculty": "Razan AlQuraan",
     "department": "Computer Science",
     "email": "razan.alquran@htu.edu.jo",
     "office": "S-313",
@@ -880,7 +880,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Razan Alquraan",
+    "faculty": "Razan AlQuraan",
     "department": "Computer Science",
     "email": "razan.alquran@htu.edu.jo",
     "office": "S-313",
@@ -890,7 +890,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Shatha Ali Al Hawawsheh",
+    "faculty": "Shatha Ali Al hawawsheh",
     "department": "Computer Science",
     "email": "shatha.alhawawsheh@htu.edu.jo",
     "office": "S-213",
@@ -900,7 +900,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Shatha Ali Al Hawawsheh",
+    "faculty": "Shatha Ali Al hawawsheh",
     "department": "Computer Science",
     "email": "shatha.alhawawsheh@htu.edu.jo",
     "office": "S-213",
@@ -910,7 +910,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Shatha Ali Al Hawawsheh",
+    "faculty": "Shatha Ali Al hawawsheh",
     "department": "Computer Science",
     "email": "shatha.alhawawsheh@htu.edu.jo",
     "office": "S-213",
@@ -920,7 +920,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Shatha Ali Al Hawawsheh",
+    "faculty": "Shatha Ali Al hawawsheh",
     "department": "Computer Science",
     "email": "shatha.alhawawsheh@htu.edu.jo",
     "office": "S-213",
@@ -930,7 +930,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Shatha Ali Al Hawawsheh",
+    "faculty": "Shatha Ali Al hawawsheh",
     "department": "Computer Science",
     "email": "shatha.alhawawsheh@htu.edu.jo",
     "office": "S-213",
@@ -1000,7 +1000,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Hana Alrasheed",
+    "faculty": "Hana AlRasheed",
     "department": "Computer Science",
     "email": "hana.alrasheed@htu.edu.jo",
     "office": "S312",
@@ -1010,7 +1010,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Hana Alrasheed",
+    "faculty": "Hana AlRasheed",
     "department": "Computer Science",
     "email": "hana.alrasheed@htu.edu.jo",
     "office": "S312",
@@ -1020,7 +1020,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Hana Alrasheed",
+    "faculty": "Hana AlRasheed",
     "department": "Computer Science",
     "email": "hana.alrasheed@htu.edu.jo",
     "office": "S312",
@@ -1030,7 +1030,7 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Hana Alrasheed",
+    "faculty": "Hana AlRasheed",
     "department": "Computer Science",
     "email": "hana.alrasheed@htu.edu.jo",
     "office": "S312",
@@ -1151,7 +1151,7 @@
   },
   {
     "faculty": "Elham Mahmoud Derbas",
-    "department": "Cyber Security",
+    "department": "cyber security",
     "email": "Elham.derbas@htu.edu.jo",
     "office": "S321",
     "day": "Saturday",
@@ -1161,7 +1161,7 @@
   },
   {
     "faculty": "Elham Mahmoud Derbas",
-    "department": "Cyber Security",
+    "department": "cyber security",
     "email": "Elham.derbas@htu.edu.jo",
     "office": "S321",
     "day": "Sunday",
@@ -1170,8 +1170,18 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Mohammad Nooraldeen Alkhateeb",
-    "department": "Computer Science",
+    "faculty": "Eng MalakFraihat",
+    "department": "Unknown",
+    "email": "",
+    "office": "",
+    "day": "",
+    "start": "",
+    "end": "",
+    "type": "In-Person"
+  },
+  {
+    "faculty": "Mohammad NoorAldeen Alkhateeb",
+    "department": "CS",
     "email": "mohammad.alkhateeb@htu.edu.jo",
     "office": "W-214",
     "day": "Saturday",
@@ -1180,8 +1190,8 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Mohammad Nooraldeen Alkhateeb",
-    "department": "Computer Science",
+    "faculty": "Mohammad NoorAldeen Alkhateeb",
+    "department": "CS",
     "email": "mohammad.alkhateeb@htu.edu.jo",
     "office": "W-214",
     "day": "Thursday",
@@ -1191,7 +1201,7 @@
   },
   {
     "faculty": "Eng. Ibrahim Ghanem",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "Ibrahim.ghanem@htu.edu.jo",
     "office": "Eiman Building | IJC-07",
     "day": "Saturday",
@@ -1201,7 +1211,7 @@
   },
   {
     "faculty": "Eng. Ibrahim Ghanem",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "Ibrahim.ghanem@htu.edu.jo",
     "office": "Eiman Building | IJC-07",
     "day": "Thursday",
@@ -1211,7 +1221,7 @@
   },
   {
     "faculty": "Qutaiba Albluwi",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "qutaiba.albluwi@htu.edu.jo",
     "office": "Dean's Office (S-319)",
     "day": "Wednesday",
@@ -1221,7 +1231,7 @@
   },
   {
     "faculty": "Qutaiba Albluwi",
-    "department": "Cyber Security",
+    "department": "Cybersecurity",
     "email": "qutaiba.albluwi@htu.edu.jo",
     "office": "Dean's Office (S-319)",
     "day": "Tuesday",
@@ -1320,43 +1330,23 @@
     "type": "In-Person"
   },
   {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
+    "faculty": "Balqees Aldabaybeh",
+    "department": "SCI",
+    "email": "Balqis.aldabaibeh@htu.edu.jo",
+    "office": "S320",
     "day": "Saturday",
-    "start": "11:30",
-    "end": "12:00",
+    "start": "1:30",
+    "end": "2:30",
     "type": "In-Person"
   },
   {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
+    "faculty": "Balqees Aldabaybeh",
+    "department": "SCI",
+    "email": "Balqis.aldabaibeh@htu.edu.jo",
+    "office": "S320",
     "day": "Sunday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Tuesday",
-    "start": "11:30",
-    "end": "12:00",
-    "type": "In-Person"
-  },
-  {
-    "faculty": "Eng Malakfraihat",
-    "department": "Data Science and Artificial Intelligence",
-    "email": "Malak.fraihat@htu.edu.jo",
-    "office": "contact them",
-    "day": "Wednesday",
-    "start": "11:30",
-    "end": "12:00",
+    "start": "1:30",
+    "end": "3:30",
     "type": "In-Person"
   }
 ]

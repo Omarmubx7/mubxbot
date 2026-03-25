@@ -15,10 +15,10 @@ export function ChatHeader({ theme, onToggleTheme }) {
         <div className="flex flex-col min-w-0">
           <div className="flex flex-col">
             <span className="text-[15px] leading-tight text-[#1C1C1E] dark:text-white truncate">
-              MUBXBot
+              MUBXBot Spring 26
             </span>
             <span className="text-[10px] leading-tight text-red-500 dark:text-red-400 tracking-wide">
-              BY OMAR MUBAIDIN Spring 2026
+              BY OMAR MUBAIDIN
             </span>
           </div>
           <span className="text-[12px] leading-tight text-[#8E8E93] dark:text-[#98989D] mt-0.5">
