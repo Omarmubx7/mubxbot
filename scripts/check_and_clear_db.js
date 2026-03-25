@@ -1,6 +1,6 @@
 const { Client } = require('pg');
 
-async function checkAndClear() {
+async function clearAllTables() {
   const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
   if (!DATABASE_URL) {
     console.error('Missing DATABASE_URL');
@@ -18,21 +18,27 @@ async function checkAndClear() {
     const tablesRes = await client.query(`
       SELECT table_name 
       FROM information_schema.tables 
-      WHERE table_schema = 'public'
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     `);
 
-    for (const row of tablesRes.rows) {
-      const tableName = row.table_name;
-      const countRes = await client.query(`SELECT COUNT(*) FROM "${tableName}"`);
-      console.log(`Table ${tableName} has ${countRes.rows[0].count} rows.`);
+    if (tablesRes.rows.length === 0) {
+      console.log("No tables found in public schema.");
+      return;
     }
 
-    console.log('\nTruncating office_hours_entries...');
-    await client.query('TRUNCATE TABLE office_hours_entries');
-    console.log('Done!');
+    const tableNames = tablesRes.rows.map(row => `"${row.table_name}"`).join(', ');
+    
+    console.log(`Truncating tables: ${tableNames}`);
+    
+    // We use CASCADE so that if there are foreign keys, it clears dependent data (though not strictly needed if we're clearing everything)
+    await client.query(`TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE`);
+    
+    console.log('✅ Successfully emptied all tables!');
+  } catch (err) {
+    console.error('Error emptying tables:', err);
   } finally {
     await client.end();
   }
 }
 
-checkAndClear().catch(console.error);
+clearAllTables();
