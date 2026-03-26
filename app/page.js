@@ -257,19 +257,19 @@ export default function Page() {
       return 'Computer Science';
     }
     
-    // Cyber Security variants
+    // Cybersecurity variants
     if (normalized === 'cyber security' || 
         normalized === 'cybersecurity' || 
         normalized === 'cyber security department') {
-      return 'Cyber Security';
+      return 'Cybersecurity';
     }
     
-    // Data Science and AI variants
+    // AI & Data Science variants
     if (normalized.includes('data science') || 
         normalized.includes('ai') || 
         normalized.includes('artificial intelligence') ||
         normalized.includes('artificial intelligent')) {
-      return 'Data Science and Artificial Intelligence';
+      return 'AI & Data Science';
     }
     
     // Information Technology

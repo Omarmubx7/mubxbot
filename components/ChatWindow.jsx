@@ -120,7 +120,7 @@ export default function ChatWindow() {
     if (!query && !specificDoctor) return;
 
     const originalQuery = query;
-    const aliases = { "cs": "Computer Science", "ai": "Data Science", "cyber": "Cyber Security", "petersons": "Petersons", "it": "Information Technology" };
+    const aliases = { "cs": "Computer Science", "ai": "AI & Data Science", "cyber": "Cybersecurity", "petersons": "Petersons", "it": "Information Technology" };
     if (aliases[query.toLowerCase()]) query = aliases[query.toLowerCase()];
     const officeMatch = query.match(/^([A-Z])(\d{3})$/i);
     if (officeMatch) query = `${officeMatch[1].toUpperCase()}-${officeMatch[2]}`;
