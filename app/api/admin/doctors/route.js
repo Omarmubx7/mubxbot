@@ -12,33 +12,28 @@ function normalizeName(value = '') {
   return String(value).trim().toLowerCase();
 }
 
+async function withDb(fn) {
+  const client = new Client({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}
+
 async function readRows() {
   if (DATABASE_URL) {
-    const client = new Client({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    await client.connect();
-    try {
+    return withDb(async (client) => {
       const { rows } = await client.query(
-        `
-          SELECT
-            faculty,
-            department,
-            email,
-            office,
-            day,
-            start,
-            "end",
-            type
-          FROM office_hours_entries
-        `
+        `SELECT faculty, department, email, office, day, start, "end", type
+         FROM office_hours_entries`
       );
       return rows;
-    } finally {
-      await client.end();
-    }
+    });
   }
 
   const raw = await fs.readFile(DATA_PATH, 'utf8');
@@ -46,63 +41,128 @@ async function readRows() {
   return Array.isArray(parsed) ? parsed : [];
 }
 
-async function writeRows(rows) {
+/**
+ * Writes rows for a single faculty member only (surgical DB path).
+ * For file fallback, replaces all rows for that faculty name.
+ */
+async function writeFacultyRows(facultyName, newRows) {
   if (DATABASE_URL) {
-    const client = new Client({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    await client.connect();
-    try {
+    return withDb(async (client) => {
       await client.query('BEGIN');
-      await client.query('TRUNCATE TABLE office_hours_entries');
+      try {
+        await client.query(
+          'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
+          [normalizeName(facultyName)]
+        );
 
-      const insertSql = `
-        INSERT INTO office_hours_entries (
-          faculty,
-          department,
-          email,
-          office,
-          day,
-          start,
-          "end",
-          type
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      `;
+        const insertSql = `
+          INSERT INTO office_hours_entries
+            (faculty, department, email, office, day, start, "end", type)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `;
 
-      for (const row of rows) {
-        await client.query(insertSql, [
-          row.faculty || '',
-          row.department || '',
-          row.email || '',
-          row.office || '',
-          row.day || '',
-          row.start || '',
-          row.end || '',
-          row.type || 'In-Person'
-        ]);
+        for (const row of newRows) {
+          await client.query(insertSql, [
+            row.faculty || '',
+            row.department || '',
+            row.email || '',
+            row.office || '',
+            row.day || '',
+            row.start || '',
+            row.end || '',
+            row.type || 'In-Person'
+          ]);
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
       }
-
-      await client.query('COMMIT');
-      return;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      await client.end();
-    }
+    });
   }
 
+  // File fallback: read all, filter out this faculty, write back with new rows
+  let allRows;
   try {
-    await fs.writeFile(DATA_PATH, `${JSON.stringify(rows, null, 2)}\n`, 'utf8');
+    const raw = await fs.readFile(DATA_PATH, 'utf8');
+    allRows = JSON.parse(raw || '[]');
+    if (!Array.isArray(allRows)) allRows = [];
+  } catch {
+    allRows = [];
+  }
+
+  const key = normalizeName(facultyName);
+  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  const combined = [...filtered, ...newRows];
+
+  try {
+    await fs.writeFile(DATA_PATH, `${JSON.stringify(combined, null, 2)}\n`, 'utf8');
   } catch (error) {
     if (error?.code === 'EROFS' || error?.code === 'EPERM') {
       throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
     }
-
     throw error;
   }
+}
+
+/**
+ * Deletes all rows for a single faculty member.
+ */
+async function deleteFacultyRows(facultyName) {
+  if (DATABASE_URL) {
+    return withDb(async (client) => {
+      const { rowCount } = await client.query(
+        'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
+        [normalizeName(facultyName)]
+      );
+      return rowCount;
+    });
+  }
+
+  // File fallback
+  let allRows;
+  try {
+    const raw = await fs.readFile(DATA_PATH, 'utf8');
+    allRows = JSON.parse(raw || '[]');
+    if (!Array.isArray(allRows)) allRows = [];
+  } catch {
+    allRows = [];
+  }
+
+  const key = normalizeName(facultyName);
+  const before = allRows.length;
+  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  if (filtered.length === before) return 0;
+
+  try {
+    await fs.writeFile(DATA_PATH, `${JSON.stringify(filtered, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    if (error?.code === 'EROFS' || error?.code === 'EPERM') {
+      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+    }
+    throw error;
+  }
+  return before - filtered.length;
+}
+
+/**
+ * Checks whether a faculty name already exists in the DB / file.
+ */
+async function facultyExists(facultyName) {
+  if (DATABASE_URL) {
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        'SELECT 1 FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1 LIMIT 1',
+        [normalizeName(facultyName)]
+      );
+      return rows.length > 0;
+    });
+  }
+
+  const allRows = await readRows();
+  const key = normalizeName(facultyName);
+  return allRows.some(r => normalizeName(r.faculty) === key);
 }
 
 function parseDaySlots(rawValue = '') {
@@ -176,15 +236,13 @@ export async function POST(req) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const rows = await readRows();
-    const nameKey = normalizeName(doctor.name);
-    const exists = rows.some(row => normalizeName(row.faculty) === nameKey);
+    const exists = await facultyExists(doctor.name);
     if (exists) {
       return NextResponse.json({ error: 'Doctor already exists' }, { status: 409 });
     }
 
-    const nextRows = [...rows, ...buildRowsFromDoctor(doctor)];
-    await writeRows(nextRows);
+    const newRows = buildRowsFromDoctor(doctor);
+    await writeFacultyRows(doctor.name, newRows);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create doctor', details: error.message }, { status: 500 });
@@ -199,16 +257,13 @@ export async function PUT(req) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const rows = await readRows();
-    const nameKey = normalizeName(doctor.name);
-    const filteredRows = rows.filter(row => normalizeName(row.faculty) !== nameKey);
-
-    if (filteredRows.length === rows.length) {
+    const exists = await facultyExists(doctor.name);
+    if (!exists) {
       return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
     }
 
-    const nextRows = [...filteredRows, ...buildRowsFromDoctor(doctor)];
-    await writeRows(nextRows);
+    const newRows = buildRowsFromDoctor(doctor);
+    await writeFacultyRows(doctor.name, newRows);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update doctor', details: error.message }, { status: 500 });
@@ -223,13 +278,11 @@ export async function DELETE(req) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const rows = await readRows();
-    const filteredRows = rows.filter(row => normalizeName(row.faculty) !== normalized);
-    if (filteredRows.length === rows.length) {
+    const deleted = await deleteFacultyRows(name);
+    if (!deleted) {
       return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
     }
 
-    await writeRows(filteredRows);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete doctor', details: error.message }, { status: 500 });

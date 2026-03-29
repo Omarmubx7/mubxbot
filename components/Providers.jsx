@@ -57,11 +57,12 @@ export default function Providers({ children }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Data Logic
+  // Data Logic — server (DB) is always the source of truth on load.
+  // Cache is used only for an instant first-render while the fetch is in flight.
   useEffect(() => {
     const cachedDoctors = safeParseDoctorsCache(localStorage.getItem(DOCTORS_CACHE_KEY));
     if (cachedDoctors.length > 0) {
-      setInstructors(cachedDoctors);
+      setInstructors(cachedDoctors); // optimistic render from cache
     }
 
     Promise.all([
@@ -69,10 +70,11 @@ export default function Providers({ children }) {
       fetch("/api/office-hours").then(res => res.json()).catch(() => [])
     ])
       .then(([doctorsData, officeHoursData]) => {
-        const mergedDoctors = mergeDoctors(doctorsData, cachedDoctors);
-        setInstructors(mergedDoctors);
-        localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(mergedDoctors));
-        setOfficeHours(officeHoursData || []);
+        // DB data wins — overwrite whatever was in the cache
+        const serverDoctors = Array.isArray(doctorsData) ? doctorsData : [];
+        setInstructors(serverDoctors);
+        localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(serverDoctors));
+        setOfficeHours(Array.isArray(officeHoursData) ? officeHoursData : []);
         setLoading(false);
       })
       .catch(err => {

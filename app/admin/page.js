@@ -90,23 +90,31 @@ export default function AdminPage() {
     performSync
   } = useAutoSync(refreshInstructors, 15);
 
+  const ALL_DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const emptyHours = () => Object.fromEntries(ALL_DAYS.map(d => [d, '']));
+
   const [formData, setFormData] = useState({
     name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
-    office_hours: { Monday: "", Tuesday: "", Wednesday: "", Thursday: "", Friday: "" }
+    office_hours: emptyHours()
   });
 
   const handleOpenAdd = () => {
     setCurrentDoctor(null);
     setFormData({
       name: "", school: "School of Computing and Informatics", department: "", email: "", office: "",
-      office_hours: { Monday: "", Tuesday: "", Wednesday: "", Thursday: "", Friday: "" }
+      office_hours: emptyHours()
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (doc) => {
     setCurrentDoctor(doc);
-    setFormData({ ...doc });
+    // Merge the doctor's existing office_hours with the full 7-day template
+    // so every day always has an input (even if empty)
+    const mergedHours = Object.fromEntries(
+      ALL_DAYS.map(d => [d, doc.office_hours?.[d] ?? ''])
+    );
+    setFormData({ ...doc, office_hours: mergedHours });
     setIsModalOpen(true);
   };
 
@@ -392,6 +400,30 @@ export default function AdminPage() {
             <input id="doctor-email" required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
               value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" />
           </div>
+
+          {/* Office Hours per day */}
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1 block">Office Hours</label>
+            <div className="space-y-2">
+              {ALL_DAYS.map(day => (
+                <div key={day} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 text-[12px] font-semibold text-[var(--text-secondary)] text-right">{day}</span>
+                  <input
+                    id={`oh-${day}`}
+                    type="text"
+                    className="flex-1 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[14px] font-medium text-[var(--text-primary)]"
+                    value={formData.office_hours?.[day] ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      office_hours: { ...formData.office_hours, [day]: e.target.value }
+                    })}
+                    placeholder="e.g. 9:00 AM - 11:00 AM"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 pt-4">
             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[var(--text-primary)]">Cancel</button>
             <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#DC2626] text-white shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
