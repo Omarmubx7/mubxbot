@@ -9,13 +9,13 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_UR
 const { Client } = pg;
 
 const DAY_ORDER = {
-  saturday: 0,
-  sunday: 1,
-  monday: 2,
-  tuesday: 3,
-  wednesday: 4,
-  thursday: 5,
-  friday: 6
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
 };
 
 function toMinutes(timeString = '') {
@@ -107,6 +107,19 @@ async function readRowsFromDatabase() {
           "end",
           type
         FROM office_hours_entries
+        ORDER BY
+          faculty,
+          CASE LOWER(TRIM(day))
+            WHEN 'sunday'    THEN 0
+            WHEN 'monday'    THEN 1
+            WHEN 'tuesday'   THEN 2
+            WHEN 'wednesday' THEN 3
+            WHEN 'thursday'  THEN 4
+            WHEN 'friday'    THEN 5
+            WHEN 'saturday'  THEN 6
+            ELSE 7
+          END,
+          start
       `
     );
     return rows;

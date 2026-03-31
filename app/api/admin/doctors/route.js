@@ -4,7 +4,7 @@ import path from 'node:path';
 import pg from 'pg';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
-const DAY_ORDER = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const { Client } = pg;
 
@@ -30,7 +30,20 @@ async function readRows() {
     return withDb(async (client) => {
       const { rows } = await client.query(
         `SELECT faculty, department, email, office, day, start, "end", type
-         FROM office_hours_entries`
+         FROM office_hours_entries
+         ORDER BY
+           faculty,
+           CASE LOWER(TRIM(day))
+             WHEN 'sunday'    THEN 0
+             WHEN 'monday'    THEN 1
+             WHEN 'tuesday'   THEN 2
+             WHEN 'wednesday' THEN 3
+             WHEN 'thursday'  THEN 4
+             WHEN 'friday'    THEN 5
+             WHEN 'saturday'  THEN 6
+             ELSE 7
+           END,
+           start`
       );
       return rows;
     });

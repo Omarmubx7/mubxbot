@@ -90,7 +90,7 @@ export default function AdminPage() {
     performSync
   } = useAutoSync(refreshInstructors, 15);
 
-  const ALL_DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const ALL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const emptyHours = () => Object.fromEntries(ALL_DAYS.map(d => [d, '']));
 
   const [formData, setFormData] = useState({
