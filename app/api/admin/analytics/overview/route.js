@@ -85,6 +85,7 @@ export async function GET(req) {
       charts: { messagesPerDay: [], errorRatePerDay: [], searchByTypePerDay: [], usageHeatmap: [] },
       recentConversations: [],
       usageSummary: { peakHour: null, peakDay: null, totalViews: 0 },
+      generatedAt: new Date().toISOString(),
       range: null,
       compare: null,
       warning: 'Database is not configured'
@@ -97,7 +98,7 @@ export async function GET(req) {
 
   try {
     const data = await withAnalyticsDb(async (client) => {
-      const [kpiRes, compareRes, messageSeriesRes, errorSeriesRes, searchSeriesRes, recentRes, usageHeatmapRes] = await Promise.all([
+      const [kpiRes, compareRes, messageCountRes, prevMessageCountRes, messageSeriesRes, errorSeriesRes, searchSeriesRes, recentRes, usageHeatmapRes] = await Promise.all([
         safeQuery(
           client,
           `
@@ -106,7 +107,6 @@ export async function GET(req) {
               COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL AND user_id <> '')::int AS unique_users,
               COUNT(*) FILTER (WHERE success = true)::int AS successful_conversations,
               COUNT(*) FILTER (WHERE has_error = true)::int AS conversations_with_error,
-              COALESCE(SUM(message_count), 0)::int AS total_messages,
               COUNT(*) FILTER (WHERE has_smart_search = true)::int AS smart_conversations
             FROM conversations
             WHERE started_at >= $1 AND started_at <= $2
@@ -117,7 +117,6 @@ export async function GET(req) {
             unique_users: 0,
             successful_conversations: 0,
             conversations_with_error: 0,
-            total_messages: 0,
             smart_conversations: 0
           }]
         ),
@@ -126,7 +125,6 @@ export async function GET(req) {
           `
             SELECT
               COUNT(*)::int AS total_conversations,
-              COALESCE(SUM(message_count), 0)::int AS total_messages,
               COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL AND user_id <> '')::int AS unique_users,
               COUNT(*) FILTER (WHERE has_smart_search = true)::int AS smart_conversations,
               COUNT(*) FILTER (WHERE has_error = true)::int AS conversations_with_error,
@@ -137,12 +135,31 @@ export async function GET(req) {
           [compareRange.from, compareRange.to],
           [{
             total_conversations: 0,
-            total_messages: 0,
             unique_users: 0,
             smart_conversations: 0,
             conversations_with_error: 0,
             successful_conversations: 0
           }]
+        ),
+        safeQuery(
+          client,
+          `
+            SELECT COUNT(*)::int AS total_messages
+            FROM messages
+            WHERE created_at >= $1 AND created_at <= $2
+          `,
+          [range.from, range.to],
+          [{ total_messages: 0 }]
+        ),
+        safeQuery(
+          client,
+          `
+            SELECT COUNT(*)::int AS total_messages
+            FROM messages
+            WHERE created_at >= $1 AND created_at <= $2
+          `,
+          [compareRange.from, compareRange.to],
+          [{ total_messages: 0 }]
         ),
         safeQuery(
           client,
@@ -229,7 +246,7 @@ export async function GET(req) {
       const p = compareRes.rows[0] || {};
 
       const totalConversations = Number(k.total_conversations || 0);
-      const totalMessages = Number(k.total_messages || 0);
+      const totalMessages = Number(messageCountRes.rows[0]?.total_messages || 0);
       const uniqueUsers = Number(k.unique_users || 0);
       const smartConversations = Number(k.smart_conversations || 0);
       const conversationsWithError = Number(k.conversations_with_error || 0);
@@ -240,7 +257,7 @@ export async function GET(req) {
       const gcr = totalConversations > 0 ? (successfulConversations / totalConversations) * 100 : 0;
 
       const prevTotalConversations = Number(p.total_conversations || 0);
-      const prevTotalMessages = Number(p.total_messages || 0);
+      const prevTotalMessages = Number(prevMessageCountRes.rows[0]?.total_messages || 0);
       const prevUniqueUsers = Number(p.unique_users || 0);
       const prevSmartRate = prevTotalConversations > 0 ? (Number(p.smart_conversations || 0) / prevTotalConversations) * 100 : 0;
       const prevErrorRate = prevTotalConversations > 0 ? (Number(p.conversations_with_error || 0) / prevTotalConversations) * 100 : 0;
@@ -311,6 +328,7 @@ export async function GET(req) {
 
     return NextResponse.json({
       ...data,
+      generatedAt: new Date().toISOString(),
       range: {
         from: range.from.toISOString(),
         to: range.to.toISOString(),
@@ -322,7 +340,7 @@ export async function GET(req) {
       }
     }, {
       headers: {
-        'Cache-Control': 'private, max-age=30, s-maxage=30',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         'Content-Type': 'application/json'
       }
     });

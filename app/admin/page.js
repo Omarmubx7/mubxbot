@@ -90,11 +90,16 @@ export default function AdminPage() {
         totalViews: Number(data?.kpis?.totalViews?.value || data?.kpis?.totalConversations?.value || 0),
         peakDay: data?.usageSummary?.peakDay || null,
         peakHour: data?.usageSummary?.peakHour,
-        peakHourViews: Number(data?.usageSummary?.peakHourViews || 0)
+        peakHourViews: Number(data?.usageSummary?.peakHourViews || 0),
+        generatedAt: data?.generatedAt || null
       });
     } catch {
       // Keep this silent so instructor management is never blocked by analytics failures.
     }
+  };
+
+  const refreshDashboardData = async () => {
+    await Promise.all([refreshInstructors(), refreshUsageSnapshot()]);
   };
 
   const {
@@ -106,7 +111,7 @@ export default function AdminPage() {
     lastSyncedAt,
     syncing,
     performSync
-  } = useAutoSync(refreshInstructors, 15);
+  } = useAutoSync(refreshDashboardData, 15);
 
   const ALL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const emptyHours = () => Object.fromEntries(ALL_DAYS.map(d => [d, '']));
@@ -263,7 +268,6 @@ export default function AdminPage() {
 
   useEffect(() => {
     performSync();
-    refreshUsageSnapshot();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -338,7 +342,12 @@ export default function AdminPage() {
         <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 className="text-[14px] font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Usage Snapshot (Last 7 Days)</h2>
-            <Link href="/admin/analytics" className="text-[13px] font-bold text-[#DC2626] hover:underline">Open Full Analytics</Link>
+            <div className="flex items-center gap-3">
+              <span className="text-[12px] text-[var(--text-secondary)]">
+                Updated: {usageSnapshot?.generatedAt ? new Date(usageSnapshot.generatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }) : '\u2014'}
+              </span>
+              <Link href="/admin/analytics" className="text-[13px] font-bold text-[#DC2626] hover:underline">Open Full Analytics</Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
