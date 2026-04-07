@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Mail, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Mail } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminHeader } from '../../components/AdminHeader.jsx';
 import { useAutoSync, AutoSyncControls } from '../../components/AutoSyncControls.jsx';
@@ -65,6 +64,7 @@ export default function AdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [usageSnapshot, setUsageSnapshot] = useState(null);
 
   const refreshInstructors = async () => {
     const response = await fetch('/api/doctors');
@@ -76,6 +76,24 @@ export default function AdminPage() {
       globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
     } catch (e) {
       console.warn('Storage write disabled', e);
+    }
+  };
+
+  const refreshUsageSnapshot = async () => {
+    try {
+      const response = await fetch('/api/admin/analytics/overview?preset=last7', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      setUsageSnapshot({
+        totalMessages: Number(data?.kpis?.totalMessages?.value || 0),
+        uniqueUsers: Number(data?.kpis?.uniqueUsers?.value || 0),
+        totalViews: Number(data?.kpis?.totalViews?.value || data?.kpis?.totalConversations?.value || 0),
+        peakDay: data?.usageSummary?.peakDay || null,
+        peakHour: data?.usageSummary?.peakHour,
+        peakHourViews: Number(data?.usageSummary?.peakHourViews || 0)
+      });
+    } catch {
+      // Keep this silent so instructor management is never blocked by analytics failures.
     }
   };
 
@@ -245,8 +263,16 @@ export default function AdminPage() {
 
   useEffect(() => {
     performSync();
+    refreshUsageSnapshot();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const formatHourLabel = (hour) => {
+    if (!Number.isFinite(hour)) return '\u2014';
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const normalized = hour % 12 === 0 ? 12 : hour % 12;
+    return `${normalized}${suffix}`;
+  };
 
 
 
@@ -303,8 +329,45 @@ export default function AdminPage() {
           syncCountdown={syncCountdown}
           lastSyncedAt={lastSyncedAt}
           syncing={syncing}
-          onRefresh={performSync}
+          onRefresh={async () => {
+            await performSync();
+            await refreshUsageSnapshot();
+          }}
         />
+
+        <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="text-[14px] font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Usage Snapshot (Last 7 Days)</h2>
+            <Link href="/admin/analytics" className="text-[13px] font-bold text-[#DC2626] hover:underline">Open Full Analytics</Link>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-widest text-[var(--text-tertiary)] font-bold">Total Views</div>
+              <div className="text-[24px] font-black text-[var(--text-primary)] mt-1">{usageSnapshot?.totalViews ?? '\u2014'}</div>
+            </div>
+
+            <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-widest text-[var(--text-tertiary)] font-bold">Total Messages</div>
+              <div className="text-[24px] font-black text-[var(--text-primary)] mt-1">{usageSnapshot?.totalMessages ?? '\u2014'}</div>
+            </div>
+
+            <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-widest text-[var(--text-tertiary)] font-bold">Unique Users</div>
+              <div className="text-[24px] font-black text-[var(--text-primary)] mt-1">{usageSnapshot?.uniqueUsers ?? '\u2014'}</div>
+            </div>
+
+            <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-widest text-[var(--text-tertiary)] font-bold">Peak Time</div>
+              <div className="text-[16px] font-black text-[var(--text-primary)] mt-2 leading-tight">
+                {usageSnapshot?.peakDay ? `${usageSnapshot.peakDay} ${formatHourLabel(usageSnapshot.peakHour)}` : '\u2014'}
+              </div>
+              <div className="text-[12px] text-[var(--text-secondary)] mt-1">
+                {usageSnapshot?.peakDay ? `${usageSnapshot.peakHourViews} views` : '\u00a0'}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Table View */}
         <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">

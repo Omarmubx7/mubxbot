@@ -14,6 +14,66 @@ function unauthorized(req) {
   return !verifyAdminSessionToken(token);
 }
 
+function buildSearchByTypeSeries(rows) {
+  const searchByTypeMap = new Map();
+  for (const row of rows) {
+    const key = new Date(row.day).toISOString().slice(0, 10);
+    if (!searchByTypeMap.has(key)) {
+      searchByTypeMap.set(key, { day: key, name: 0, smart: 0, other: 0 });
+    }
+    const rec = searchByTypeMap.get(key);
+    const type = String(row.search_type || 'other').toLowerCase();
+    if (type === 'name') rec.name = Number(row.count || 0);
+    else if (type === 'smart') rec.smart = Number(row.count || 0);
+    else rec.other += Number(row.count || 0);
+  }
+  return [...searchByTypeMap.values()];
+}
+
+function buildUsageHeatmapSummary(rows) {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const usageHeatmap = [];
+  const dayTotals = Array.from({ length: 7 }, () => 0);
+  const hourTotals = Array.from({ length: 24 }, () => 0);
+
+  for (const row of rows) {
+    const dow = Number(row.dow || 0);
+    const hour = Number(row.hour || 0);
+    const views = Number(row.views || 0);
+    if (dow < 0 || dow > 6 || hour < 0 || hour > 23) continue;
+
+    usageHeatmap.push({ dayIndex: dow, day: dayNames[dow], hour, views });
+    dayTotals[dow] += views;
+    hourTotals[hour] += views;
+  }
+
+  let peakHour = null;
+  let peakHourViews = 0;
+  for (let h = 0; h < hourTotals.length; h += 1) {
+    if (hourTotals[h] > peakHourViews) {
+      peakHourViews = hourTotals[h];
+      peakHour = h;
+    }
+  }
+
+  let peakDay = null;
+  let peakDayViews = 0;
+  for (let d = 0; d < dayTotals.length; d += 1) {
+    if (dayTotals[d] > peakDayViews) {
+      peakDayViews = dayTotals[d];
+      peakDay = dayNames[d];
+    }
+  }
+
+  return {
+    usageHeatmap,
+    peakHour,
+    peakHourViews,
+    peakDay,
+    peakDayViews
+  };
+}
+
 export async function GET(req) {
   if (unauthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,8 +82,9 @@ export async function GET(req) {
   if (!hasAnalyticsDb()) {
     return NextResponse.json({
       kpis: {},
-      charts: { messagesPerDay: [], errorRatePerDay: [], searchByTypePerDay: [] },
+      charts: { messagesPerDay: [], errorRatePerDay: [], searchByTypePerDay: [], usageHeatmap: [] },
       recentConversations: [],
+      usageSummary: { peakHour: null, peakDay: null, totalViews: 0 },
       range: null,
       compare: null,
       warning: 'Database is not configured'
@@ -36,7 +97,7 @@ export async function GET(req) {
 
   try {
     const data = await withAnalyticsDb(async (client) => {
-      const [kpiRes, compareRes, messageSeriesRes, errorSeriesRes, searchSeriesRes, recentRes] = await Promise.all([
+      const [kpiRes, compareRes, messageSeriesRes, errorSeriesRes, searchSeriesRes, recentRes, usageHeatmapRes] = await Promise.all([
         safeQuery(
           client,
           `
@@ -146,6 +207,21 @@ export async function GET(req) {
           `,
           [range.from, range.to],
           []
+        ),
+        safeQuery(
+          client,
+          `
+            SELECT
+              EXTRACT(DOW FROM started_at)::int AS dow,
+              EXTRACT(HOUR FROM started_at)::int AS hour,
+              COUNT(*)::int AS views
+            FROM conversations
+            WHERE started_at >= $1 AND started_at <= $2
+            GROUP BY EXTRACT(DOW FROM started_at), EXTRACT(HOUR FROM started_at)
+            ORDER BY dow ASC, hour ASC
+          `,
+          [range.from, range.to],
+          []
         )
       ]);
 
@@ -170,24 +246,18 @@ export async function GET(req) {
       const prevErrorRate = prevTotalConversations > 0 ? (Number(p.conversations_with_error || 0) / prevTotalConversations) * 100 : 0;
       const prevGcr = prevTotalConversations > 0 ? (Number(p.successful_conversations || 0) / prevTotalConversations) * 100 : 0;
 
-      const searchByTypeMap = new Map();
-      for (const row of searchSeriesRes.rows) {
-        const key = new Date(row.day).toISOString().slice(0, 10);
-        if (!searchByTypeMap.has(key)) {
-          searchByTypeMap.set(key, { day: key, name: 0, smart: 0, other: 0 });
-        }
-        const rec = searchByTypeMap.get(key);
-        const type = String(row.search_type || 'other').toLowerCase();
-        if (type === 'name') rec.name = Number(row.count || 0);
-        else if (type === 'smart') rec.smart = Number(row.count || 0);
-        else rec.other += Number(row.count || 0);
-      }
+      const searchByTypePerDay = buildSearchByTypeSeries(searchSeriesRes.rows);
+      const usage = buildUsageHeatmapSummary(usageHeatmapRes.rows);
 
       return {
         kpis: {
           totalMessages: {
             value: totalMessages,
             deltaPct: percentDelta(totalMessages, prevTotalMessages)
+          },
+          totalViews: {
+            value: totalConversations,
+            deltaPct: percentDelta(totalConversations, prevTotalConversations)
           },
           totalConversations: {
             value: totalConversations,
@@ -225,9 +295,17 @@ export async function GET(req) {
               rate: total > 0 ? (errored / total) * 100 : 0
             };
           }),
-          searchByTypePerDay: [...searchByTypeMap.values()]
+          searchByTypePerDay,
+          usageHeatmap: usage.usageHeatmap
         },
-        recentConversations: recentRes.rows
+        recentConversations: recentRes.rows,
+        usageSummary: {
+          peakHour: usage.peakHour,
+          peakHourViews: usage.peakHourViews,
+          peakDay: usage.peakDay,
+          peakDayViews: usage.peakDayViews,
+          totalViews: totalConversations
+        }
       };
     });
 

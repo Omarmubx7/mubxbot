@@ -77,6 +77,86 @@ function SparkBars({ rows = [], keys = [], colors = [] }) {
   );
 }
 
+function formatHourLabel(hour) {
+  const h = Number(hour || 0);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const normalized = h % 12 === 0 ? 12 : h % 12;
+  return `${normalized}${suffix}`;
+}
+
+function UsageHeatmap({ rows = [], summary = null }) {
+  const dayRows = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const viewMap = new Map();
+  let maxViews = 0;
+  for (const row of rows) {
+    const dayIndex = Number(row.dayIndex);
+    const hour = Number(row.hour);
+    const views = Number(row.views || 0);
+    if (Number.isNaN(dayIndex) || Number.isNaN(hour)) continue;
+    viewMap.set(`${dayIndex}-${hour}`, views);
+    if (views > maxViews) maxViews = views;
+  }
+
+  const colorForViews = (views) => {
+    if (views <= 0 || maxViews <= 0) return 'rgba(220, 38, 38, 0.08)';
+    const ratio = views / maxViews;
+    const alpha = 0.15 + (ratio * 0.8);
+    return `rgba(220, 38, 38, ${alpha.toFixed(3)})`;
+  };
+
+  return (
+    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Usage Heatmap (Views by Day & Hour)</div>
+        <div className="text-[12px] font-medium text-[var(--text-secondary)]">
+          {summary?.peakDay ? `Peak: ${summary.peakDay} at ${formatHourLabel(summary.peakHour)} (${summary.peakHourViews || 0} views)` : 'No usage data in selected range'}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto pb-1">
+        <div className="min-w-[720px]">
+          <div className="grid grid-cols-[52px_repeat(24,minmax(20px,1fr))] gap-1 text-[10px] text-[var(--text-tertiary)] mb-1">
+            <div />
+            {hours.map((hour) => (
+              <div key={`label-${hour}`} className="text-center">
+                {hour % 3 === 0 ? formatHourLabel(hour) : ''}
+              </div>
+            ))}
+          </div>
+
+          {dayRows.map((day, dayIndex) => (
+            <div key={day} className="grid grid-cols-[52px_repeat(24,minmax(20px,1fr))] gap-1 mb-1">
+              <div className="text-[11px] font-bold text-[var(--text-tertiary)] flex items-center">{day}</div>
+              {hours.map((hour) => {
+                const views = viewMap.get(`${dayIndex}-${hour}`) || 0;
+                return (
+                  <div
+                    key={`${day}-${hour}`}
+                    className="h-5 rounded-[4px] border border-black/5 dark:border-white/10"
+                    style={{ backgroundColor: colorForViews(views) }}
+                    title={`${day} ${formatHourLabel(hour)}: ${views} views`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
+        <div>Total views: {summary?.totalViews || 0}</div>
+        <div className="flex items-center gap-2">
+          <span>Low</span>
+          <div className="w-16 h-2 rounded-full" style={{ background: 'linear-gradient(to right, rgba(220,38,38,0.08), rgba(220,38,38,0.95))' }} />
+          <span>High</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function KpiCard({ title, value, subtitle, delta }) {
   let tone = 'text-[var(--text-tertiary)]';
   if (delta != null) {
@@ -349,7 +429,7 @@ export default function AdminAnalyticsPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                   <KpiCard title="Total Messages" value={overview.kpis.totalMessages?.value || 0} delta={overview.kpis.totalMessages?.deltaPct} />
-                  <KpiCard title="Total Conversations" value={overview.kpis.totalConversations?.value || 0} delta={overview.kpis.totalConversations?.deltaPct} />
+                  <KpiCard title="Total Views" value={overview.kpis.totalViews?.value || overview.kpis.totalConversations?.value || 0} subtitle="Conversation starts" delta={overview.kpis.totalViews?.deltaPct ?? overview.kpis.totalConversations?.deltaPct} />
                   <KpiCard title="Unique Users" value={overview.kpis.uniqueUsers?.value || 0} delta={overview.kpis.uniqueUsers?.deltaPct} />
                   <KpiCard title="Smart Searches" value={overview.kpis.smartSearches?.value || 0} subtitle={`${(overview.kpis.smartSearches?.rate || 0).toFixed(1)}%`} delta={overview.kpis.smartSearches?.deltaPct} />
                   <KpiCard title="Error Rate" value={`${(overview.kpis.errorRateConversations?.value || 0).toFixed(1)}%`} delta={overview.kpis.errorRateConversations?.deltaPct} />
@@ -371,6 +451,8 @@ export default function AdminAnalyticsPage() {
                   <div className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Search Events Per Day (Name / Smart / Other)</div>
                   <SparkBars rows={overview.charts.searchByTypePerDay || []} keys={['name', 'smart', 'other']} colors={['#0EA5E9', '#16A34A', '#F59E0B']} />
                 </div>
+
+                <UsageHeatmap rows={overview.charts.usageHeatmap || []} summary={overview.usageSummary || null} />
 
                 <Table
                   columns={[
