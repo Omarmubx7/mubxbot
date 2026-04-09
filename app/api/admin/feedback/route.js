@@ -38,6 +38,111 @@ function applyFilters(rows, category) {
   return rows.filter((row) => String(row?.category || '').toLowerCase() === category);
 }
 
+function parseLegacyReason(value) {
+  try {
+    const parsed = JSON.parse(String(value || '{}'));
+    if (parsed && typeof parsed === 'object') return parsed;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+async function readLegacyFeedbackRows(category, limit) {
+  return withDb(async (client) => {
+    const params = [limit];
+    const result = await client.query(
+      `
+        SELECT id, conversation_id, reason, created_at
+        FROM feedback_events
+        WHERE feedback = 'down'
+        ORDER BY created_at DESC
+        LIMIT $1
+      `,
+      params
+    );
+
+    const mapped = result.rows.map((row) => {
+      const reason = parseLegacyReason(row.reason);
+      return {
+        id: row.id,
+        category: String(reason.category || 'general').toLowerCase(),
+        message: reason.message || row.reason || '',
+        missing_name: reason.missing_name || null,
+        user_query: reason.user_query || null,
+        request_label: reason.request_label || null,
+        conversation_id: row.conversation_id || null,
+        user_id: null,
+        source_path: reason.source_path || null,
+        source: reason.source || 'chat',
+        created_at: row.created_at
+      };
+    });
+
+    return applyFilters(mapped, category);
+  });
+}
+
+async function readUserFeedbackRows(category, limit) {
+  return withDb(async (client) => {
+    const params = [];
+    let where = '';
+
+    if (category !== 'all') {
+      params.push(category);
+      where = `WHERE category = $${params.length}`;
+    }
+
+    params.push(limit);
+
+    const result = await client.query(
+      `
+        SELECT
+          id,
+          category,
+          message,
+          missing_name,
+          user_query,
+          request_label,
+          conversation_id,
+          user_id,
+          source_path,
+          source,
+          created_at
+        FROM user_feedback
+        ${where}
+        ORDER BY created_at DESC
+        LIMIT $${params.length}
+      `,
+      params
+    );
+
+    return result.rows;
+  });
+}
+
+async function tryReadFromDb(category, limit) {
+  if (!DATABASE_URL) return null;
+
+  try {
+    return await readUserFeedbackRows(category, limit);
+  } catch (error) {
+    if (error?.code !== '42P01' && error?.code !== '42703') {
+      throw error;
+    }
+  }
+
+  try {
+    return await readLegacyFeedbackRows(category, limit);
+  } catch (error) {
+    if (error?.code !== '42P01' && error?.code !== '42703') {
+      throw error;
+    }
+  }
+
+  return null;
+}
+
 export async function GET(req) {
   if (unauthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,50 +153,9 @@ export async function GET(req) {
   const limit = Math.min(500, Math.max(1, Number.parseInt(url.searchParams.get('limit') || '200', 10) || 200));
 
   try {
-    if (DATABASE_URL) {
-      try {
-        const rows = await withDb(async (client) => {
-          const params = [];
-          let where = '';
-
-          if (category !== 'all') {
-            params.push(category);
-            where = `WHERE category = $${params.length}`;
-          }
-
-          params.push(limit);
-
-          const result = await client.query(
-            `
-              SELECT
-                id,
-                category,
-                message,
-                missing_name,
-                user_query,
-                request_label,
-                conversation_id,
-                user_id,
-                source_path,
-                source,
-                created_at
-              FROM user_feedback
-              ${where}
-              ORDER BY created_at DESC
-              LIMIT $${params.length}
-            `,
-            params
-          );
-
-          return result.rows;
-        });
-
-        return NextResponse.json({ rows, count: rows.length });
-      } catch (error) {
-        if (error?.code !== '42P01' && error?.code !== '42703') {
-          throw error;
-        }
-      }
+    const dbRows = await tryReadFromDb(category, limit);
+    if (dbRows) {
+      return NextResponse.json({ rows: dbRows, count: dbRows.length });
     }
 
     const rows = applyFilters(await readFileRows(), category)

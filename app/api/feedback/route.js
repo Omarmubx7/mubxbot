@@ -103,6 +103,112 @@ async function insertDbRecord(record) {
   });
 }
 
+async function ensureUserFeedbackTable() {
+  return withDb(async (client) => {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_feedback (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL CHECK (category IN ('missing_name', 'general')),
+        message TEXT,
+        missing_name TEXT,
+        user_query TEXT,
+        request_label TEXT,
+        conversation_id TEXT,
+        user_id TEXT,
+        source_path TEXT,
+        source TEXT NOT NULL DEFAULT 'chat',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query('CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at)');
+  });
+}
+
+async function ensureLegacyConversation(client, conversationId, userId) {
+  if (!conversationId) return;
+
+  await client.query(
+    `
+      INSERT INTO conversations (id, user_id, started_at, environment)
+      VALUES ($1, $2, NOW(), 'prod')
+      ON CONFLICT (id) DO NOTHING
+    `,
+    [conversationId, userId || null]
+  );
+}
+
+function buildLegacyReason(record) {
+  return JSON.stringify({
+    category: record.category,
+    message: record.message || '',
+    missing_name: record.missing_name || null,
+    user_query: record.user_query || null,
+    request_label: record.request_label || null,
+    source_path: record.source_path || null,
+    source: record.source || 'chat'
+  });
+}
+
+async function insertLegacyFeedbackEvent(record) {
+  return withDb(async (client) => {
+    await ensureLegacyConversation(client, record.conversation_id, record.user_id);
+
+    await client.query(
+      `
+        INSERT INTO feedback_events (id, conversation_id, message_id, feedback, reason)
+        VALUES ($1, $2, NULL, 'down', $3)
+      `,
+      [record.id, record.conversation_id, buildLegacyReason(record)]
+    );
+
+    return {
+      id: record.id,
+      category: record.category,
+      message: record.message,
+      missing_name: record.missing_name,
+      user_query: record.user_query,
+      request_label: record.request_label,
+      conversation_id: record.conversation_id,
+      user_id: record.user_id,
+      source_path: record.source_path,
+      source: record.source,
+      created_at: new Date().toISOString(),
+      storage: 'feedback_events'
+    };
+  });
+}
+
+async function tryPersistToDb(record) {
+  if (!DATABASE_URL) return null;
+
+  try {
+    return await insertDbRecord(record);
+  } catch (error) {
+    if (error?.code !== '42P01' && error?.code !== '42703') {
+      throw error;
+    }
+  }
+
+  try {
+    await ensureUserFeedbackTable();
+    return await insertDbRecord(record);
+  } catch (error) {
+    console.warn('user_feedback bootstrap failed; trying legacy fallback', error?.code || error?.message || error);
+  }
+
+  try {
+    if (record.conversation_id) {
+      return await insertLegacyFeedbackEvent(record);
+    }
+  } catch (error) {
+    console.warn('legacy feedback_events insert failed; trying file fallback', error?.code || error?.message || error);
+  }
+
+  return null;
+}
+
 export async function POST(req) {
   try {
     const payload = await req.json();
@@ -114,22 +220,25 @@ export async function POST(req) {
 
     const record = normalized.value;
 
-    if (DATABASE_URL) {
-      try {
-        const created = await insertDbRecord(record);
-        return NextResponse.json(created, { status: 201 });
-      } catch (error) {
-        if (error?.code !== '42P01' && error?.code !== '42703') {
-          throw error;
-        }
-        // Fall back to file mode when table/column migration has not been applied yet.
-      }
+    const dbCreated = await tryPersistToDb(record);
+    if (dbCreated) {
+      return NextResponse.json(dbCreated, { status: 201 });
     }
 
-    const rows = await readFileRows();
-    const created = { ...record, id: record.id || String(Date.now()) };
-    await writeFileRows([created, ...rows]);
-    return NextResponse.json(created, { status: 201 });
+    try {
+      const rows = await readFileRows();
+      const created = { ...record, id: record.id || String(Date.now()) };
+      await writeFileRows([created, ...rows]);
+      return NextResponse.json(created, { status: 201 });
+    } catch (fileError) {
+      if (fileError?.code === 'EROFS' || fileError?.code === 'EPERM') {
+        return NextResponse.json(
+          { error: 'Feedback storage is not writable in this deployment. Please enable DB table user_feedback.' },
+          { status: 503 }
+        );
+      }
+      throw fileError;
+    }
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to submit feedback', details: error.message },
