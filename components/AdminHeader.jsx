@@ -70,6 +70,12 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
         >
           Analytics & Quality
         </Link>
+        <Link
+          href="/admin/feedback"
+          className="whitespace-nowrap rounded-xl bg-black/5 dark:bg-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-secondary)] hover:bg-black/10 dark:hover:bg-white/20 hover:text-[var(--text-primary)] transition-all"
+        >
+          User Feedback
+        </Link>
       </div>
     </>
   );

@@ -157,3 +157,21 @@ CREATE INDEX IF NOT EXISTS idx_performance_events_message_id ON performance_even
 CREATE INDEX IF NOT EXISTS idx_performance_events_created_at ON performance_events (created_at);
 CREATE INDEX IF NOT EXISTS idx_performance_events_total_latency ON performance_events (total_latency_ms);
 CREATE INDEX IF NOT EXISTS idx_performance_events_environment ON performance_events (environment);
+
+CREATE TABLE IF NOT EXISTS user_feedback (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL CHECK (category IN ('missing_name', 'general')),
+    message TEXT,
+    missing_name TEXT,
+    user_query TEXT,
+    request_label TEXT,
+    conversation_id TEXT,
+    user_id TEXT,
+    source_path TEXT,
+    source TEXT NOT NULL DEFAULT 'chat',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category);
+CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at);
+CREATE INDEX IF NOT EXISTS idx_user_feedback_missing_name ON user_feedback (missing_name);

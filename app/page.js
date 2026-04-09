@@ -123,6 +123,13 @@ export default function Page() {
   const [fuseInstance, setFuseInstance] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackCategory, setFeedbackCategory] = useState('general');
+  const [feedbackMissingName, setFeedbackMissingName] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackContext, setFeedbackContext] = useState(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
   
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
@@ -185,6 +192,85 @@ export default function Page() {
     userId: analyticsUserIdRef.current || generateUUID(),
     conversationId: conversationIdRef.current || generateUUID()
   });
+
+  const openFeedbackForm = ({
+    category = 'general',
+    missingName = '',
+    userQuery = '',
+    requestLabel = ''
+  } = {}) => {
+    setFeedbackCategory(category);
+    setFeedbackMissingName(missingName);
+    setFeedbackMessage('');
+    setFeedbackError('');
+    setFeedbackContext({
+      userQuery,
+      requestLabel,
+      sourcePath: globalThis.location?.pathname || '/'
+    });
+    setFeedbackOpen(true);
+  };
+
+  const closeFeedbackForm = () => {
+    setFeedbackOpen(false);
+    setFeedbackSubmitting(false);
+    setFeedbackError('');
+  };
+
+  const submitFeedback = async (event) => {
+    event.preventDefault();
+
+    if (feedbackCategory === 'missing_name' && !feedbackMissingName.trim()) {
+      setFeedbackError('Please enter the missing instructor name.');
+      return;
+    }
+
+    if (feedbackCategory === 'general' && !feedbackMessage.trim()) {
+      setFeedbackError('Please enter your feedback message.');
+      return;
+    }
+
+    try {
+      setFeedbackSubmitting(true);
+      setFeedbackError('');
+
+      const payload = withAnalyticsMeta({
+        category: feedbackCategory,
+        missingName: feedbackMissingName,
+        message: feedbackMessage,
+        userQuery: feedbackContext?.userQuery,
+        requestLabel: feedbackContext?.requestLabel,
+        sourcePath: feedbackContext?.sourcePath
+      });
+
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || body?.details || 'Could not submit feedback');
+      }
+
+      closeFeedbackForm();
+      setMessages((prev) => ([
+        ...prev,
+        {
+          id: `feedback-${Date.now()}`,
+          type: 'bot',
+          content: 'Thanks for the feedback. It has been sent to the admin dashboard for review.',
+          timestamp: getCurrentTime(),
+          quickReplies: ['Search another', 'By department']
+        }
+      ]));
+    } catch (error) {
+      setFeedbackError(String(error?.message || error || 'Could not submit feedback'));
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
@@ -735,6 +821,17 @@ export default function Page() {
                     ))}
                   </div>
                 )}
+                <button
+                  onClick={() => openFeedbackForm({
+                    category: 'missing_name',
+                    missingName: data.subject || data.message || '',
+                    userQuery: data.message || '',
+                    requestLabel: data.requestLabel || ''
+                  })}
+                  className="w-full text-left rounded-xl border border-[#DC2626]/30 bg-[#DC2626]/5 px-3 py-2.5 text-[13px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
+                >
+                  Missing name? Report it here
+                </button>
               </div>
             ),
             timestamp: getCurrentTime(),
@@ -988,7 +1085,86 @@ export default function Page() {
           inlineSuggestion={inlineSuggestion}
           placeholder="What = email, When = hours, Where = office"
         />
+
+        <div className="px-4 pb-3 md:pb-4 bg-white dark:bg-black border-t border-black/5 dark:border-white/5">
+          <button
+            onClick={() => openFeedbackForm({ category: 'general' })}
+            className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] px-4 py-2.5 text-[13px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+          >
+            Share general feedback
+          </button>
+        </div>
       </div>
+
+      {feedbackOpen && (
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <button
+            aria-label="Close feedback modal"
+            onClick={closeFeedbackForm}
+            className="absolute inset-0 bg-black/40"
+          />
+          <div className="relative w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 p-5 sm:p-6 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-[20px] font-black tracking-tight text-[var(--text-primary)]">Send Feedback</h2>
+              <button onClick={closeFeedbackForm} className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10">✕</button>
+            </div>
+
+            <form onSubmit={submitFeedback} className="space-y-4">
+              <div>
+                <label htmlFor="feedback-type" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Type</label>
+                <select
+                  id="feedback-type"
+                  value={feedbackCategory}
+                  onChange={(e) => setFeedbackCategory(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                >
+                  <option value="general">General feedback</option>
+                  <option value="missing_name">Missing instructor name</option>
+                </select>
+              </div>
+
+              {feedbackCategory === 'missing_name' && (
+                <div>
+                  <label htmlFor="feedback-missing-name" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Instructor name</label>
+                  <input
+                    id="feedback-missing-name"
+                    value={feedbackMissingName}
+                    onChange={(e) => setFeedbackMissingName(e.target.value)}
+                    placeholder="Example: Dr. Jane Doe"
+                    className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="feedback-details" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Details</label>
+                <textarea
+                  id="feedback-details"
+                  value={feedbackMessage}
+                  onChange={(e) => setFeedbackMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Tell us what is missing or how we can improve"
+                  className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                />
+              </div>
+
+              {feedbackError && (
+                <div className="rounded-lg border border-red-300/40 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-[13px] text-red-700 dark:text-red-300">
+                  {feedbackError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={feedbackSubmitting}
+                className="w-full rounded-xl bg-[#DC2626] text-white font-bold px-4 py-3 disabled:opacity-60"
+              >
+                {feedbackSubmitting ? 'Submitting...' : 'Submit feedback'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
