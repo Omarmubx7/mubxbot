@@ -367,6 +367,11 @@ export default function Page() {
     return dept.charAt(0).toUpperCase() + dept.slice(1).toLowerCase();
   };
 
+  const shouldShowTeamsButton = (dept) => {
+    const normalized = String(dept || '').trim().toLowerCase();
+    return !normalized.includes('finance');
+  };
+
   const sanitizeInput = (query) => {
     const cleaned = query.replaceAll(/[^a-zA-Z0-9\s@.-]/g, '').trim();
     if (cleaned.length < 2) return null;
@@ -398,6 +403,7 @@ export default function Page() {
       email={data.email}
       department={normalizeDepartment(data.department)}
       office={data.office}
+      showTeamsButton={shouldShowTeamsButton(data.department)}
       emptyStateMessage={emptyStateMessage}
     />
   );
@@ -574,6 +580,7 @@ export default function Page() {
               email={hoursData[0].email}
               department={hoursData[0].department || specificDoctor.department}
               office={hoursData[0].office || specificDoctor.office}
+              showTeamsButton={shouldShowTeamsButton(hoursData[0].department || specificDoctor.department)}
             />,
             timestamp: getCurrentTime(),
             quickReplies: ['Search another', 'By department']
@@ -589,6 +596,7 @@ export default function Page() {
               email={specificDoctor.email}
               department={normalizeDepartment(specificDoctor.department)}
               office={specificDoctor.office}
+              showTeamsButton={shouldShowTeamsButton(specificDoctor.department)}
             />,
             timestamp: getCurrentTime()
           }]);
@@ -933,6 +941,7 @@ export default function Page() {
             email={hoursData[0].email}
             department={hoursData[0].department || doctor.department}
             office={hoursData[0].office || doctor.office}
+            showTeamsButton={shouldShowTeamsButton(hoursData[0].department || doctor.department)}
           />,
           timestamp: getCurrentTime(),
           quickReplies: ['Search another', 'By department']
@@ -948,6 +957,7 @@ export default function Page() {
             email={doctor.email}
             department={normalizeDepartment(doctor.department)}
             office={doctor.office}
+            showTeamsButton={shouldShowTeamsButton(doctor.department)}
           />,
           timestamp: getCurrentTime(),
           quickReplies: ['Search another', 'By department']
