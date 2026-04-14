@@ -6,6 +6,8 @@ import Fuse from "fuse.js";
 import { AnimatePresence, motion } from "framer-motion";
 import MessageBubble from "./MessageBubble.jsx";
 import { useDoctors } from "./Providers.jsx";
+import { ShareButton } from "./ShareButton.jsx";
+import { FeedbackButton } from "./FeedbackButton.jsx";
 
 const HighlightText = ({ text, highlight }) => {
   if (!text) return null;
@@ -209,19 +211,28 @@ export default function ChatWindow() {
           </div>
           <div className="flex flex-col">
             <span className="text-[17px] font-bold leading-tight tracking-tight text-[var(--text-primary)]">MUBXBot</span>
-            <span className="text-[12px] text-[var(--success)] font-bold flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
-              Online
-            </span>
+            <a 
+              href="https://mubx.dev/links" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[12px] text-[var(--primary)] font-bold flex items-center gap-1.5 mt-0.5 hover:opacity-80 transition-opacity"
+              title="Visit Omar Mubaidin's profile"
+            >
+              BY OMAR MUBAIDIN
+            </a>
           </div>
         </div>
-        <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 hover:scale-110 active:scale-90 transition-all border border-black/5 dark:border-white/10">
-          {theme === 'light' ? <Sun size={18} className="text-[var(--text-secondary)]" /> : <Moon size={18} className="text-[#AEAEB2]" />}
-        </button>
+        <div className="flex items-center gap-3">
+          <FeedbackButton />
+          <ShareButton messages={messages} />
+          <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 hover:scale-110 active:scale-90 transition-all border border-black/5 dark:border-white/10">
+            {theme === 'light' ? <Sun size={18} className="text-[var(--text-secondary)]" /> : <Moon size={18} className="text-[#AEAEB2]" />}
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto py-6 no-scrollbar relative chat-scroll" onClick={() => setSuggestions([])}>
-        <div className="max-w-[640px] mx-auto w-full px-4 text-[var(--text-primary)]">
+        <div className="max-w-[640px] mx-auto w-full px-4 text-[var(--text-primary)]" data-chat-container>
           <AnimatePresence mode="popLayout" initial={false}>
             <div className="space-y-6">
               {messages.map((m) => <MessageBubble key={m.id} sender={m.sender} timestamp={m.timestamp}>{m.content}</MessageBubble>)}
@@ -260,10 +271,15 @@ export default function ChatWindow() {
       </AnimatePresence>
 
       <div className="flex items-center gap-3 px-4 py-4 bg-white/40 dark:bg-black/40 backdrop-blur-3xl border-t border-black/5 dark:border-white/10 pb-safe">
-        <button onClick={() => { setMessages([]); setLastDoctor(null); }} className="p-2.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors active:scale-90" title="Reset Chat"><Plus className={`w-6 h-6 ${messages.length > 0 ? "rotate-45 text-red-500" : "text-[var(--primary)]"} transition-transform`} /></button>
+        <button onClick={() => { setMessages([]); }} className="p-2.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors active:scale-90" title="Reset Chat"><Plus className={`w-6 h-6 ${messages.length > 0 ? "rotate-45 text-red-500" : "text-[var(--primary)]"} transition-transform`} /></button>
         <input value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask intelligence..."
           className="flex-1 h-11 px-5 rounded-full bg-black/5 dark:bg-white/10 text-[16px] outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[var(--text-primary)] placeholder-[var(--text-tertiary)]" autoComplete="off" />
         <button onClick={() => handleSend()} disabled={!inputValue.trim()} className={`w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90 ${inputValue.trim() ? 'bg-[var(--primary)] text-white shadow-lg' : 'bg-black/5 dark:bg-white/5 text-gray-400 cursor-not-allowed'}`}><Send size={18} fill={inputValue.trim() ? "currentColor" : "none"} /></button>
+        {messages.length > 1 && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative">
+            <ShareButton messages={messages} />
+          </motion.div>
+        )}
       </div>
     </div>
   );
