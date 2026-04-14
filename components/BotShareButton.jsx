@@ -18,13 +18,13 @@ export function BotShareButton() {
 
   const shareText = async () => {
     try {
-      const text = `MUBXBot - Spring 2026\n\nMUBXBot is an intelligent chatbot that helps students find instructor information at the School of Computing.\n\nFeatures:\n• Search for instructors by name\n• Find office locations\n• Check office hours\n• Browse by department\n• Get contact information\n\nBuilt by Omar Mubaidin\nhttps://mubx.dev/links`;
+      const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
+      const text = `🎓 Stop wasting time searching for professor info!\n\nMeet MUBXBot 🤖 - Your AI assistant for the School of Computing. Instantly find office hours, emails, and locations in seconds.\n\nTry it here: ${targetUrl}`;
 
       if (navigator.share) {
         await navigator.share({
-          title: 'MUBXBot',
+          title: 'MUBXBot - School of Computing',
           text: text,
-          url: typeof window !== 'undefined' ? window.location.href : '',
         });
         showFeedback('Shared successfully!');
       } else {
@@ -41,7 +41,8 @@ export function BotShareButton() {
 
   const copyToClipboard = async () => {
     try {
-      const text = `MUBXBot - Spring 2026\n\nMUBXBot is an intelligent chatbot that helps students find instructor information.\n\nVisit: ${typeof window !== 'undefined' ? window.location.href : 'mubxbot.vercel.app'}`;
+      const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
+      const text = `🎓 Stop wasting time searching for professor info!\n\nMeet MUBXBot 🤖 - Your AI assistant for the School of Computing. Instantly find office hours, emails, and locations in seconds.\n\nTry it here: ${targetUrl}`;
       await navigator.clipboard.writeText(text);
       showFeedback('Copied to clipboard!');
     } catch (error) {
@@ -76,8 +77,8 @@ export function BotShareButton() {
           if (navigator.share && navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
-              title: 'MUBXBot',
-              text: 'Check out MUBXBot - an intelligent chatbot for finding instructor info!',
+              title: 'MUBXBot - School of Computing',
+              text: `🎓 Found this awesome AI bot for the School of Computing! MUBXBot finds professor office hours & emails instantly.\n\nTry it here: ${typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app'}`,
             });
             showFeedback('Screenshot shared!');
           } else {
@@ -108,7 +109,7 @@ export function BotShareButton() {
       {/* Share Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group relative z-10"
         title="Share MUBXBot"
       >
         <Share2 className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D] group-hover:text-[#DC2626] transition-colors" strokeWidth={2} />
@@ -118,13 +119,13 @@ export function BotShareButton() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            initial={{ opacity: 0, scale: 0.9, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            exit={{ opacity: 0, scale: 0.9, y: 8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute bottom-full right-0 mb-3 w-52 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden z-50"
+            className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 z-50 overflow-hidden origin-top-right"
           >
-            <div className="px-4 py-2.5 bg-gradient-to-r from-[#DC2626]/10 to-[#DC2626]/5 dark:from-[#DC2626]/20 dark:to-[#DC2626]/10 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-2.5 bg-linear-to-r from-[#DC2626]/10 to-[#DC2626]/5 dark:from-[#DC2626]/20 dark:to-[#DC2626]/10 border-b border-gray-200 dark:border-gray-700">
               <div className="text-[11px] font-bold uppercase tracking-widest text-[#8E8E93] dark:text-[#98989D]">
                 Share MUBXBot
               </div>

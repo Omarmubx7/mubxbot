@@ -31,9 +31,9 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
   }
 
   return (
-    <div className="bg-linear-to-r from-[#DC2626]/5 to-[#DC2626]/2 dark:from-[#DC2626]/10 dark:to-[#DC2626]/5 border border-[#DC2626]/20 dark:border-[#DC2626]/30 rounded-lg overflow-hidden">
+    <div className="bg-linear-to-r from-[#DC2626]/5 to-[#DC2626]/2 dark:from-[#DC2626]/10 dark:to-[#DC2626]/5 border border-[#DC2626]/20 dark:border-[#DC2626]/30 rounded-xl flex flex-col relative z-0">
       {/* Header with Teams Button */}
-      <div className="p-3.5 sm:p-4 border-b border-[#DC2626]/15 dark:border-[#DC2626]/25 flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 bg-white/40 dark:bg-black/20">
+      <div className="p-3.5 sm:p-4 border-b border-[#DC2626]/15 dark:border-[#DC2626]/25 flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 bg-white/40 dark:bg-black/20 rounded-t-xl">
         <div className="flex-1">
           <h3 className="text-[17px] sm:text-lg font-semibold text-slate-900 dark:text-white wrap-break-word">{faculty}</h3>
           {department && (
@@ -105,7 +105,7 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
       </div>
 
       {showTeamsButton && (
-        <div className="p-4 border-t border-[#DC2626]/15 dark:border-[#DC2626]/25 bg-[#DC2626]/3 dark:bg-[#DC2626]/5">
+        <div className="p-4 border-t border-[#DC2626]/15 dark:border-[#DC2626]/25 bg-[#DC2626]/3 dark:bg-[#DC2626]/5 rounded-b-xl relative z-0">
           <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
             <span className="text-base leading-none">💡</span> Click <strong>Open in Teams</strong> above to search for this faculty member and start a chat.
           </p>

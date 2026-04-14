@@ -19,14 +19,15 @@ export function InstructorShareButton({ faculty, email, department, office, offi
   const shareText = async () => {
     try {
       const hoursText = officeHours.length > 0 
-        ? officeHours.map(h => `${h.day}: ${h.start} - ${h.end}`).join('\n')
+        ? officeHours.map(h => `• ${h.day}: ${h.start} - ${h.end}`).join('\n')
         : 'No office hours available';
 
-      const text = `${faculty} - ${department}\nOffice: ${office || 'TBD'}\nEmail: ${email}\n\nOffice Hours:\n${hoursText}`;
+      const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
+      const text = `🎓 Here is the info for ${faculty}:\n\n🏫 Department: ${department || 'School of Computing'}\n📍 Office: ${office || 'TBD'}\n✉️ Email: ${email}\n\n🕒 Office Hours:\n${hoursText}\n\n---\n🤖 Found instantly using MUBXBot! Find any professor's info right here: ${targetUrl}`;
 
       if (navigator.share) {
         await navigator.share({
-          title: `${faculty} - MUBXBot`,
+          title: `${faculty} - MUBXBot Info`,
           text: text,
         });
         showFeedback('Shared successfully!');
@@ -45,10 +46,11 @@ export function InstructorShareButton({ faculty, email, department, office, offi
   const copyToClipboard = async () => {
     try {
       const hoursText = officeHours.length > 0 
-        ? officeHours.map(h => `${h.day}: ${h.start} - ${h.end}`).join('\n')
+        ? officeHours.map(h => `• ${h.day}: ${h.start} - ${h.end}`).join('\n')
         : 'No office hours available';
 
-      const text = `${faculty} - ${department}\nOffice: ${office || 'TBD'}\nEmail: ${email}\n\nOffice Hours:\n${hoursText}`;
+      const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
+      const text = `🎓 Here is the info for ${faculty}:\n\n🏫 Department: ${department || 'School of Computing'}\n📍 Office: ${office || 'TBD'}\n✉️ Email: ${email}\n\n🕒 Office Hours:\n${hoursText}\n\n---\n🤖 Found instantly using MUBXBot! Find any professor's info right here: ${targetUrl}`;
       
       await navigator.clipboard.writeText(text);
       showFeedback('Copied to clipboard!');
@@ -82,10 +84,11 @@ export function InstructorShareButton({ faculty, email, department, office, offi
           const file = new File([blob], `${faculty}-info.png`, { type: 'image/png' });
 
           if (navigator.share && navigator.canShare({ files: [file] })) {
+            const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
             await navigator.share({
               files: [file],
               title: `${faculty} - MUBXBot`,
-              text: `Check out ${faculty}'s info on MUBXBot!`,
+              text: `🎓 Found ${faculty}'s schedule using MUBXBot! Fast directory for School of Computing.\n\nTry it here: ${targetUrl}`,
             });
             showFeedback('Screenshot shared!');
           } else {
@@ -116,7 +119,7 @@ export function InstructorShareButton({ faculty, email, department, office, offi
       {/* Share Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full sm:w-auto flex items-center justify-center text-[#DC2626] dark:text-[#EF4444] hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 p-2.5 sm:p-2 rounded-lg border border-[#DC2626]/30 dark:border-[#DC2626]/40 transition-colors min-h-11 sm:min-h-0 aspect-square"
+        className="w-full sm:w-auto flex items-center justify-center text-[#DC2626] dark:text-[#EF4444] hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 p-2.5 sm:p-2 rounded-lg border border-[#DC2626]/30 dark:border-[#DC2626]/40 transition-colors min-h-11 sm:min-h-0 aspect-square relative z-10"
         title="Share instructor info"
       >
         <Share2 className="w-4 h-4" />
@@ -126,11 +129,11 @@ export function InstructorShareButton({ faculty, email, department, office, offi
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            initial={{ opacity: 0, scale: 0.9, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            exit={{ opacity: 0, scale: 0.9, y: 8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute bottom-full right-0 mb-3 w-48 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden z-50"
+            className="absolute top-full right-0 mt-3 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 z-50 overflow-hidden origin-top-right"
           >
             <div className="p-2 space-y-1">
               <button
