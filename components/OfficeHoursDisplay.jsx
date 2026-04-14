@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { TeamsButton } from './TeamsButton';
+import { InstructorShareButton } from './InstructorShareButton';
 import { MapPin, Clock, Calendar, Mail } from 'lucide-react';
 
 /**
@@ -54,8 +55,11 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
           )}
         </div>
         {showTeamsButton && (
-          <div className="w-full sm:w-auto mt-2 sm:mt-0">
-            <TeamsButton email={email} facultyName={faculty} />
+          <div className="w-full sm:w-auto mt-2 sm:mt-0 flex gap-2">
+            <div className="flex-1 sm:flex-none">
+              <TeamsButton email={email} facultyName={faculty} />
+            </div>
+            <InstructorShareButton faculty={faculty} email={email} department={department} office={office} officeHours={officeHours} />
           </div>
         )}
       </div>

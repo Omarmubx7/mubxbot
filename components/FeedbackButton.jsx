@@ -52,17 +52,15 @@ export function FeedbackButton() {
   };
 
   return (
-    <div className="relative">
+    <>
       {/* Feedback Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2.5 sm:p-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group"
         title="Send feedback"
       >
-        <MessageSquare size={20} strokeWidth={2} />
-      </motion.button>
+        <MessageSquare className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D] group-hover:text-orange-500 transition-colors" strokeWidth={2} />
+      </button>
 
       {/* Feedback Modal */}
       <AnimatePresence>
@@ -203,7 +201,7 @@ export function FeedbackButton() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
 
