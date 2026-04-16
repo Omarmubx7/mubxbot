@@ -155,7 +155,12 @@ export async function GET(req) {
   try {
     const dbRows = await tryReadFromDb(category, limit);
     if (dbRows) {
-      return NextResponse.json({ rows: dbRows, count: dbRows.length });
+      return NextResponse.json({
+        rows: dbRows,
+        count: dbRows.length,
+        fetchedAt: new Date().toISOString(),
+        source: DATABASE_URL ? 'database' : 'file'
+      });
     }
 
     const rows = applyFilters(await readFileRows(), category)
@@ -166,7 +171,12 @@ export async function GET(req) {
       })
       .slice(0, limit);
 
-    return NextResponse.json({ rows, count: rows.length });
+    return NextResponse.json({
+      rows,
+      count: rows.length,
+      fetchedAt: new Date().toISOString(),
+      source: 'file'
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to load feedback', details: error.message },

@@ -1,8 +1,7 @@
 "use client";
 
-/* eslint-disable react/prop-types, jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Download } from 'lucide-react';
 import { AdminHeader } from '../../../components/AdminHeader.jsx';
 import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
@@ -76,6 +75,12 @@ function SparkBars({ rows = [], keys = [], colors = [] }) {
     </div>
   );
 }
+
+SparkBars.propTypes = {
+  rows: PropTypes.array,
+  keys: PropTypes.array,
+  colors: PropTypes.array
+};
 
 function formatHourLabel(hour) {
   const h = Number(hour || 0);
@@ -157,6 +162,11 @@ function UsageHeatmap({ rows = [], summary = null }) {
   );
 }
 
+UsageHeatmap.propTypes = {
+  rows: PropTypes.array,
+  summary: PropTypes.object
+};
+
 function KpiCard({ title, value, subtitle, delta }) {
   let tone = 'text-[var(--text-tertiary)]';
   if (delta != null) {
@@ -174,6 +184,13 @@ function KpiCard({ title, value, subtitle, delta }) {
     </div>
   );
 }
+
+KpiCard.propTypes = {
+  title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.node]),
+  subtitle: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  delta: PropTypes.number
+};
 
 function Table({ columns, rows, empty = 'No data available' }) {
   return (
@@ -207,6 +224,12 @@ function Table({ columns, rows, empty = 'No data available' }) {
   );
 }
 
+Table.propTypes = {
+  columns: PropTypes.array,
+  rows: PropTypes.array,
+  empty: PropTypes.string
+};
+
 export default function AdminAnalyticsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [preset, setPreset] = useState('last7');
@@ -214,6 +237,15 @@ export default function AdminAnalyticsPage() {
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [conversationFilters, setConversationFilters] = useState({
+    userId: '',
+    conversationId: '',
+    status: '',
+    feedback: '',
+    intent: '',
+    escalation: '',
+    department: ''
+  });
 
   const [overview, setOverview] = useState(null);
   const [conversations, setConversations] = useState({ rows: [], total: 0 });
@@ -265,29 +297,42 @@ export default function AdminAnalyticsPage() {
     return params.toString();
   }, [preset, from, to]);
 
-  const fetchTabData = useCallback(async ({ silent = false, withDetail = true } = {}) => {
+  const selectedRangeLabel = useMemo(() => {
+    if (preset === 'custom') return 'Custom range';
+    const selected = PRESETS.find((item) => item.value === preset);
+    return selected?.label || 'Selected range';
+  }, [preset]);
+
+  const conversationQueryString = useMemo(() => {
+    const params = new URLSearchParams(queryString);
+    if (conversationFilters.userId.trim()) params.set('userId', conversationFilters.userId.trim());
+    if (conversationFilters.conversationId.trim()) params.set('conversationId', conversationFilters.conversationId.trim());
+    if (conversationFilters.status.trim()) params.set('status', conversationFilters.status.trim());
+    if (conversationFilters.feedback.trim()) params.set('feedback', conversationFilters.feedback.trim());
+    if (conversationFilters.intent.trim()) params.set('intent', conversationFilters.intent.trim());
+    if (conversationFilters.escalation.trim()) params.set('escalation', conversationFilters.escalation.trim());
+    if (conversationFilters.department.trim()) params.set('department', conversationFilters.department.trim());
+    return params.toString();
+  }, [conversationFilters, queryString]);
+
+  const requestQueryString = activeTab === 'conversations' ? conversationQueryString : queryString;
+
+  const fetchTabData = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     setError('');
     try {
       const config = tabRequestConfig[activeTab];
       if (config) {
-        const res = await fetch(`${config.path}?${queryString}${config.extra}`, { cache: 'no-store' });
+        const res = await fetch(`${config.path}?${requestQueryString}${config.extra}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(config.errorMessage);
         config.assign(await res.json());
-      }
-
-      if (withDetail && selectedConversation?.conversation?.id) {
-        const res = await fetch(`/api/admin/analytics/conversations/${selectedConversation.conversation.id}`, { cache: 'no-store' });
-        if (res.ok) {
-          setSelectedConversation(await res.json());
-        }
       }
     } catch (e) {
       setError(e.message || 'Failed to load analytics data');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [activeTab, queryString, selectedConversation?.conversation?.id, tabRequestConfig]);
+  }, [activeTab, requestQueryString, tabRequestConfig]);
 
   const {
     autoSyncEnabled,
@@ -298,12 +343,11 @@ export default function AdminAnalyticsPage() {
     lastSyncedAt,
     syncing,
     performSync
-  } = useAutoSync(async () => await fetchTabData({ silent: true, withDetail: true }), 15);
+  } = useAutoSync(async () => await fetchTabData({ silent: true }), 15);
 
   useEffect(() => {
     fetchTabData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchTabData]);
 
   const loadConversationDetail = async (id) => {
     try {
@@ -313,6 +357,62 @@ export default function AdminAnalyticsPage() {
     } catch (e) {
       setError(e.message || 'Failed to load conversation detail');
     }
+  };
+
+  const conversationSummary = useMemo(() => {
+    const rows = Array.isArray(conversations.rows) ? conversations.rows : [];
+    const counts = rows.reduce((acc, row) => {
+      const status = String(row?.status || '').toLowerCase();
+      const feedbackState = String(row?.feedback_state || '').toLowerCase();
+      const escalationState = String(row?.escalation_state || '').toLowerCase();
+
+      if (status === 'live') acc.live += 1;
+      else if (status === 'resolved') acc.resolved += 1;
+      else if (status === 'needs_review') acc.needsReview += 1;
+
+      if (feedbackState === 'reviewed') acc.reviewed += 1;
+      if (escalationState === 'escalated') acc.escalated += 1;
+      return acc;
+    }, { live: 0, resolved: 0, needsReview: 0, reviewed: 0, escalated: 0 });
+
+    return counts;
+  }, [conversations.rows]);
+
+  const dataAgeSeconds = lastSyncedAt ? Math.max(0, Math.floor((Date.now() - lastSyncedAt.getTime()) / 1000)) : null;
+  const isStale = dataAgeSeconds != null && dataAgeSeconds > Math.max(30, syncIntervalSec * 2);
+  let freshnessLabel = 'Waiting for stream';
+  if (lastSyncedAt) {
+    freshnessLabel = formatTimeOnly(lastSyncedAt);
+    if (isStale) {
+      freshnessLabel += ' · stale';
+    }
+  }
+
+  const resetConversationFilters = () => {
+    setConversationFilters({
+      userId: '',
+      conversationId: '',
+      status: '',
+      feedback: '',
+      intent: '',
+      escalation: '',
+      department: ''
+    });
+  };
+
+  const conversationRows = Array.isArray(conversations.rows) ? conversations.rows : [];
+  const isConversationDetailOpen = Boolean(selectedConversation?.conversation?.id);
+
+  const updateConversationFilter = (key, value) => {
+    setConversationFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const statePillClass = (state) => {
+    const normalized = String(state || '').toLowerCase();
+    if (normalized === 'live' || normalized === 'positive') return 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]';
+    if (normalized === 'resolved' || normalized === 'reviewed') return 'bg-[#DBEAFE] text-[#1D4ED8] border-[#BFDBFE]';
+    if (normalized === 'needs_review' || normalized === 'escalated') return 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]';
+    return 'bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] border-black/10 dark:border-white/10';
   };
 
   return (
@@ -414,8 +514,13 @@ export default function AdminAnalyticsPage() {
                   onRefresh={performSync}
                 />
               </div>
-              <div className="text-[12px] text-[var(--text-secondary)] mt-4 font-medium">
-                All charts and tables respect this date range. Your changes apply immediately.
+              <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Live polling only</span>
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Historical query: {selectedRangeLabel}</span>
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Freshness required on every widget</span>
+              </div>
+              <div className="text-[12px] text-[var(--text-secondary)] mt-3 font-medium">
+                All charts and tables respect this date range. If data is delayed or missing, the UI must show that state instead of guessing.
               </div>
             </div>
 
@@ -470,20 +575,181 @@ export default function AdminAnalyticsPage() {
 
             {!loading && activeTab === 'conversations' && (
               <div className="space-y-4">
-                <div className="text-[13px] font-medium text-[var(--text-secondary)]">Total conversations: {conversations.total || 0}</div>
-                <Table
-                  columns={[
-                    { key: 'id', label: 'Conversation ID', render: (v, row) => <button className="underline text-[#DC2626]" onClick={() => loadConversationDetail(row.id)}>{v}</button> },
-                    { key: 'user_id', label: 'User ID' },
-                    { key: 'started_at', label: 'Started', render: (v) => formatDateTime(v) },
-                    { key: 'duration_seconds', label: 'Duration (s)' },
-                    { key: 'message_count', label: 'Messages' },
-                    { key: 'has_smart_search', label: 'Smart Search' },
-                    { key: 'has_error', label: 'Has Error' },
-                    { key: 'success', label: 'Success' }
-                  ]}
-                  rows={conversations.rows || []}
-                />
+                <section className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-black tracking-tight text-[var(--text-primary)]">Conversations</h2>
+                      <p className="text-[13px] text-[var(--text-secondary)]">
+                        One row per stored conversation. Session, intent, feedback, and transcript detail are read only from persisted backend records.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={`/api/admin/analytics/export/conversations?${conversationQueryString}`}
+                        className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 transition-all"
+                      >
+                        <Download size={14} /> Export CSV
+                      </a>
+                      <button
+                        type="button"
+                        onClick={resetConversationFilters}
+                        className="rounded-xl border border-black/10 dark:border-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+                    <KpiCard title="Live sessions" value={conversationSummary.live} subtitle="Rows with active backend conversations" />
+                    <KpiCard title="Resolved" value={conversationSummary.resolved} subtitle="Ended with success=true" />
+                    <KpiCard title="Needs review" value={conversationSummary.needsReview} subtitle="Ended with has_error=true" />
+                    <KpiCard title="Reviewed feedback" value={conversationSummary.reviewed} subtitle="Linked user feedback exists" />
+                    <KpiCard title="Escalated" value={conversationSummary.escalated} subtitle="Backend error or error events present" />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <div>
+                      <label htmlFor="conversation-filter-user" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">User ID</label>
+                      <input
+                        id="conversation-filter-user"
+                        value={conversationFilters.userId}
+                        onChange={(e) => updateConversationFilter('userId', e.target.value)}
+                        placeholder="Filter by stored user id"
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-session" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Session ID</label>
+                      <input
+                        id="conversation-filter-session"
+                        value={conversationFilters.conversationId}
+                        onChange={(e) => updateConversationFilter('conversationId', e.target.value)}
+                        placeholder="Filter by conversation/session id"
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-status" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Status</label>
+                      <select
+                        id="conversation-filter-status"
+                        value={conversationFilters.status}
+                        onChange={(e) => updateConversationFilter('status', e.target.value)}
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      >
+                        <option value="">All statuses</option>
+                        <option value="live">Live</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="needs_review">Needs review</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-feedback" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Feedback</label>
+                      <select
+                        id="conversation-filter-feedback"
+                        value={conversationFilters.feedback}
+                        onChange={(e) => updateConversationFilter('feedback', e.target.value)}
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      >
+                        <option value="">All feedback states</option>
+                        <option value="none">No feedback</option>
+                        <option value="positive">Positive</option>
+                        <option value="reviewed">Reviewed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-intent" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Intent</label>
+                      <select
+                        id="conversation-filter-intent"
+                        value={conversationFilters.intent}
+                        onChange={(e) => updateConversationFilter('intent', e.target.value)}
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      >
+                        <option value="">All intents</option>
+                        <option value="general">General</option>
+                        <option value="smart">Smart</option>
+                        <option value="error">Error</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-escalation" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Escalation</label>
+                      <select
+                        id="conversation-filter-escalation"
+                        value={conversationFilters.escalation}
+                        onChange={(e) => updateConversationFilter('escalation', e.target.value)}
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-transparent px-3 py-2.5 text-[13px] font-bold outline-none"
+                      >
+                        <option value="">All escalation states</option>
+                        <option value="normal">Normal</option>
+                        <option value="escalated">Escalated</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="conversation-filter-department" className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Department</label>
+                      <input
+                        id="conversation-filter-department"
+                        value={conversationFilters.department}
+                        onChange={(e) => updateConversationFilter('department', e.target.value)}
+                        placeholder="Not yet stored in analytics"
+                        className="mt-1 w-full rounded-xl bg-black/5 dark:bg-white/10 border border-dashed border-black/10 dark:border-white/10 px-3 py-2.5 text-[13px] font-bold outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Source: conversations, messages, feedback_events, user_feedback</span>
+                    <span className={`rounded-full border px-3 py-1 ${isStale ? 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]' : 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]'}`}>
+                      {isStale ? 'Stale' : 'Live'} · {freshnessLabel}
+                    </span>
+                    <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Backend total: {conversations.total || 0}</span>
+                    <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">
+                      {conversations.fetchedAt ? `Fetched ${formatDateTime(conversations.fetchedAt)}` : 'No live data'}
+                    </span>
+                  </div>
+                </section>
+
+                {conversations.warning && (
+                  <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] text-[#991B1B] px-4 py-3 text-[13px]">
+                    {conversations.warning}
+                  </div>
+                )}
+
+                {!conversations.warning && conversationRows.length === 0 && (
+                  <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 p-6 text-[13px] text-[var(--text-secondary)]">
+                    No live data or no conversations matched the selected filters. Waiting for stream or backend query results.
+                  </div>
+                )}
+
+                {conversationRows.length > 0 && (
+                  <Table
+                    columns={[
+                      {
+                        key: 'session_id',
+                        label: 'Session ID',
+                        render: (v, row) => <button className="underline text-[#DC2626] font-bold" onClick={() => loadConversationDetail(row.id)}>{v || row.id}</button>
+                      },
+                      { key: 'user_id', label: 'User ID' },
+                      { key: 'first_message_at', label: 'First Message', render: (v) => formatDateTime(v) },
+                      { key: 'last_activity_at', label: 'Last Activity', render: (v) => formatDateTime(v) },
+                      { key: 'message_count', label: 'Messages' },
+                      { key: 'detected_intent', label: 'Detected Intent', render: (v) => String(v || 'unknown') },
+                      { key: 'status', label: 'Status', render: (v) => <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${statePillClass(v)}`}>{String(v || 'unknown')}</span> },
+                      { key: 'feedback_state', label: 'Feedback', render: (v) => <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${statePillClass(v)}`}>{String(v || 'none')}</span> },
+                      { key: 'escalation_state', label: 'Escalation', render: (v) => <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${statePillClass(v)}`}>{String(v || 'normal')}</span> },
+                      { key: 'id', label: 'Transcript', render: (v, row) => <button className="rounded-lg bg-black/5 dark:bg-white/10 px-3 py-2 text-[12px] font-bold text-[var(--text-primary)]" onClick={() => loadConversationDetail(row.id)}>Open</button> }
+                    ]}
+                    rows={conversationRows}
+                    empty="No live data"
+                  />
+                )}
               </div>
             )}
 
@@ -606,25 +872,65 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {selectedConversation && (
-        <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm p-4 sm:p-8 overflow-y-auto" onClick={() => setSelectedConversation(null)}>
-          <div className="max-w-4xl mx-auto rounded-3xl bg-white dark:bg-[#171717] border border-black/10 dark:border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      {isConversationDetailOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm p-4 sm:p-8 overflow-y-auto">
+          <button
+            type="button"
+            aria-label="Close transcript dialog"
+            className="absolute inset-0 cursor-default bg-transparent"
+            onClick={() => setSelectedConversation(null)}
+          />
+          <dialog open className="relative max-w-4xl mx-auto rounded-3xl bg-white dark:bg-[#171717] border border-black/10 dark:border-white/10 shadow-2xl w-full p-0">
             <div className="px-5 py-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
               <div>
-                <div className="text-[11px] uppercase font-bold tracking-widest text-[var(--text-tertiary)]">Conversation Detail</div>
+                <div className="text-[11px] uppercase font-bold tracking-widest text-[var(--text-tertiary)]">Transcript drill-down</div>
                 <div className="text-[14px] font-bold text-[var(--text-primary)]">{selectedConversation.conversation?.id || 'Unknown'}</div>
               </div>
               <button className="text-[13px] font-bold text-[#DC2626]" onClick={() => setSelectedConversation(null)}>Close</button>
             </div>
+
             <div className="p-5 space-y-4">
-              <div className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Messages</div>
-              <div className="space-y-2 max-h-[40dvh] overflow-y-auto">
-                {(selectedConversation.messages || []).map((m) => (
-                  <div key={m.id} className={cn('rounded-xl px-3 py-2 text-[13px] border', m.sender === 'user' ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100')}>
-                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">{m.sender} • {formatTimeOnly(m.created_at)}</div>
-                    <div className="mt-1 whitespace-pre-wrap font-medium">{m.text}</div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Session ID</div>
+                  <div className="mt-1 text-[13px] font-bold text-[var(--text-primary)] break-all">{selectedConversation.conversation?.session_id || selectedConversation.conversation?.id || 'Unknown'}</div>
+                </div>
+                <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">User ID</div>
+                  <div className="mt-1 text-[13px] font-bold text-[var(--text-primary)] break-all">{selectedConversation.conversation?.user_id || 'No live data'}</div>
+                </div>
+                <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Status</div>
+                  <div className="mt-1 text-[13px] font-bold text-[var(--text-primary)]">{selectedConversation.conversation?.status || 'unknown'}</div>
+                </div>
+                <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Freshness</div>
+                  <div className="mt-1 text-[13px] font-bold text-[var(--text-primary)]">{freshnessLabel}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-[13px] text-[var(--text-secondary)]">
+                <div>First message: <span className="font-bold text-[var(--text-primary)]">{formatDateTime(selectedConversation.conversation?.first_message_at)}</span></div>
+                <div>Last activity: <span className="font-bold text-[var(--text-primary)]">{formatDateTime(selectedConversation.conversation?.last_activity_at)}</span></div>
+                <div>Detected intent: <span className="font-bold text-[var(--text-primary)]">{selectedConversation.conversation?.detected_intent || 'unknown'}</span></div>
+                <div>Feedback state: <span className="font-bold text-[var(--text-primary)]">{selectedConversation.conversation?.feedback_state || 'none'}</span></div>
+              </div>
+
+              <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/10 p-4 space-y-2">
+                <div className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Exact transcript</div>
+                <div className="space-y-2 max-h-[40dvh] overflow-y-auto">
+                  {(selectedConversation.messages || []).map((m) => (
+                    <div key={m.id} className={cn('rounded-xl px-3 py-2 text-[13px] border', m.sender === 'user' ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100')}>
+                      <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">{m.sender} • {formatDateTime(m.created_at)}</div>
+                      <div className="mt-1 whitespace-pre-wrap font-medium">{m.text}</div>
+                    </div>
+                  ))}
+                  {(selectedConversation.messages || []).length === 0 && (
+                    <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 text-[13px] text-[var(--text-secondary)]">
+                      No live data for this transcript.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -648,8 +954,19 @@ export default function AdminAnalyticsPage() {
                   empty="No errors"
                 />
               </div>
+
+              <Table
+                columns={[
+                  { key: 'category', label: 'Feedback Category' },
+                  { key: 'message', label: 'Message' },
+                  { key: 'request_label', label: 'Request Label' },
+                  { key: 'created_at', label: 'Created', render: (v) => formatDateTime(v) }
+                ]}
+                rows={selectedConversation.feedbackEvents || []}
+                empty="No feedback events"
+              />
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </div>

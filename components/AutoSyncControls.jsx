@@ -72,6 +72,18 @@ export function AutoSyncControls({
   syncing = false,
   onRefresh
 }) {
+  let lastSyncLabel = 'Waiting for stream';
+  if (lastSyncedAt) {
+    lastSyncLabel = lastSyncedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+  }
+
+  let statusLabel = 'Live sync paused.';
+  if (syncing) {
+    statusLabel = 'Refreshing live backend data...';
+  } else if (autoSyncEnabled) {
+    statusLabel = `Polling every ${syncIntervalSec}s.`;
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 glass-card rounded-[24px] sm:rounded-[28px] border-black/[0.03] dark:border-white/[0.05] p-2 sm:p-3 shadow-sm">
       <button 
@@ -107,12 +119,10 @@ export function AutoSyncControls({
         </select>
       </div>
       
-      <div className="text-[12px] font-medium text-[var(--text-secondary)] sm:ml-auto px-2 text-center sm:text-right">
-        {syncing && 'Syncing now...'}
-        {!syncing && autoSyncEnabled && `Next sync in ${syncCountdown}s.`}
-        {!syncing && !autoSyncEnabled && 'Live sync paused.'}
-        {lastSyncedAt ? <br className="sm:hidden" /> : ''}
-        {lastSyncedAt ? ` Last: ${lastSyncedAt.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true})}` : ''}
+      <div className="sm:ml-auto px-2 text-center sm:text-right space-y-0.5">
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Backend data only</div>
+        <div className="text-[12px] font-medium text-[var(--text-secondary)]">{statusLabel}</div>
+        <div className="text-[11px] font-medium text-[var(--text-tertiary)]">Last successful sync: {lastSyncLabel}{!syncing && autoSyncEnabled ? ` · Next sync in ${syncCountdown}s` : ''}</div>
       </div>
     </div>
   );

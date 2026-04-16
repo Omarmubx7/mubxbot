@@ -36,7 +36,9 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
               <div className="text-[13px] font-medium text-[var(--text-tertiary)] flex flex-wrap gap-2 items-center">
                 <span className="bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-md border border-black/5 dark:border-white/5">v2.0</span>
                 <span className="hidden sm:inline text-black/20 dark:text-white/20">•</span>
-                <span>System Management</span>
+                <span>Operations Console</span>
+                <span className="hidden sm:inline text-black/20 dark:text-white/20">•</span>
+                <span>Real backend data only</span>
               </div>
             </div>
           </div>
@@ -76,6 +78,9 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
         >
           User Feedback
         </Link>
+        <div className="whitespace-nowrap rounded-xl border border-dashed border-black/10 dark:border-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-tertiary)] bg-white/30 dark:bg-black/10">
+          No placeholder analytics
+        </div>
       </div>
     </>
   );

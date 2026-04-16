@@ -124,6 +124,12 @@ export default function AdminStaticResponsesPage() {
     }
   };
 
+  const totals = {
+    total: rows.length,
+    active: rows.filter((row) => row.is_active !== false).length,
+    inactive: rows.filter((row) => row.is_active === false).length
+  };
+
   return (
     <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
@@ -142,8 +148,15 @@ export default function AdminStaticResponsesPage() {
         <div className="flex items-center justify-between gap-4 mb-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Response Templates</h2>
-            <p className="text-sm mt-1 text-[var(--text-secondary)]">Manage fixed bot replies for exact trigger phrases.</p>
+            <p className="text-sm mt-1 text-[var(--text-secondary)]">Master data only. These are exact-match response rules, not analytics or live conversation data.</p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+          <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Source: bot_static_responses</span>
+          <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Rows: {totals.total}</span>
+          <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Active: {totals.active}</span>
+          <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Inactive: {totals.inactive}</span>
         </div>
 
         {error && <div className="rounded-xl border border-red-300/40 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
@@ -218,10 +231,10 @@ export default function AdminStaticResponsesPage() {
             />
           </div>
           {loading && (
-            <div className="text-sm text-[var(--text-secondary)]">Loading...</div>
+              <div className="text-sm text-[var(--text-secondary)]">Waiting for backend rows...</div>
           )}
           {!loading && rows.length === 0 && (
-            <div className="text-sm text-[var(--text-secondary)]">No static responses yet.</div>
+              <div className="rounded-xl border border-black/10 dark:border-white/10 p-6 text-sm text-[var(--text-secondary)]">No live data for static response rules.</div>
           )}
           {!loading && rows.length > 0 && (
             <div className="space-y-3">
