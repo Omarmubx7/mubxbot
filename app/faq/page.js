@@ -4,38 +4,38 @@ const SITE_URL = 'https://bot.mubx.dev';
 
 export const metadata = {
   title: 'FAQ',
-  description: 'Frequently asked questions about MUBXBot, including how to find instructor emails, office hours, departments, and office locations.',
+  description: 'Frequently asked questions about MUBXBot for HTU faculty search, including instructor email lookup, office hours, department search, and office locations.',
   alternates: {
     canonical: '/faq'
   },
   openGraph: {
     title: 'MUBXBot FAQ | HTU School of Computing',
-    description: 'Answers to common MUBXBot questions about faculty details, office hours, and department lookup.',
+    description: 'Answers to common MUBXBot questions about instructor email lookup, office hours, office locations, and department search at HTU.',
     url: `${SITE_URL}/faq`,
     type: 'article'
   },
   twitter: {
     card: 'summary_large_image',
     title: 'MUBXBot FAQ | HTU School of Computing',
-    description: 'Answers to common MUBXBot questions about faculty details, office hours, and department lookup.'
+    description: 'Answers to common MUBXBot questions about instructor email lookup, office hours, office locations, and department search at HTU.'
   }
 };
 
 const FAQ_ITEMS = [
   {
-    question: 'How do I find an instructor email?',
+    question: 'How do I find an HTU instructor email?',
     answer: 'Type what followed by the instructor name. Example: what Dr. Ahmed.'
   },
   {
-    question: 'How do I check office hours?',
+    question: 'How do I check HTU office hours?',
     answer: 'Type when followed by the instructor name. Example: when Dr. Smith.'
   },
   {
-    question: 'How do I find office location?',
+    question: 'How do I find a professor office location?',
     answer: 'Type where followed by the instructor name. Example: where Professor Johnson.'
   },
   {
-    question: 'Can I search by department?',
+    question: 'Can I search HTU faculty by department?',
     answer: 'Yes. Ask by department and MUBXBot returns matching instructors in that department.'
   },
   {
@@ -68,7 +68,7 @@ export default function FAQPage() {
       <div className="mx-auto w-full max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
         <h1 className="text-3xl font-black tracking-tight sm:text-4xl">MUBXBot FAQ</h1>
         <p className="mt-3 text-[15px] leading-7 text-black/70 dark:text-white/70">
-          Quick answers to common questions about using MUBXBot to find instructor details at HTU School of Computing and Informatics.
+          Quick answers to common questions about using MUBXBot for HTU faculty search, including instructor email lookup, office hour checks, and office location lookup.
         </p>
 
         <div className="mt-8 space-y-4">

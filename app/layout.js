@@ -16,7 +16,7 @@ const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
 const SITE_URL = "https://bot.mubx.dev";
 const SITE_NAME = "MUBXBot";
 const SITE_TITLE = "MUBXBot | HTU School of Computing";
-const SITE_DESCRIPTION = "MUBXBot is the official assistant for the HTU School of Computing and Informatics.";
+const SITE_DESCRIPTION = "MUBXBot is the official HTU School of Computing and Informatics assistant for instructor email lookup, office hours, office locations, and department search.";
 const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined;
 const BING_SITE_VERIFICATION = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || undefined;
 
@@ -44,7 +44,8 @@ const structuredData = {
       "@id": `${SITE_URL}/#org`,
       name: "HTU School of Computing and Informatics",
       url: SITE_URL,
-      logo: `${SITE_URL}/logo.png`
+      logo: `${SITE_URL}/logo.png`,
+      areaServed: "Jordan"
     },
     {
       "@type": "SoftwareApplication",
@@ -54,6 +55,12 @@ const structuredData = {
       operatingSystem: "Web",
       url: SITE_URL,
       description: SITE_DESCRIPTION,
+      featureList: [
+        "Find instructor emails",
+        "Check office hours",
+        "Find office locations",
+        "Search by department"
+      ],
       provider: {
         "@id": `${SITE_URL}/#org`
       }
@@ -74,9 +81,15 @@ export const metadata = {
     "MUBXBot",
     "HTU",
     "School of Computing and Informatics",
+    "Hashemite University of Technology",
+    "Jordan faculty search",
     "faculty assistant",
+    "faculty directory chatbot",
     "office hours",
-    "instructor contact"
+    "instructor contact",
+    "instructor email",
+    "professor office location",
+    "department lookup"
   ],
   authors: [{ name: "Omar Mubaidin" }],
   creator: "Omar Mubaidin",
@@ -116,7 +129,7 @@ export const metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: SITE_NAME,
-    locale: "en_US",
+    locale: "en_JO",
     images: [
       {
         url: OG_IMAGE_URL,

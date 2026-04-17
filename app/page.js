@@ -93,20 +93,20 @@ const SITE_URL = 'https://bot.mubx.dev';
 
 const FAQ_ITEMS = [
   {
-    question: 'How can I find an instructor email on MUBXBot?',
-    answer: 'Type what followed by the instructor name, and MUBXBot will return the available contact details including email when present.'
+    question: 'How do I find an HTU instructor email with MUBXBot?',
+    answer: 'Type what followed by the instructor name. MUBXBot returns available contact details including instructor email when present.'
   },
   {
-    question: 'How can I check office hours for an instructor?',
-    answer: 'Type when followed by the instructor name to see office hour availability and schedule details.'
+    question: 'How do I check HTU office hours for a professor?',
+    answer: 'Type when followed by the instructor name to view office hour availability and schedule details.'
   },
   {
-    question: 'How can I find an instructor office location?',
-    answer: 'Type where followed by the instructor name to get the office location and code when available.'
+    question: 'How do I find a professor office location at HTU?',
+    answer: 'Type where followed by the instructor name to get office location and office code when available.'
   },
   {
-    question: 'Can I search by department?',
-    answer: 'Yes. You can ask by department and MUBXBot will show matching instructors from that department.'
+    question: 'Can I search HTU faculty by department?',
+    answer: 'Yes. Ask by department and MUBXBot returns matching instructors from that department.'
   }
 ];
 
@@ -167,7 +167,7 @@ export default function Page() {
         '@id': `${SITE_URL}/#webpage`,
         url: SITE_URL,
         name: 'MUBXBot | HTU School of Computing',
-        description: 'Official HTU School of Computing and Informatics assistant for faculty contacts, office locations, and office hours.',
+        description: 'Official HTU School of Computing and Informatics assistant for instructor email lookup, office locations, and office hours.',
         isPartOf: {
           '@id': `${SITE_URL}/#website`
         },
