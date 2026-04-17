@@ -134,6 +134,9 @@ export default function Page() {
           <div className="text-[13px] opacity-80 pt-1">
             💡 <span className="font-medium">Quick tip:</span> Use <strong>what</strong> for email, <strong>when</strong> for office hours, <strong>where</strong> for office code, or just type an instructor's name.
           </div>
+          <div className="text-[12px] opacity-70">
+            Learn more: <a href="/faq" className="underline decoration-current/30 hover:decoration-current">MUBXBot FAQ</a>
+          </div>
         </div>
       ),
       timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),

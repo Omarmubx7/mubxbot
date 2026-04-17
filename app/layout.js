@@ -17,6 +17,8 @@ const SITE_URL = "https://bot.mubx.dev";
 const SITE_NAME = "MUBXBot";
 const SITE_TITLE = "MUBXBot | HTU School of Computing";
 const SITE_DESCRIPTION = "MUBXBot is the official assistant for the HTU School of Computing and Informatics.";
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined;
+const BING_SITE_VERIFICATION = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || undefined;
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -92,6 +94,10 @@ export const metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }]
   },
   manifest: "/site.webmanifest",
+  verification: {
+    google: GOOGLE_SITE_VERIFICATION,
+    other: BING_SITE_VERIFICATION ? { "msvalidate.01": BING_SITE_VERIFICATION } : undefined
+  },
   robots: {
     index: true,
     follow: true,

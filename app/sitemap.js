@@ -10,6 +10,11 @@ const staticRoutes = [
     path: "/test-chat",
     changeFrequency: "weekly",
     priority: 0.5
+  },
+  {
+    path: "/faq",
+    changeFrequency: "weekly",
+    priority: 0.8
   }
 ];
 
