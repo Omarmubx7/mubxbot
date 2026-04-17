@@ -1,6 +1,10 @@
 {
-    "name": "MUBXBot",
+    "name": "MUBXBot - HTU School of Computing Assistant",
     "short_name": "MUBXBot",
+    "description": "Official HTU School of Computing and Informatics assistant for faculty details, office locations, and office hours.",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -15,5 +19,7 @@
     ],
     "theme_color": "#ffffff",
     "background_color": "#ffffff",
-    "display": "standalone"
+    "display": "standalone",
+    "lang": "en",
+    "categories": ["education", "productivity"]
 }

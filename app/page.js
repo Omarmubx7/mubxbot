@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
 import { Search, X } from 'lucide-react';
@@ -89,6 +89,27 @@ function generateUUID() {
   }); // NOSONAR
 }
 
+const SITE_URL = 'https://bot.mubx.dev';
+
+const FAQ_ITEMS = [
+  {
+    question: 'How can I find an instructor email on MUBXBot?',
+    answer: 'Type what followed by the instructor name, and MUBXBot will return the available contact details including email when present.'
+  },
+  {
+    question: 'How can I check office hours for an instructor?',
+    answer: 'Type when followed by the instructor name to see office hour availability and schedule details.'
+  },
+  {
+    question: 'How can I find an instructor office location?',
+    answer: 'Type where followed by the instructor name to get the office location and code when available.'
+  },
+  {
+    question: 'Can I search by department?',
+    answer: 'Yes. You can ask by department and MUBXBot will show matching instructors from that department.'
+  }
+];
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
   const [messages, setMessages] = useState(() => ([
@@ -134,6 +155,35 @@ export default function Page() {
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
   const analyticsUserIdRef = useRef('');
+
+  const homeStructuredDataJson = useMemo(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': `${SITE_URL}/#webpage`,
+        url: SITE_URL,
+        name: 'MUBXBot | HTU School of Computing',
+        description: 'Official HTU School of Computing and Informatics assistant for faculty contacts, office locations, and office hours.',
+        isPartOf: {
+          '@id': `${SITE_URL}/#website`
+        },
+        inLanguage: 'en'
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${SITE_URL}/#faq`,
+        mainEntity: FAQ_ITEMS.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+          }
+        }))
+      }
+    ]
+  }), []);
 
   useEffect(() => {
     let storedUserId = '';
@@ -1054,6 +1104,15 @@ export default function Page() {
 
   return (
     <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: homeStructuredDataJson }}
+      />
+
+      <noscript>
+        MUBXBot is the HTU School of Computing and Informatics assistant for finding instructor emails, office hours, departments, and office locations.
+      </noscript>
+
       {/* Background Mesh */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{ 
         backgroundImage: 'radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(185, 28, 28, 0.15) 0px, transparent 50%)' 

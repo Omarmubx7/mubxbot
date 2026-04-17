@@ -19,6 +19,22 @@ export async function GET(req) {
   const url = new URL(req.url);
   const range = parseDateRange(url.searchParams);
   const { page, pageSize, offset } = coercePage(url.searchParams);
+  const sortByRaw = String(url.searchParams.get('sortBy') || 'started_at').trim().toLowerCase();
+  const sortDirRaw = String(url.searchParams.get('sortDir') || 'desc').trim().toLowerCase();
+  const sortDir = sortDirRaw === 'asc' ? 'ASC' : 'DESC';
+
+  const sortColumnMap = {
+    started_at: 'base.started_at',
+    last_activity_at: 'base.last_activity_at',
+    message_count: 'base.message_count',
+    actual_message_count: 'base.actual_message_count',
+    status: 'base.status',
+    feedback_state: 'base.feedback_state',
+    escalation_state: 'base.escalation_state',
+    user_id: 'base.user_id',
+    detected_intent: 'base.detected_intent'
+  };
+  const sortColumn = sortColumnMap[sortByRaw] || sortColumnMap.started_at;
 
   const success = url.searchParams.get('success');
   const hasError = url.searchParams.get('hasError');
@@ -209,7 +225,7 @@ export async function GET(req) {
             base.meta
           FROM base
           ${outerWhereSql}
-          ORDER BY base.started_at DESC
+          ORDER BY ${sortColumn} ${sortDir}, base.started_at DESC
           LIMIT $${dataParams.length - 1}
           OFFSET $${dataParams.length}
         `,
@@ -240,6 +256,10 @@ export async function GET(req) {
         intent: intent || null,
         escalation: escalation || null,
         department: department || null
+      },
+      sort: {
+        by: sortByRaw in sortColumnMap ? sortByRaw : 'started_at',
+        dir: sortDir.toLowerCase()
       },
       fetchedAt: new Date().toISOString()
     }, {

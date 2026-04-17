@@ -246,6 +246,10 @@ export default function AdminAnalyticsPage() {
     escalation: '',
     department: ''
   });
+  const [conversationPage, setConversationPage] = useState(1);
+  const [conversationPageSize, setConversationPageSize] = useState(25);
+  const [conversationSortBy, setConversationSortBy] = useState('started_at');
+  const [conversationSortDir, setConversationSortDir] = useState('desc');
 
   const [overview, setOverview] = useState(null);
   const [conversations, setConversations] = useState({ rows: [], total: 0 });
@@ -263,7 +267,7 @@ export default function AdminAnalyticsPage() {
     },
     conversations: {
       path: '/api/admin/analytics/conversations',
-      extra: '&page=1&pageSize=50',
+      extra: '',
       assign: setConversations,
       errorMessage: 'Failed to load conversations'
     },
@@ -305,6 +309,10 @@ export default function AdminAnalyticsPage() {
 
   const conversationQueryString = useMemo(() => {
     const params = new URLSearchParams(queryString);
+    params.set('page', String(conversationPage));
+    params.set('pageSize', String(conversationPageSize));
+    params.set('sortBy', conversationSortBy);
+    params.set('sortDir', conversationSortDir);
     if (conversationFilters.userId.trim()) params.set('userId', conversationFilters.userId.trim());
     if (conversationFilters.conversationId.trim()) params.set('conversationId', conversationFilters.conversationId.trim());
     if (conversationFilters.status.trim()) params.set('status', conversationFilters.status.trim());
@@ -313,7 +321,7 @@ export default function AdminAnalyticsPage() {
     if (conversationFilters.escalation.trim()) params.set('escalation', conversationFilters.escalation.trim());
     if (conversationFilters.department.trim()) params.set('department', conversationFilters.department.trim());
     return params.toString();
-  }, [conversationFilters, queryString]);
+  }, [conversationFilters, queryString, conversationPage, conversationPageSize, conversationSortBy, conversationSortDir]);
 
   const requestQueryString = activeTab === 'conversations' ? conversationQueryString : queryString;
 
@@ -398,6 +406,7 @@ export default function AdminAnalyticsPage() {
       escalation: '',
       department: ''
     });
+    setConversationPage(1);
   };
 
   const conversationRows = Array.isArray(conversations.rows) ? conversations.rows : [];
@@ -405,7 +414,22 @@ export default function AdminAnalyticsPage() {
 
   const updateConversationFilter = (key, value) => {
     setConversationFilters((prev) => ({ ...prev, [key]: value }));
+    setConversationPage(1);
   };
+
+  useEffect(() => {
+    setConversationPage(1);
+  }, [preset, from, to]);
+
+  const conversationTotal = Number(conversations.total || 0);
+  const conversationTotalPages = Math.max(1, Math.ceil(conversationTotal / conversationPageSize));
+
+  useEffect(() => {
+    if (activeTab !== 'conversations') return;
+    if (conversationPage > conversationTotalPages) {
+      setConversationPage(conversationTotalPages);
+    }
+  }, [activeTab, conversationPage, conversationTotalPages]);
 
   const statePillClass = (state) => {
     const normalized = String(state || '').toLowerCase();
@@ -585,6 +609,59 @@ export default function AdminAnalyticsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] px-3 py-2">
+                        <label htmlFor="conversation-sort-by" className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Sort</label>
+                        <select
+                          id="conversation-sort-by"
+                          value={conversationSortBy}
+                          onChange={(e) => {
+                            setConversationSortBy(e.target.value);
+                            setConversationPage(1);
+                          }}
+                          className="rounded-lg bg-transparent border border-transparent px-2 py-1 text-[12px] font-bold outline-none"
+                        >
+                          <option value="started_at">Started</option>
+                          <option value="last_activity_at">Last activity</option>
+                          <option value="message_count">Messages (stored)</option>
+                          <option value="actual_message_count">Messages (actual)</option>
+                          <option value="status">Status</option>
+                          <option value="feedback_state">Feedback</option>
+                          <option value="escalation_state">Escalation</option>
+                          <option value="user_id">User</option>
+                          <option value="detected_intent">Intent</option>
+                        </select>
+                        <select
+                          id="conversation-sort-dir"
+                          value={conversationSortDir}
+                          onChange={(e) => {
+                            setConversationSortDir(e.target.value);
+                            setConversationPage(1);
+                          }}
+                          className="rounded-lg bg-transparent border border-transparent px-2 py-1 text-[12px] font-bold outline-none"
+                        >
+                          <option value="desc">Desc</option>
+                          <option value="asc">Asc</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] px-3 py-2">
+                        <label htmlFor="conversation-page-size" className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Rows</label>
+                        <select
+                          id="conversation-page-size"
+                          value={conversationPageSize}
+                          onChange={(e) => {
+                            setConversationPageSize(Number(e.target.value) || 25);
+                            setConversationPage(1);
+                          }}
+                          className="rounded-lg bg-transparent border border-transparent px-2 py-1 text-[12px] font-bold outline-none"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
+
                       <a
                         href={`/api/admin/analytics/export/conversations?${conversationQueryString}`}
                         className="rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 px-4 py-3 text-[13px] font-bold inline-flex items-center gap-2 transition-all"
@@ -749,6 +826,36 @@ export default function AdminAnalyticsPage() {
                     rows={conversationRows}
                     empty="No live data"
                   />
+                )}
+
+                {!conversations.warning && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-black/20 p-4">
+                    <div className="text-[12px] font-medium text-[var(--text-secondary)]">
+                      Page <span className="font-bold text-[var(--text-primary)]">{conversationPage}</span> of <span className="font-bold text-[var(--text-primary)]">{conversationTotalPages}</span>
+                      {' · '}
+                      Showing up to <span className="font-bold text-[var(--text-primary)]">{conversationPageSize}</span> rows per page
+                      {' · '}
+                      Total rows: <span className="font-bold text-[var(--text-primary)]">{conversationTotal}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConversationPage((p) => Math.max(1, p - 1))}
+                        disabled={conversationPage <= 1}
+                        className="rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-[12px] font-bold disabled:opacity-40"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConversationPage((p) => Math.min(conversationTotalPages, p + 1))}
+                        disabled={conversationPage >= conversationTotalPages}
+                        className="rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-[12px] font-bold disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
