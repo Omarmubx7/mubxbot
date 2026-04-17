@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 
 const SITE_URL = 'https://bot.mubx.dev';
 
@@ -81,9 +82,9 @@ export default function FAQPage() {
         </div>
 
         <div className="mt-10">
-          <a href="/" className="inline-flex items-center rounded-xl bg-[#DC2626] px-4 py-2.5 text-sm font-bold text-white">
+          <Link href="/" className="inline-flex items-center rounded-xl bg-[#DC2626] px-4 py-2.5 text-sm font-bold text-white">
             Back to MUBXBot
-          </a>
+          </Link>
         </div>
       </div>
     </main>

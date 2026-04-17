@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Share2, Copy, Image, MessageCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Share2, Copy, Image as ImageIcon, MessageCircle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PropTypes from 'prop-types';
 import { useScreenshotListener, useShareListener } from '../lib/useScreenshotListener';
@@ -117,7 +117,7 @@ export function ShareButton({ messages = [] }) {
             link.download = 'mubxbot-screenshot.png';
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
+            link.remove();
             URL.revokeObjectURL(url);
             showFeedback('Screenshot downloaded!');
           }
@@ -213,7 +213,7 @@ export function ShareButton({ messages = [] }) {
                 title="Keyboard shortcut: Ctrl+Shift+S (or Cmd+Shift+S on Mac)"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 transition-all group disabled:opacity-50"
               >
-                <Image size={18} className="text-purple-500 group-hover:text-purple-600" />
+                <ImageIcon size={18} className="text-purple-500 group-hover:text-purple-600" />
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-semibold text-[#1C1C1E] dark:text-white">
                     {isCapturing ? 'Capturing...' : 'Screenshot'}

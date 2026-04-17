@@ -50,7 +50,6 @@ export default function AdminStaticResponsesPage() {
 
   useEffect(() => {
     loadRows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onSubmit = async (event) => {
