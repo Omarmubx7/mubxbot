@@ -2,10 +2,9 @@
 
 import { Moon, Sun, GraduationCap } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { FeedbackButton } from './FeedbackButton';
 import { BotShareButton } from './BotShareButton';
 
-export function ChatHeader({ theme, onToggleTheme }) {
+export function ChatHeader({ theme, onToggleTheme, onOpenFeedback }) {
   return (
     <div className="flex items-center justify-between px-3 sm:px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
       {/* Avatar and Name */}
@@ -39,8 +38,15 @@ export function ChatHeader({ theme, onToggleTheme }) {
 
       {/* Actions */}
       <div className="flex items-center gap-2.5">
-        <FeedbackButton />
-          <BotShareButton />
+        <button
+          onClick={onOpenFeedback}
+          className="h-9 px-3 rounded-full border border-gray-200 dark:border-gray-700 text-[13px] font-semibold text-[#8E8E93] dark:text-[#98989D] hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#1C1C1E] dark:hover:text-white transition-all"
+          title="Send feedback"
+          aria-label="Send feedback"
+        >
+          Feedback
+        </button>
+        <BotShareButton />
         <button
           onClick={onToggleTheme}
           className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
@@ -60,4 +66,5 @@ export function ChatHeader({ theme, onToggleTheme }) {
 ChatHeader.propTypes = {
   theme: PropTypes.oneOf(['light', 'dark']).isRequired,
   onToggleTheme: PropTypes.func.isRequired,
+  onOpenFeedback: PropTypes.func.isRequired,
 };

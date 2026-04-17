@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
+import { notifyFeedbackSubmission } from '../../../lib/notifications';
 
 const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
@@ -221,24 +222,30 @@ export async function POST(req) {
     const record = normalized.value;
 
     const dbCreated = await tryPersistToDb(record);
-    if (dbCreated) {
-      return NextResponse.json(dbCreated, { status: 201 });
+    const createdRecord = dbCreated || null;
+
+    let responseRecord = createdRecord;
+    if (!responseRecord) {
+      try {
+        const rows = await readFileRows();
+        responseRecord = { ...record, id: record.id || String(Date.now()) };
+        await writeFileRows([responseRecord, ...rows]);
+      } catch (fileError) {
+        if (fileError?.code === 'EROFS' || fileError?.code === 'EPERM') {
+          return NextResponse.json(
+            { error: 'Feedback storage is not writable in this deployment. Please enable DB table user_feedback.' },
+            { status: 503 }
+          );
+        }
+        throw fileError;
+      }
     }
 
-    try {
-      const rows = await readFileRows();
-      const created = { ...record, id: record.id || String(Date.now()) };
-      await writeFileRows([created, ...rows]);
-      return NextResponse.json(created, { status: 201 });
-    } catch (fileError) {
-      if (fileError?.code === 'EROFS' || fileError?.code === 'EPERM') {
-        return NextResponse.json(
-          { error: 'Feedback storage is not writable in this deployment. Please enable DB table user_feedback.' },
-          { status: 503 }
-        );
-      }
-      throw fileError;
-    }
+    notifyFeedbackSubmission(responseRecord).catch((error) => {
+      console.warn('feedback notification email failed', error?.message || error);
+    });
+
+    return NextResponse.json(responseRecord, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to submit feedback', details: error.message },

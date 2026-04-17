@@ -378,6 +378,26 @@ export default function Page() {
     return cleaned;
   };
 
+  const sendChatIssueNotification = async ({ type, query, normalizedQuery = '', reason = '' }) => {
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          query,
+          normalizedQuery,
+          reason,
+          conversationId: conversationIdRef.current || '',
+          userId: analyticsUserIdRef.current || '',
+          sourcePath: globalThis.location?.pathname || '/'
+        })
+      });
+    } catch (error) {
+      console.warn('Chat issue notification failed', error);
+    }
+  };
+
   const getAlias = (query) => {
     const aliases = {
       "cs": "CS",
@@ -782,6 +802,13 @@ export default function Page() {
             }]);
           }
         } else if (data.type === 'no_results') {
+          sendChatIssueNotification({
+            type: 'no_results',
+            query: userText,
+            normalizedQuery: query,
+            reason: data.summary || `No result matched the query "${userText}"`
+          });
+
           // No results found
           setMessages(prev => [...prev, {
             id: Date.now(),
@@ -858,6 +885,12 @@ export default function Page() {
         return;
       } catch (error) {
         console.error('API Error:', error);
+        sendChatIssueNotification({
+          type: 'error',
+          query: userText,
+          normalizedQuery: query,
+          reason: error?.message || 'Chat API request failed'
+        });
         setIsTyping(false);
         // Fall through to regular search if API fails
       }
@@ -918,6 +951,13 @@ export default function Page() {
     setIsTyping(false);
 
     if (results.length === 0) {
+      sendChatIssueNotification({
+        type: 'no_results',
+        query: userText,
+        normalizedQuery: query,
+        reason: `No instructor match found for "${userText}"`
+      });
+
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
@@ -1022,7 +1062,7 @@ export default function Page() {
       {/* Main Container */}
       <div className="w-full max-w-[960px] h-[100dvh] md:h-[90vh] md:rounded-[32px] md:shadow-2xl relative z-10 overflow-hidden flex flex-col bg-white dark:bg-black">
         {/* Header */}
-        <ChatHeader theme={theme} onToggleTheme={toggleTheme} />
+        <ChatHeader theme={theme} onToggleTheme={toggleTheme} onOpenFeedback={() => openFeedbackForm({ category: 'general' })} />
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
@@ -1096,14 +1136,6 @@ export default function Page() {
           placeholder="What = email, When = hours, Where = office"
         />
 
-        <div className="px-4 pb-3 md:pb-4 bg-white dark:bg-black border-t border-black/5 dark:border-white/5">
-          <button
-            onClick={() => openFeedbackForm({ category: 'general' })}
-            className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] px-4 py-2.5 text-[13px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
-          >
-            Share general feedback
-          </button>
-        </div>
       </div>
 
       {feedbackOpen && (
