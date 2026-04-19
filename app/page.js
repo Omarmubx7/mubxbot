@@ -132,7 +132,7 @@ export default function Page() {
             </div>
           </div>
           <div className="text-[13px] opacity-80 pt-1">
-            💡 <span className="font-medium">Quick tip:</span> Use <strong>what</strong> for email, <strong>when</strong> for office hours, <strong>where</strong> for office code, or just type an instructor's name.
+
           </div>
           <div className="text-[12px] opacity-70">
             Learn more: <a href="/faq" className="underline decoration-current/30 hover:decoration-current">MUBXBot FAQ</a>
@@ -140,7 +140,7 @@ export default function Page() {
         </div>
       ),
       timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      quickReplies: ['Search name', 'By department', 'Office hours']
+      quickReplies: ['By department']
     }
   ]));
   const [isTyping, setIsTyping] = useState(false);
@@ -692,7 +692,7 @@ export default function Page() {
         type: 'bot',
         content: "Please type a valid instructor name (at least 2 letters).",
         timestamp: getCurrentTime(),
-        quickReplies: ['By department', 'Search name']
+        quickReplies: ['By department']
       }]);
       return;
     }
@@ -811,7 +811,7 @@ export default function Page() {
             type: 'bot',
             content: data.message || 'That selection expired. Please ask your question again.',
             timestamp: getCurrentTime(),
-            quickReplies: ['Search name', 'By department']
+            quickReplies: ['By department']
           }]);
         } else if (data.type === 'office_hours') {
           if (data.results.length === 1) {
@@ -932,7 +932,7 @@ export default function Page() {
             type: 'bot',
             content: "Try this pattern for consistent results:\n• what + name = email\n• when + name = office hours\n• where + name = office code\n• Or just type a professor's name",
             timestamp: getCurrentTime(),
-            quickReplies: ['By department', 'Search name']
+            quickReplies: ['By department']
           }]);
         }
         return;
@@ -1016,7 +1016,7 @@ export default function Page() {
         type: 'bot',
         content: `I couldn't find any instructors matching '${userText}'. Try checking the spelling or browse by department.`,
         timestamp: getCurrentTime(),
-        quickReplies: ['By department', 'Office hours']
+        quickReplies: ['By department']
       }]);
     } else if (results.length === 1) {
       // Check if office hours exist for this instructor
@@ -1133,7 +1133,7 @@ export default function Page() {
               <EmptyState />
               <div className="flex justify-center mt-6">
                  <QuickReplies 
-                  options={['Search name', 'By department', 'Office hours']} 
+                  options={['By department']} 
                   onSelect={(opt) => handleQuickReply(opt)}
                  />
               </div>
@@ -1195,7 +1195,7 @@ export default function Page() {
           onSend={handleSendMessage}
           onChange={handleInputChange}
           inlineSuggestion={inlineSuggestion}
-          placeholder="What = email, When = hours, Where = office"
+          placeholder="Type an instructor's name"
         />
 
       </div>
