@@ -1,5 +1,6 @@
 "use client";
 
+import PropTypes from 'prop-types';
 import { Send } from 'lucide-react';
 import { VoiceInput } from './VoiceInput';
  
@@ -7,6 +8,7 @@ export function ChatInput({
   value,
   onSend,
   onChange,
+  onKeyDown,
   inlineSuggestion,
   placeholder = "Type doctor name…"
 }) {
@@ -40,6 +42,11 @@ export function ChatInput({
   const inlineRemainder = getInlineRemainder();
 
   const handleKeyDown = (e) => {
+    if (onKeyDown) {
+      const handled = onKeyDown(e, { message, inlineSuggestion, inlineRemainder });
+      if (handled) return;
+    }
+
     if (e.key === 'Tab' && inlineRemainder) {
       e.preventDefault();
       if (onChange) onChange(inlineSuggestion);
@@ -75,6 +82,7 @@ export function ChatInput({
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck="false"
+          aria-label="Ask MUBXBot"
         />
 
         <div className="mr-1">
@@ -92,9 +100,19 @@ export function ChatInput({
             : 'bg-[#E9ECEF] dark:bg-[#2C2C2E] text-[#8E8E93] dark:text-[#98989D] opacity-70'
         }`}
         aria-label="Send message"
+        title="Send message"
       >
         <Send className={`w-[22px] h-[22px] ${message.trim() ? '-ml-0.5' : ''}`} />
       </button>
     </div>
   );
 }
+
+ChatInput.propTypes = {
+  value: PropTypes.string,
+  onSend: PropTypes.func.isRequired,
+  onChange: PropTypes.func,
+  onKeyDown: PropTypes.func,
+  inlineSuggestion: PropTypes.string,
+  placeholder: PropTypes.string,
+};

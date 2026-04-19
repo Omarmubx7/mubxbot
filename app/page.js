@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
-import { Search, X } from 'lucide-react';
+import { Search, X, Copy, Pin, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatMessage } from '../components/ChatMessage';
@@ -110,43 +110,87 @@ const FAQ_ITEMS = [
   }
 ];
 
+const QUICK_ACTIONS = [
+  { label: 'Find email', query: 'what is Razan email' },
+  { label: 'Check office hours', query: 'when is Razan free' },
+  { label: 'Find office', query: 'where is Razan office' }
+];
+
+const buildWelcomeMessage = ({ isReturningUser = false, lastAction = '' } = {}) => (
+  <div className="space-y-4">
+    <div className="rounded-2xl border border-[#DC2626]/20 bg-gradient-to-br from-[#DC2626]/10 via-white to-[#FCA5A5]/20 dark:from-[#DC2626]/20 dark:via-[#1C1C1E] dark:to-[#7F1D1D]/30 p-4">
+      <div className="font-black text-[18px] tracking-tight text-[#7F1D1D] dark:text-[#FCA5A5]">
+        {isReturningUser ? '👋 Welcome back to MUBXBot!' : '👋 Yo, welcome to MUBXBot!'}
+      </div>
+      <div className="mt-2 text-[14px] leading-relaxed text-[#1F2937] dark:text-[#E5E7EB]">
+        Your go-to helper for everything instructor-related at HTU’s School of Computing and Informatics.
+      </div>
+      {isReturningUser && lastAction && (
+        <div className="mt-3 text-[12px] rounded-lg bg-white/75 dark:bg-black/20 px-3 py-2 border border-[#DC2626]/15">
+          Last time you asked: <span className="font-semibold">{lastAction}</span>
+        </div>
+      )}
+    </div>
+
+    <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/5 p-4 space-y-2.5">
+      <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#DC2626] dark:text-[#F87171]">🔍 I can help you with:</div>
+      <div className="text-[13px] leading-relaxed space-y-1.5 text-[#111827] dark:text-[#E5E7EB]">
+        <div>Find instructor emails and contact info</div>
+        <div>Check office hours and availability</div>
+        <div>Search by name, department, or office</div>
+        <div>Pull up full instructor profiles</div>
+      </div>
+    </div>
+
+    <div className="rounded-2xl border border-[#DC2626]/15 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-4 space-y-3">
+      <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#B91C1C] dark:text-[#FCA5A5]">💡 Quick hacks:</div>
+      <div className="space-y-2 text-[13px] leading-relaxed text-[#1F2937] dark:text-[#F3F4F6]">
+        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
+          Type "what + name" to get the email<br />
+          <span className="opacity-75">Example: what is Razan email</span>
+        </div>
+        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
+          Type "when + name" to check office hours<br />
+          <span className="opacity-75">Example: when is Razan free</span>
+        </div>
+        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
+          Type "where + name" to find the office<br />
+          <span className="opacity-75">Example: where is Razan office</span>
+        </div>
+      </div>
+      <div className="text-[13px] font-medium text-[#7F1D1D] dark:text-[#FCA5A5]">Just drop your question and I’ll do the rest ✨</div>
+    </div>
+
+    <div className="text-[12px] opacity-80">
+      📘 Learn more: <a href="/faq" className="font-semibold underline decoration-current/30 hover:decoration-current">MUBXBot FAQ</a>
+    </div>
+  </div>
+);
+
+const highlightQueryMatch = (text, query) => {
+  return text;
+};
+
+const createWelcomeMessage = ({ isReturningUser = false, lastAction = '' } = {}) => ({
+  id: 'welcome-message',
+  type: 'bot',
+  content: buildWelcomeMessage({ isReturningUser, lastAction }),
+  timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+  variant: 'smart',
+  rawText: 'Welcome to MUBXBot',
+  quickReplies: ['By department']
+});
+
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
-  const [messages, setMessages] = useState(() => ([
-    {
-      id: 'welcome-message',
-      type: 'bot',
-      content: (
-        <div className="space-y-3">
-          <div className="font-bold text-[16px]">👋 Welcome to MUBXBot!</div>
-          <div className="text-[14px] leading-relaxed opacity-90">
-            Your go-to assistant for finding instructor information at HTU's School of Computing and Informatics.
-          </div>
-          <div className="space-y-2">
-            <div className="text-[13px] font-semibold opacity-95">🔍 What I can help you with:</div>
-            <div className="text-[13px] opacity-85 space-y-1 pl-4">
-              <div>• Find instructor contact details</div>
-              <div>• Check office hours and availability</div>
-              <div>• Search by name, department, or office</div>
-              <div>• Get complete instructor profiles</div>
-            </div>
-          </div>
-          <div className="text-[13px] opacity-80 pt-1">
-
-          </div>
-          <div className="text-[12px] opacity-70">
-            Learn more: <a href="/faq" className="underline decoration-current/30 hover:decoration-current">MUBXBot FAQ</a>
-          </div>
-        </div>
-      ),
-      timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      quickReplies: ['By department']
-    }
-  ]));
+  const [messages, setMessages] = useState(() => ([createWelcomeMessage()]));
   const [isTyping, setIsTyping] = useState(false);
   const [fuseInstance, setFuseInstance] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
   const [inputValue, setInputValue] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [pinnedResponses, setPinnedResponses] = useState([]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackCategory, setFeedbackCategory] = useState('general');
   const [feedbackMissingName, setFeedbackMissingName] = useState('');
@@ -158,6 +202,7 @@ export default function Page() {
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
   const analyticsUserIdRef = useRef('');
+  const lastActionRef = useRef('');
 
   const homeStructuredDataJson = useMemo(() => JSON.stringify({
     '@context': 'https://schema.org',
@@ -191,10 +236,14 @@ export default function Page() {
   useEffect(() => {
     let storedUserId = '';
     let storedConversationId = '';
+    let storedLastAction = '';
+    let hasVisitedBefore = false;
 
     try {
       storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
       storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
+      storedLastAction = globalThis.localStorage.getItem('mubx_last_action') || '';
+      hasVisitedBefore = globalThis.localStorage.getItem('mubx_has_visited') === '1';
     } catch (e) {
       // Storage access might be denied in strict privacy modes
       console.warn('Storage access is disabled');
@@ -205,14 +254,36 @@ export default function Page() {
 
     analyticsUserIdRef.current = userId;
     conversationIdRef.current = conversationId;
+    lastActionRef.current = storedLastAction;
+
+    setMessages((prev) => prev.map((message) => {
+      if (message.id !== 'welcome-message') return message;
+      return createWelcomeMessage({
+        isReturningUser: hasVisitedBefore,
+        lastAction: storedLastAction
+      });
+    }));
 
     try {
       if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
       if (!storedConversationId) globalThis.sessionStorage.setItem('mubx_analytics_conversation_id', conversationId);
+      globalThis.localStorage.setItem('mubx_has_visited', '1');
     } catch (e) {
       console.warn('Storage write disabled', e);
     }
   }, []);
+
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+
+    const timerId = globalThis.setTimeout(() => {
+      setToastMessage('');
+    }, 2200);
+
+    return () => {
+      globalThis.clearTimeout(timerId);
+    };
+  }, [toastMessage]);
 
   useEffect(() => {
     if (instructors && instructors.length > 0) {
@@ -245,6 +316,173 @@ export default function Page() {
     userId: analyticsUserIdRef.current || generateUUID(),
     conversationId: conversationIdRef.current || generateUUID()
   });
+
+  const recordLastAction = (actionLabel) => {
+    const value = String(actionLabel || '').trim();
+    if (!value) return;
+
+    lastActionRef.current = value;
+    try {
+      globalThis.localStorage.setItem('mubx_last_action', value);
+    } catch (error) {
+      console.warn('Could not persist last action', error);
+    }
+  };
+
+  const resolveLatestBotSummary = () => {
+    const latestBot = [...messages].reverse().find((message) => message.type === 'bot');
+    if (!latestBot) return '';
+    if (latestBot.rawText) return latestBot.rawText;
+    if (typeof latestBot.content === 'string') return latestBot.content;
+    return 'Latest assistant response';
+  };
+
+  const copyText = async (value, successMessage) => {
+    const text = String(value || '').trim();
+    if (!text) return;
+
+    try {
+      await globalThis.navigator.clipboard.writeText(text);
+      setToastMessage(successMessage);
+    } catch (error) {
+      console.warn('Clipboard copy failed', error);
+      setToastMessage('Could not copy to clipboard');
+    }
+  };
+
+  const handleCopyLastAnswer = () => {
+    const latest = resolveLatestBotSummary();
+    if (!latest) {
+      setToastMessage('No answer yet to copy');
+      return;
+    }
+    copyText(latest, 'Last answer copied');
+  };
+
+  const handlePinLastAnswer = () => {
+    const latest = resolveLatestBotSummary();
+    if (!latest) {
+      setToastMessage('No answer yet to pin');
+      return;
+    }
+
+    setPinnedResponses((prev) => {
+      if (prev.includes(latest)) return prev;
+      return [latest, ...prev].slice(0, 5);
+    });
+    setToastMessage('Pinned to quick notes');
+  };
+
+  const handleClearConversation = () => {
+    setMessages([
+      createWelcomeMessage({
+        isReturningUser: true,
+        lastAction: lastActionRef.current
+      })
+    ]);
+    setSuggestions([]);
+    setHighlightedSuggestionIndex(-1);
+    setInputValue('');
+    setToastMessage('Conversation cleared');
+  };
+
+  const openTeamsFromEmail = (email) => {
+    const cleanedEmail = String(email || '').trim();
+    if (!cleanedEmail) return;
+    const encodedEmail = encodeURIComponent(cleanedEmail);
+    const webChatUrl = `https://teams.microsoft.com/l/chat/0/0?users=${encodedEmail}`;
+    const desktopDeepLink = `msteams://teams.microsoft.com/l/chat/0/0?users=${encodedEmail}`;
+
+    const popup = globalThis.open(webChatUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      globalThis.location.href = desktopDeepLink;
+    }
+  };
+
+  const handleInputKeyDown = (event) => {
+    if (event.key === 'ArrowDown' && suggestions.length > 0) {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((prev) => {
+        if (prev < 0) return 0;
+        return Math.min(prev + 1, suggestions.length - 1);
+      });
+      return true;
+    }
+
+    if (event.key === 'ArrowUp' && suggestions.length > 0) {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((prev) => Math.max(prev - 1, 0));
+      return true;
+    }
+
+    if (event.key === 'Escape') {
+      setSuggestions([]);
+      setHighlightedSuggestionIndex(-1);
+      return true;
+    }
+
+    if (event.key === 'Enter' && suggestions.length > 0 && highlightedSuggestionIndex >= 0) {
+      event.preventDefault();
+      const selected = suggestions[highlightedSuggestionIndex]?.item;
+      if (selected) handleSendMessage(selected.name, selected);
+      return true;
+    }
+
+    return false;
+  };
+
+  const renderResultActions = (professor) => {
+    const displayName = professor?.name || professor?.professor || '';
+    const email = professor?.email || '';
+
+    return (
+      <div className="rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-3 space-y-2">
+        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B91C1C] dark:text-[#FCA5A5]">Quick actions</div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => copyText(email, 'Email copied')}
+            disabled={!email}
+            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
+          >
+            Copy email
+          </button>
+          <button
+            type="button"
+            onClick={() => openTeamsFromEmail(email)}
+            disabled={!email}
+            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
+          >
+            Open Teams
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSendMessage(`what ${displayName} email`)}
+            disabled={!displayName}
+            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
+          >
+            Ask email
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSendMessage(`when ${displayName} free`)}
+            disabled={!displayName}
+            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
+          >
+            Ask hours
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSendMessage(`where ${displayName} office`)}
+            disabled={!displayName}
+            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
+          >
+            Ask office
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const openFeedbackForm = ({
     category = 'general',
@@ -315,7 +553,7 @@ export default function Page() {
           type: 'bot',
           content: 'Thanks for the feedback. It has been sent to the admin dashboard for review.',
           timestamp: getCurrentTime(),
-          quickReplies: ['Search another', 'By department']
+          quickReplies: ['By department']
         }
       ]));
     } catch (error) {
@@ -588,41 +826,28 @@ export default function Page() {
     if (val.trim() && fuseInstance) {
       const results = fuseInstance.search(val).slice(0, 5);
       setSuggestions(results);
+      setHighlightedSuggestionIndex(-1);
     } else {
       setSuggestions([]);
+      setHighlightedSuggestionIndex(-1);
     }
   };
 
   const handleQuickReply = (action) => {
-    if (action === 'Search name') {
-      // Just show a prompt, don't search
-      setMessages(prev => [...prev, {
-        id: `msg-${Date.now()}`,
-        type: 'bot',
-        content: "Please type an instructor's name in the search box below.",
-        timestamp: getCurrentTime()
-      }]);
-      return;
-    } else if (action === 'By department') {
+    recordLastAction(action);
+    if (action === 'By department') {
       // Trigger department list
       handleBotResponse('by department');
       return;
-    } else if (action === 'Office hours') {
-      // Ask for name
-      setMessages(prev => [...prev, {
-        id: `msg-${Date.now()}`,
-        type: 'bot',
-        content: "Whose office hours would you like to see? Please type an instructor's name.",
-        timestamp: getCurrentTime()
-      }]);
-      return;
     }
-    // For other quick replies like "Search another", trigger the actual behavior
+    // For other quick replies, trigger the actual behavior
     handleBotResponse(action);
   };
 
   const handleSendMessage = (text, specificDoctor = null, displayText = null, apiPayload = null) => {
     if (!text.trim() && !specificDoctor) return;
+
+    recordLastAction(displayText || text);
 
     const userMessage = {
       id: `msg-${Date.now()}`,
@@ -633,6 +858,7 @@ export default function Page() {
 
     setMessages(prev => [...prev, userMessage]);
     setSuggestions([]);
+    setHighlightedSuggestionIndex(-1);
     setInputValue('');
 
     setIsTyping(true);
@@ -647,31 +873,45 @@ export default function Page() {
           setMessages(prev => [...prev, {
             id: Date.now() + 1,
             type: 'bot',
-            content: <OfficeHoursDisplay 
-              officeHours={hoursData}
-              faculty={hoursData[0].faculty || specificDoctor.name}
-              email={hoursData[0].email}
-              department={hoursData[0].department || specificDoctor.department}
-              office={hoursData[0].office || specificDoctor.office}
-              showTeamsButton={shouldShowTeamsButton(hoursData[0].department || specificDoctor.department)}
-            />,
+            content: (
+              <div className="space-y-3">
+                <OfficeHoursDisplay 
+                  officeHours={hoursData}
+                  faculty={hoursData[0].faculty || specificDoctor.name}
+                  email={hoursData[0].email}
+                  department={hoursData[0].department || specificDoctor.department}
+                  office={hoursData[0].office || specificDoctor.office}
+                  showTeamsButton={shouldShowTeamsButton(hoursData[0].department || specificDoctor.department)}
+                />
+                {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
+              </div>
+            ),
             timestamp: getCurrentTime(),
-            quickReplies: ['Search another', 'By department']
+            variant: 'smart',
+            rawText: `Profile details for ${specificDoctor.name || 'instructor'}`,
+            quickReplies: ['By department']
           }]);
         } else {
           // Fallback to OfficeHoursDisplay with empty hours
           setMessages(prev => [...prev, {
             id: Date.now() + 1,
             type: 'bot',
-            content: <OfficeHoursDisplay 
-              officeHours={[]}
-              faculty={specificDoctor.name}
-              email={specificDoctor.email}
-              department={normalizeDepartment(specificDoctor.department)}
-              office={specificDoctor.office}
-              showTeamsButton={shouldShowTeamsButton(specificDoctor.department)}
-            />,
-            timestamp: getCurrentTime()
+            content: (
+              <div className="space-y-3">
+                <OfficeHoursDisplay 
+                  officeHours={[]}
+                  faculty={specificDoctor.name}
+                  email={specificDoctor.email}
+                  department={normalizeDepartment(specificDoctor.department)}
+                  office={specificDoctor.office}
+                  showTeamsButton={shouldShowTeamsButton(specificDoctor.department)}
+                />
+                {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            variant: 'smart',
+            rawText: `Profile details for ${specificDoctor.name || 'instructor'}`
           }]);
         }
       } else {
@@ -692,6 +932,8 @@ export default function Page() {
         type: 'bot',
         content: "Please type a valid instructor name (at least 2 letters).",
         timestamp: getCurrentTime(),
+        variant: 'error',
+        rawText: 'Please type a valid instructor name (at least 2 letters).',
         quickReplies: ['By department']
       }]);
       return;
@@ -706,8 +948,7 @@ export default function Page() {
     // Route most informational queries through API so name/email/day variants are handled consistently.
     const isApiQuery =
       lowerText.length > 1 &&
-      lowerText !== 'by department' &&
-      lowerText !== 'search another';
+      lowerText !== 'by department';
 
     if (isApiQuery) {
       try {
@@ -728,9 +969,16 @@ export default function Page() {
             setMessages(prev => [...prev, {
               id: Date.now(),
               type: 'bot',
-              content: <SmartAnswerCard professor={data.results[0]} response={data.response} context={data.context} />,
+              content: (
+                <div className="space-y-3">
+                  <SmartAnswerCard professor={data.results[0]} response={data.response} context={data.context} />
+                  {renderResultActions(data.results[0])}
+                </div>
+              ),
               timestamp: getCurrentTime(),
-              quickReplies: ['Search another', 'By department']
+              variant: 'smart',
+              rawText: data.response,
+              quickReplies: ['By department']
             }]);
           } else {
             // Keep free-form text rendering for non-profile responses.
@@ -745,7 +993,9 @@ export default function Page() {
                 </div>
               ),
               timestamp: getCurrentTime(),
-              quickReplies: ['Search another', 'By department']
+              variant: 'smart',
+              rawText: data.response,
+              quickReplies: ['By department']
             }]);
           }
         } else if (data.type === 'disambiguation') {
@@ -803,7 +1053,9 @@ export default function Page() {
               </div>
             ),
             timestamp: getCurrentTime(),
-            quickReplies: ['Search another', 'By department']
+            variant: 'disambiguation',
+            rawText: data.message,
+            quickReplies: ['By department']
           }]);
         } else if (data.type === 'expired_disambiguation') {
           setMessages(prev => [...prev, {
@@ -811,6 +1063,8 @@ export default function Page() {
             type: 'bot',
             content: data.message || 'That selection expired. Please ask your question again.',
             timestamp: getCurrentTime(),
+            variant: 'error',
+            rawText: data.message || 'That selection expired. Please ask your question again.',
             quickReplies: ['By department']
           }]);
         } else if (data.type === 'office_hours') {
@@ -819,9 +1073,16 @@ export default function Page() {
             setMessages(prev => [...prev, {
               id: Date.now(),
               type: 'bot',
-              content: <OfficeHoursCard data={data.results[0]} />,
+              content: (
+                <div className="space-y-3">
+                  <OfficeHoursCard data={data.results[0]} />
+                  {renderResultActions(data.results[0])}
+                </div>
+              ),
               timestamp: getCurrentTime(),
-              quickReplies: ['Search another', 'By department']
+              variant: 'smart',
+              rawText: `Office hours for ${data.results[0]?.professor || data.results[0]?.name || 'instructor'}`,
+              quickReplies: ['By department']
             }]);
           } else if (data.results.length > 1) {
             // Multiple results - show clickable list
@@ -851,7 +1112,9 @@ export default function Page() {
                 </div>
               ),
               timestamp: getCurrentTime(),
-              quickReplies: ['Search another', 'By department']
+              variant: 'disambiguation',
+              rawText: `Found ${data.results.length} matching professors.`,
+              quickReplies: ['By department']
             }]);
           }
         } else if (data.type === 'no_results') {
@@ -910,6 +1173,7 @@ export default function Page() {
                   </div>
                 )}
                 <button
+                  type="button"
                   onClick={() => openFeedbackForm({
                     category: 'missing_name',
                     missingName: data.subject || data.message || '',
@@ -920,10 +1184,19 @@ export default function Page() {
                 >
                   Missing name? Report it here
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleBotResponse('by department')}
+                  className="w-full text-left rounded-xl border border-black/15 dark:border-white/15 bg-white/60 dark:bg-black/20 px-3 py-2.5 text-[13px] font-semibold hover:bg-white dark:hover:bg-black/30 transition-colors"
+                >
+                  Browse by department now
+                </button>
               </div>
             ),
             timestamp: getCurrentTime(),
-            quickReplies: ['By department', 'Search another']
+            variant: 'no_results',
+            rawText: data.summary || 'No matching faculty found.',
+            quickReplies: ['By department']
           }]);
         } else {
           // Help message
@@ -932,6 +1205,8 @@ export default function Page() {
             type: 'bot',
             content: "Try this pattern for consistent results:\n• what + name = email\n• when + name = office hours\n• where + name = office code\n• Or just type a professor's name",
             timestamp: getCurrentTime(),
+            variant: 'smart',
+            rawText: 'Try what/when/where + name for consistent results.',
             quickReplies: ['By department']
           }]);
         }
@@ -951,7 +1226,7 @@ export default function Page() {
 
     if (lowerText === "by department") {
       // Normalize departments and get unique list (Bug #10)
-      const departments = [...new Set(instructors.map(i => normalizeDepartment(i.department)))].sort();
+      const departments = [...new Set(instructors.map(i => normalizeDepartment(i.department)))].sort((a, b) => a.localeCompare(b));
       setIsTyping(false);
       setMessages(prev => [...prev, {
         id: Date.now(),
@@ -972,18 +1247,9 @@ export default function Page() {
             </div>
           </div>
         ),
-        timestamp: getCurrentTime()
-      }]);
-      return;
-    }
-
-    if (lowerText === "search name" || lowerText === "office hours") {
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        type: 'bot',
-        content: "Please type the name of the instructor you're looking for.",
-        timestamp: getCurrentTime()
+        timestamp: getCurrentTime(),
+        variant: 'disambiguation',
+        rawText: 'Explore departments.'
       }]);
       return;
     }
@@ -994,7 +1260,9 @@ export default function Page() {
         id: Date.now(),
         type: 'bot',
         content: "I'm still preparing the directory. Please wait just a second.",
-        timestamp: getCurrentTime()
+        timestamp: getCurrentTime(),
+        variant: 'error',
+        rawText: "I'm still preparing the directory. Please wait just a second."
       }]);
       return;
     }
@@ -1016,6 +1284,8 @@ export default function Page() {
         type: 'bot',
         content: `I couldn't find any instructors matching '${userText}'. Try checking the spelling or browse by department.`,
         timestamp: getCurrentTime(),
+        variant: 'no_results',
+        rawText: `No instructors found for ${userText}`,
         quickReplies: ['By department']
       }]);
     } else if (results.length === 1) {
@@ -1028,32 +1298,46 @@ export default function Page() {
         setMessages(prev => [...prev, {
           id: Date.now(),
           type: 'bot',
-          content: <OfficeHoursDisplay 
-            officeHours={hoursData}
-            faculty={hoursData[0].faculty || doctor.name}
-            email={hoursData[0].email}
-            department={hoursData[0].department || doctor.department}
-            office={hoursData[0].office || doctor.office}
-            showTeamsButton={shouldShowTeamsButton(hoursData[0].department || doctor.department)}
-          />,
+          content: (
+            <div className="space-y-3">
+              <OfficeHoursDisplay 
+                officeHours={hoursData}
+                faculty={hoursData[0].faculty || doctor.name}
+                email={hoursData[0].email}
+                department={hoursData[0].department || doctor.department}
+                office={hoursData[0].office || doctor.office}
+                showTeamsButton={shouldShowTeamsButton(hoursData[0].department || doctor.department)}
+              />
+              {renderResultActions(doctor)}
+            </div>
+          ),
           timestamp: getCurrentTime(),
-          quickReplies: ['Search another', 'By department']
+          variant: 'smart',
+          rawText: `Office hours for ${doctor.name || doctor.professor || 'instructor'}`,
+          quickReplies: ['By department']
         }]);
       } else {
         // No office hours - show regular card with new UI
         setMessages(prev => [...prev, {
           id: Date.now(),
           type: 'bot',
-          content: <OfficeHoursDisplay 
-            officeHours={[]}
-            faculty={doctor.name || doctor.professor}
-            email={doctor.email}
-            department={normalizeDepartment(doctor.department)}
-            office={doctor.office}
-            showTeamsButton={shouldShowTeamsButton(doctor.department)}
-          />,
+          content: (
+            <div className="space-y-3">
+              <OfficeHoursDisplay 
+                officeHours={[]}
+                faculty={doctor.name || doctor.professor}
+                email={doctor.email}
+                department={normalizeDepartment(doctor.department)}
+                office={doctor.office}
+                showTeamsButton={shouldShowTeamsButton(doctor.department)}
+              />
+              {renderResultActions(doctor)}
+            </div>
+          ),
           timestamp: getCurrentTime(),
-          quickReplies: ['Search another', 'By department']
+          variant: 'smart',
+          rawText: `Profile details for ${doctor.name || doctor.professor || 'instructor'}`,
+          quickReplies: ['By department']
         }]);
       }
     } else {
@@ -1082,7 +1366,9 @@ export default function Page() {
             </div>
           </div>
         ),
-        timestamp: getCurrentTime()
+        timestamp: getCurrentTime(),
+        variant: 'disambiguation',
+        rawText: `Found ${results.length} matching instructors.`
       }]);
     }
   };
@@ -1104,6 +1390,8 @@ export default function Page() {
     if (!first) return '';
     return first.toLowerCase().startsWith(inputValue.toLowerCase()) ? first : '';
   })();
+
+  const hasConversationHistory = messages.some((message) => message.type === 'user');
 
   return (
     <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative">
@@ -1128,14 +1416,70 @@ export default function Page() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
+          {(hasConversationHistory || pinnedResponses.length > 0) && (
+            <div className="px-3 sm:px-4 pb-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleClearConversation}
+                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
+                aria-label="Clear conversation"
+              >
+                <RotateCcw className="w-3.5 h-3.5 inline mr-1" /> Clear chat
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyLastAnswer}
+                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
+                aria-label="Copy last answer"
+              >
+                <Copy className="w-3.5 h-3.5 inline mr-1" /> Copy last answer
+              </button>
+              <button
+                type="button"
+                onClick={handlePinLastAnswer}
+                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
+                aria-label="Pin useful result"
+              >
+                <Pin className="w-3.5 h-3.5 inline mr-1" /> Pin useful result
+              </button>
+            </div>
+          )}
+
+          {pinnedResponses.length > 0 && (
+            <div className="px-3 sm:px-4 pb-3">
+              <div className="rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-3 space-y-2">
+                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B91C1C] dark:text-[#FCA5A5]">Pinned notes</div>
+                {pinnedResponses.map((item) => (
+                  <div key={item} className="text-[12px] leading-relaxed text-[#1F2937] dark:text-[#E5E7EB] border-b border-[#DC2626]/10 last:border-0 pb-2 last:pb-0">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center">
               <EmptyState />
-              <div className="flex justify-center mt-6">
-                 <QuickReplies 
+              <div className="px-3 sm:px-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => handleSendMessage(action.query)}
+                    className="min-h-14 rounded-xl border border-[#DC2626]/25 bg-white/70 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-colors px-3 py-2 text-left"
+                    aria-label={`${action.label} example`}
+                  >
+                    <div className="text-[13px] font-bold text-[#B91C1C] dark:text-[#FCA5A5]">{action.label}</div>
+                    <div className="text-[11px] opacity-75 mt-1">{action.query}</div>
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-center mt-4">
+                <QuickReplies 
                   options={['By department']} 
                   onSelect={(opt) => handleQuickReply(opt)}
-                 />
+                />
               </div>
             </div>
           ) : (
@@ -1146,6 +1490,8 @@ export default function Page() {
                     type={message.type}
                     content={message.content}
                     timestamp={message.timestamp}
+                    variant={message.variant}
+                    animationDelay={Math.min(index * 0.02, 0.18)}
                   />
                   {message.quickReplies && index === messages.length - 1 && (
                     <QuickReplies
@@ -1166,20 +1512,23 @@ export default function Page() {
           <div className="absolute bottom-[84px] sm:bottom-[88px] left-2 right-2 sm:left-4 sm:right-4 md:left-1/2 md:right-auto md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
             <div className="px-4 py-2 border-b border-black/5 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-black/50">
               <span className="text-[10px] font-bold uppercase tracking-wider opacity-40 text-black dark:text-white">Suggestions</span>
-              <button onClick={() => setSuggestions([])} className="opacity-40 hover:opacity-100 transition-opacity text-black dark:text-white"><X size={14} /></button>
+              <button onClick={() => { setSuggestions([]); setHighlightedSuggestionIndex(-1); }} className="opacity-40 hover:opacity-100 transition-opacity text-black dark:text-white"><X size={14} /></button>
             </div>
             <div className="max-h-[45dvh] sm:max-h-[240px] overflow-y-auto">
               {suggestions.map((s, index) => (
                 <button
-                  key={index}
+                  key={`${s.item?.name || 'suggestion'}-${index}`}
                   onClick={() => handleSendMessage(s.item.name, s.item)}
-                  className="w-full text-left p-3.5 sm:p-3 hover:bg-[#DC2626]/10 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0"
+                  className={`w-full text-left p-3.5 sm:p-3 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0 ${
+                    highlightedSuggestionIndex === index ? 'bg-[#DC2626]/15' : 'hover:bg-[#DC2626]/10'
+                  }`}
+                  aria-label={`Choose ${s.item.name}`}
                 >
                   <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px]">
                     {s.item.name.charAt(0)}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <div className="text-[15px] sm:text-[14px] font-bold truncate text-black dark:text-white">{s.item.name}</div>
+                    <div className="text-[15px] sm:text-[14px] font-bold truncate text-black dark:text-white">{highlightQueryMatch(s.item.name, inputValue)}</div>
                     <div className="text-[10px] uppercase tracking-widest opacity-50 truncate text-black dark:text-white">{s.item.department}</div>
                   </div>
                   <Search size={14} className="opacity-20 text-black dark:text-white" />
@@ -1194,6 +1543,7 @@ export default function Page() {
           value={inputValue}
           onSend={handleSendMessage}
           onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
           inlineSuggestion={inlineSuggestion}
           placeholder="Type an instructor's name"
         />
@@ -1267,6 +1617,12 @@ export default function Page() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[200] px-3 py-2 rounded-full bg-black/80 text-white text-[12px] font-medium shadow-lg">
+          {toastMessage}
         </div>
       )}
     </main>
