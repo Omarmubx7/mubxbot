@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
-import { Search, X, Copy, Pin, RotateCcw } from 'lucide-react';
+import { Search, X, Copy, Pin, RotateCcw, Sun, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatMessage } from '../components/ChatMessage';
@@ -198,6 +198,7 @@ export default function Page() {
   const [feedbackContext, setFeedbackContext] = useState(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
+  const [showSummerNotice, setShowSummerNotice] = useState(false);
   
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
@@ -244,6 +245,8 @@ export default function Page() {
       storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
       storedLastAction = globalThis.localStorage.getItem('mubx_last_action') || '';
       hasVisitedBefore = globalThis.localStorage.getItem('mubx_has_visited') === '1';
+      
+      setShowSummerNotice(true);
     } catch (e) {
       // Storage access might be denied in strict privacy modes
       console.warn('Storage access is disabled');
@@ -305,6 +308,10 @@ export default function Page() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  const handleDismissSummerNotice = () => {
+    setShowSummerNotice(false);
+  };
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -1624,6 +1631,59 @@ export default function Page() {
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[200] px-3 py-2 rounded-full bg-black/80 text-white text-[12px] font-medium shadow-lg">
           {toastMessage}
         </div>
+      )}
+
+      {showSummerNotice && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xl"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
+          >
+            {/* Glowing radial background inside card */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-red-500/10 dark:bg-red-500/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-amber-500/10 dark:bg-amber-500/20 blur-3xl pointer-events-none" />
+
+            {/* Sun/Alert Icon block */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-red-500 flex items-center justify-center shadow-lg shadow-amber-500/20 animate-pulse relative z-10">
+              <Sun className="w-8 h-8 text-white stroke-[2.5]" />
+            </div>
+
+            {/* Text Content */}
+            <div className="space-y-3 relative z-10">
+              <h2 className="text-[24px] sm:text-[28px] font-black tracking-tight text-neutral-900 dark:text-white bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-600 dark:from-white dark:via-neutral-200 dark:to-neutral-400 bg-clip-text text-transparent">
+                Summer Data Update Pending
+              </h2>
+              <p className="text-[14px] sm:text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+                The new summer data is not updated yet. Thank you for your support!
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-3 relative z-10 pt-2">
+              <a
+                href="mailto:omarmubaidincs@gmail.com?subject=MUBXBot%20Summer%20Data%20Contribution&body=Hi%20Omar,%0D%0A%0D%0AI%20would%20like%20to%20help%20provide%20or%20verify%20the%20summer%20data%20for%20MUBXBot.%20Here%20are%20the%20details:%0D%0A"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold px-4 py-3.5 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:opacity-95 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Help Us Update Faster</span>
+              </a>
+              
+              <button
+                type="button"
+                onClick={handleDismissSummerNotice}
+                className="w-full rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-neutral-800 dark:text-neutral-200 font-bold px-4 py-3 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all duration-200"
+              >
+                Use the tool anyway
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </main>
   );
