@@ -175,3 +175,26 @@ CREATE TABLE IF NOT EXISTS user_feedback (
 CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category);
 CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at);
 CREATE INDEX IF NOT EXISTS idx_user_feedback_missing_name ON user_feedback (missing_name);
+
+-- ==============================
+-- Public office-hours data submissions (student/helper contributions)
+-- ==============================
+
+CREATE TABLE IF NOT EXISTS instructor_submissions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    department TEXT,
+    email TEXT,
+    office TEXT,
+    office_hours JSONB NOT NULL DEFAULT '{}'::jsonb,
+    missing_name_link TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    ip_hash TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    reviewed_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_instructor_submissions_status ON instructor_submissions (status);
+CREATE INDEX IF NOT EXISTS idx_instructor_submissions_name ON instructor_submissions (name);
+CREATE INDEX IF NOT EXISTS idx_instructor_submissions_created_at ON instructor_submissions (created_at);

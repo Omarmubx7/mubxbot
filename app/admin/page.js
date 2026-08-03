@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Plus, Edit2, Trash2, Search, Mail } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Mail, Loader2 } from "lucide-react";
 import { useDoctors } from "../../components/Providers.jsx";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,12 +58,35 @@ ClickableEmail.propTypes = {
   className: PropTypes.string
 };
 
+function DataStatusBadge({ isNew }) {
+  if (isNew) {
+    return (
+      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white text-[13px] font-black uppercase tracking-[0.12em] shadow-lg shadow-[#DC2626]/30">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+        New Data
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-[var(--text-tertiary)] text-[10px] font-bold uppercase tracking-[0.14em]">
+      Old Data
+    </span>
+  );
+}
+
+DataStatusBadge.propTypes = {
+  isNew: PropTypes.bool.isRequired
+};
+
 export default function AdminPage() {
   const { instructors, setInstructors, loading } = useDoctors() || { instructors: [], loading: true };
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [deleteInFlight, setDeleteInFlight] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [usageSnapshot, setUsageSnapshot] = useState(null);
 
   const refreshInstructors = async () => {
@@ -197,6 +220,8 @@ export default function AdminPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       if (currentDoctor) {
         await saveExistingDoctor();
@@ -225,15 +250,17 @@ export default function AdminPage() {
       }
 
       alert('Failed to save: ' + (err.message || err));
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (name) => {
-    if (!confirm(`Delete ${name}?`)) { setIsDeleting(null); return; }
+    if (deleteInFlight) return;
+    setDeleteInFlight(true);
     try {
       await requestDoctorMutation('DELETE', { name });
       await refreshInstructors();
-      setIsDeleting(null);
     } catch (err) {
       console.error(err);
       const message = String(err?.message || err || '');
@@ -241,12 +268,13 @@ export default function AdminPage() {
       if (/read-only/i.test(message)) {
         const nextInstructors = removeDoctorFromList(instructors, name);
         persistInstructorsLocally(nextInstructors);
-        setIsDeleting(null);
         alert('Deleted locally in this browser. Server storage is read-only in this deployment.');
         return;
       }
 
       alert('Failed to delete: ' + (err.message || err));
+    } finally {
+      setDeleteInFlight(false);
       setIsDeleting(null);
     }
   };
@@ -261,10 +289,14 @@ export default function AdminPage() {
     globalThis.location.href = '/admin-login';
   };
 
-  const filtered = instructors.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = instructors
+    .filter(d => 
+      d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.department.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => Number(b.isNew) - Number(a.isNew));
+
+  const newDataCount = instructors.filter(d => d.isNew).length;
 
   useEffect(() => {
     performSync();
@@ -293,6 +325,18 @@ export default function AdminPage() {
 
   return (
     <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
+      {/* Mutation loading bar */}
+      {(deleteInFlight || saving) && (
+        <div className="fixed top-0 left-0 right-0 h-[3px] z-[200] overflow-hidden bg-black/5 dark:bg-white/10">
+          <motion.div
+            className="h-full bg-gradient-to-r from-[#DC2626] via-[#EF4444] to-[#B91C1C]"
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+      )}
+
       {/* Premium Apple Header */}
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
         <div className="max-w-6xl mx-auto">
@@ -380,11 +424,21 @@ export default function AdminPage() {
 
         {/* Table View */}
         <div className="glass-surface rounded-[24px] sm:rounded-[32px] border-black/[0.03] dark:border-white/[0.05] overflow-hidden shadow-2xl">
+          <div className="flex flex-wrap items-center gap-3 px-4 sm:px-8 py-4 border-b border-black/5 dark:border-white/5">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-br from-[#DC2626] to-[#B91C1C] text-white text-[13px] font-black uppercase tracking-[0.12em] shadow-lg shadow-[#DC2626]/30">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              {newDataCount} New Data
+            </span>
+            <span className="text-[12px] font-semibold text-[var(--text-tertiary)]">
+              Update office hours for these instructors. Everyone else is marked old data.
+            </span>
+          </div>
           <div className="sm:hidden p-4 space-y-3">
             {filtered.map((doc) => (
               <div key={doc.name} className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 p-4 space-y-3">
                 <div>
-                  <div className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
+                  <div className="mb-2"><DataStatusBadge isNew={doc.isNew} /></div>
+                  <div className={`font-bold ${doc.isNew ? 'text-[20px]' : 'text-[16px]'} text-[var(--text-primary)] leading-tight`}>{doc.name}</div>
                   <div className="flex items-center gap-2 mt-2 opacity-70 text-[var(--text-primary)] break-all">
                     <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[12px] font-medium underline decoration-transparent hover:decoration-current" />
                   </div>
@@ -414,7 +468,8 @@ export default function AdminPage() {
                 {filtered.map((doc) => (
                   <tr key={doc.name} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors group">
                     <td className="px-8 py-6">
-                      <div className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{doc.name}</div>
+                      <div className="mb-2"><DataStatusBadge isNew={doc.isNew} /></div>
+                      <div className={`font-bold ${doc.isNew ? 'text-[20px]' : 'text-[16px]'} text-[var(--text-primary)] leading-tight`}>{doc.name}</div>
                       <div className="flex items-center gap-2 mt-1.5 opacity-60 text-[var(--text-primary)]">
                         <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[13px] font-medium underline decoration-transparent hover:decoration-current" />
                       </div>
@@ -497,14 +552,17 @@ export default function AdminPage() {
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 pt-4">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[var(--text-primary)]">Cancel</button>
-            <button type="submit" className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#DC2626] text-white shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all">{currentDoctor ? "Update" : "Save"}</button>
+            <button type="button" onClick={() => setIsModalOpen(false)} disabled={saving} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-[var(--text-primary)] disabled:opacity-50 disabled:pointer-events-none">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#DC2626] text-white shadow-lg shadow-[#DC2626]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2">
+              {saving && <Loader2 size={18} className="animate-spin" />}
+              {saving ? 'Saving…' : (currentDoctor ? "Update" : "Save")}
+            </button>
           </div>
         </form>
       </Modal>
 
       {/* Delete Confirmation */}
-      <Modal title="Warning" isOpen={!!isDeleting} onClose={() => setIsDeleting(null)}>
+      <Modal title="Warning" isOpen={!!isDeleting} onClose={() => { if (!deleteInFlight) setIsDeleting(null); }}>
         <div className="space-y-8 text-center py-4">
           <div className="w-20 h-20 bg-[#FF3B30]/10 text-[#FF3B30] rounded-full flex items-center justify-center mx-auto shadow-sm">
             <Trash2 size={36} strokeWidth={1.5} />
@@ -515,8 +573,11 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
-            <button onClick={() => setIsDeleting(null)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-all text-[var(--text-primary)]">Keep</button>
-            <button onClick={() => handleDelete(isDeleting)} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#FF3B30] text-white shadow-lg shadow-[#FF3B30]/20 hover:scale-[1.02] active:scale-95 transition-all">Delete</button>
+            <button onClick={() => setIsDeleting(null)} disabled={deleteInFlight} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-all text-[var(--text-primary)] disabled:opacity-50 disabled:pointer-events-none">Keep</button>
+            <button onClick={() => handleDelete(isDeleting)} disabled={deleteInFlight} className="flex-1 px-6 py-4 rounded-2xl font-bold bg-[#FF3B30] text-white shadow-lg shadow-[#FF3B30]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2">
+              {deleteInFlight && <Loader2 size={18} className="animate-spin" />}
+              {deleteInFlight ? 'Deleting…' : 'Delete'}
+            </button>
           </div>
         </div>
       </Modal>

@@ -15,19 +15,18 @@
     "watcher": "node scripts/watcher.js"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.0.6",
+    "@azure/msal-node": "^5.4.3",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@vercel/analytics": "^1.6.1",
-    "axios": "^1.13.6",
+    "axios": "^1.19.0",
     "dotenv": "^17.3.1",
     "framer-motion": "^12.35.2",
     "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.477.0",
-    "next": "^15.2.0",
+    "next": "^15.5.22",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.1",
-    "openai": "^6.27.0",
+    "nodemailer": "^9.0.3",
     "pdf-parse": "^2.4.5",
     "pg": "^8.20.0",
     "prop-types": "^15.8.1",
@@ -40,7 +39,11 @@
     "autoprefixer": "^10.4.20",
     "eslint": "9.39.3",
     "eslint-config-next": "16.1.6",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.25",
     "tailwindcss": "^4.0.0"
+  },
+  "overrides": {
+    "sharp": "^0.35.3",
+    "postcss": "^8.5.25"
   }
 }

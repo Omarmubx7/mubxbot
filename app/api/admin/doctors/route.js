@@ -2,11 +2,18 @@ import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
+import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
+import { markNewData, removeNewDataName } from '../../../../lib/newDataStore';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const { Client } = pg;
+
+function unauthorized(req) {
+  const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value || '';
+  return !verifyAdminSessionToken(token);
+}
 
 function normalizeName(value = '') {
   return String(value).trim().toLowerCase();
@@ -15,7 +22,7 @@ function normalizeName(value = '') {
 async function withDb(fn) {
   const client = new Client({
     connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
   });
   await client.connect();
   try {
@@ -243,6 +250,10 @@ function validateDoctorPayload(doctor) {
 
 export async function POST(req) {
   try {
+    if (unauthorized(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const doctor = await req.json();
     const validationError = validateDoctorPayload(doctor);
     if (validationError) {
@@ -256,7 +267,14 @@ export async function POST(req) {
 
     const newRows = buildRowsFromDoctor(doctor);
     await writeFacultyRows(doctor.name, newRows);
-    return NextResponse.json({ ok: true }, { status: 201 });
+    let marked = true;
+    try {
+      await markNewData(doctor.name);
+    } catch (error) {
+      marked = false;
+      console.error('Failed to mark name as new data', error?.message || error);
+    }
+    return NextResponse.json({ ok: true, marked }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create doctor', details: error.message }, { status: 500 });
   }
@@ -264,6 +282,10 @@ export async function POST(req) {
 
 export async function PUT(req) {
   try {
+    if (unauthorized(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const doctor = await req.json();
     const validationError = validateDoctorPayload(doctor);
     if (validationError) {
@@ -277,7 +299,14 @@ export async function PUT(req) {
 
     const newRows = buildRowsFromDoctor(doctor);
     await writeFacultyRows(doctor.name, newRows);
-    return NextResponse.json({ ok: true });
+    let marked = true;
+    try {
+      await markNewData(doctor.name);
+    } catch (error) {
+      marked = false;
+      console.error('Failed to mark name as new data', error?.message || error);
+    }
+    return NextResponse.json({ ok: true, marked });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update doctor', details: error.message }, { status: 500 });
   }
@@ -285,6 +314,10 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   try {
+    if (unauthorized(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { name } = await req.json();
     const normalized = normalizeName(name);
     if (!normalized) {
@@ -292,11 +325,18 @@ export async function DELETE(req) {
     }
 
     const deleted = await deleteFacultyRows(name);
-    if (!deleted) {
-      return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
+
+    try {
+      await removeNewDataName(name);
+    } catch (error) {
+      console.error('Failed to remove name from new data store', error?.message || error);
     }
 
-    return NextResponse.json({ ok: true });
+    if (!deleted) {
+      return NextResponse.json({ ok: true, deleted: false });
+    }
+
+    return NextResponse.json({ ok: true, deleted: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete doctor', details: error.message }, { status: 500 });
   }

@@ -35,7 +35,7 @@ async function main() {
 
   const c = new Client({
     connectionString: process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
   });
   await c.connect();
 

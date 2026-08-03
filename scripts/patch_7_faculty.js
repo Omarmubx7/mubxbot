@@ -1,6 +1,6 @@
 const { Client } = require('pg');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
-const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const client = new Client({ connectionString: DATABASE_URL, ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) }) });
 
 const corrections = [
   // Dr. Salem Alemaishat

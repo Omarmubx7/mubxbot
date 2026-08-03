@@ -14,11 +14,25 @@ export function middleware(req) {
     return applyNoIndexHeaders(NextResponse.next());
   }
 
+  if (pathname.startsWith('/api/admin/submissions/action')) {
+    return applyNoIndexHeaders(NextResponse.next());
+  }
+
   if (pathname.startsWith('/admin-login')) {
     return applyNoIndexHeaders(NextResponse.next());
   }
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+  if (pathname.startsWith('/api/admin')) {
+    const hasSession = Boolean(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+
+    if (!hasSession) {
+      return applyNoIndexHeaders(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
+    }
+
+    return applyNoIndexHeaders(NextResponse.next());
+  }
+
+  if (pathname.startsWith('/admin')) {
     const hasSession = Boolean(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 
     if (!hasSession) {

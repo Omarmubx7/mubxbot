@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
-import { Search, X, Copy, Pin, RotateCcw, Sun, Mail } from 'lucide-react';
+import { Search, X, Copy, Pin, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatMessage } from '../components/ChatMessage';
@@ -13,6 +13,7 @@ import { ChatInput } from '../components/ChatInput';
 import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
+import ContributeFlow from '../components/ContributeFlow';
 
 const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
   <motion.div 
@@ -110,80 +111,13 @@ const FAQ_ITEMS = [
   }
 ];
 
-const QUICK_ACTIONS = [
-  { label: 'Find email', query: 'what is Razan email' },
-  { label: 'Check office hours', query: 'when is Razan free' },
-  { label: 'Find office', query: 'where is Razan office' }
-];
-
-const buildWelcomeMessage = ({ isReturningUser = false, lastAction = '' } = {}) => (
-  <div className="space-y-4">
-    <div className="rounded-2xl border border-[#DC2626]/20 bg-gradient-to-br from-[#DC2626]/10 via-white to-[#FCA5A5]/20 dark:from-[#DC2626]/20 dark:via-[#1C1C1E] dark:to-[#7F1D1D]/30 p-4">
-      <div className="font-black text-[18px] tracking-tight text-[#7F1D1D] dark:text-[#FCA5A5]">
-        {isReturningUser ? '👋 Welcome back to MUBXBot!' : '👋 Yo, welcome to MUBXBot!'}
-      </div>
-      <div className="mt-2 text-[14px] leading-relaxed text-[#1F2937] dark:text-[#E5E7EB]">
-        Your go-to helper for everything instructor-related at HTU’s School of Computing and Informatics.
-      </div>
-      {isReturningUser && lastAction && (
-        <div className="mt-3 text-[12px] rounded-lg bg-white/75 dark:bg-black/20 px-3 py-2 border border-[#DC2626]/15">
-          Last time you asked: <span className="font-semibold">{lastAction}</span>
-        </div>
-      )}
-    </div>
-
-    <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/5 p-4 space-y-2.5">
-      <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#DC2626] dark:text-[#F87171]">🔍 I can help you with:</div>
-      <div className="text-[13px] leading-relaxed space-y-1.5 text-[#111827] dark:text-[#E5E7EB]">
-        <div>Find instructor emails and contact info</div>
-        <div>Check office hours and availability</div>
-        <div>Search by name, department, or office</div>
-        <div>Pull up full instructor profiles</div>
-      </div>
-    </div>
-
-    <div className="rounded-2xl border border-[#DC2626]/15 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-4 space-y-3">
-      <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#B91C1C] dark:text-[#FCA5A5]">💡 Quick hacks:</div>
-      <div className="space-y-2 text-[13px] leading-relaxed text-[#1F2937] dark:text-[#F3F4F6]">
-        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
-          Type "what + name" to get the email<br />
-          <span className="opacity-75">Example: what is Razan email</span>
-        </div>
-        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
-          Type "when + name" to check office hours<br />
-          <span className="opacity-75">Example: when is Razan free</span>
-        </div>
-        <div className="rounded-lg bg-white/70 dark:bg-black/20 px-3 py-2">
-          Type "where + name" to find the office<br />
-          <span className="opacity-75">Example: where is Razan office</span>
-        </div>
-      </div>
-      <div className="text-[13px] font-medium text-[#7F1D1D] dark:text-[#FCA5A5]">Just drop your question and I’ll do the rest ✨</div>
-    </div>
-
-    <div className="text-[12px] opacity-80">
-      📘 Learn more: <a href="/faq" className="font-semibold underline decoration-current/30 hover:decoration-current">MUBXBot FAQ</a>
-    </div>
-  </div>
-);
-
 const highlightQueryMatch = (text, query) => {
   return text;
 };
 
-const createWelcomeMessage = ({ isReturningUser = false, lastAction = '' } = {}) => ({
-  id: 'welcome-message',
-  type: 'bot',
-  content: buildWelcomeMessage({ isReturningUser, lastAction }),
-  timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-  variant: 'smart',
-  rawText: 'Welcome to MUBXBot',
-  quickReplies: ['By department']
-});
-
 export default function Page() {
   const { instructors, officeHours, loading, theme, setTheme } = useDoctors();
-  const [messages, setMessages] = useState(() => ([createWelcomeMessage()]));
+  const [messages, setMessages] = useState(() => ([]));
   const [isTyping, setIsTyping] = useState(false);
   const [fuseInstance, setFuseInstance] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -198,7 +132,8 @@ export default function Page() {
   const [feedbackContext, setFeedbackContext] = useState(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
-  const [showSummerNotice, setShowSummerNotice] = useState(false);
+  const [contributeOpen, setContributeOpen] = useState(false);
+  const [contributeName, setContributeName] = useState('');
   
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
@@ -238,15 +173,11 @@ export default function Page() {
     let storedUserId = '';
     let storedConversationId = '';
     let storedLastAction = '';
-    let hasVisitedBefore = false;
 
     try {
       storedUserId = globalThis.localStorage.getItem('mubx_analytics_user_id') || '';
       storedConversationId = globalThis.sessionStorage.getItem('mubx_analytics_conversation_id') || '';
       storedLastAction = globalThis.localStorage.getItem('mubx_last_action') || '';
-      hasVisitedBefore = globalThis.localStorage.getItem('mubx_has_visited') === '1';
-      
-      setShowSummerNotice(true);
     } catch (e) {
       // Storage access might be denied in strict privacy modes
       console.warn('Storage access is disabled');
@@ -258,14 +189,6 @@ export default function Page() {
     analyticsUserIdRef.current = userId;
     conversationIdRef.current = conversationId;
     lastActionRef.current = storedLastAction;
-
-    setMessages((prev) => prev.map((message) => {
-      if (message.id !== 'welcome-message') return message;
-      return createWelcomeMessage({
-        isReturningUser: hasVisitedBefore,
-        lastAction: storedLastAction
-      });
-    }));
 
     try {
       if (!storedUserId) globalThis.localStorage.setItem('mubx_analytics_user_id', userId);
@@ -308,10 +231,6 @@ export default function Page() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
-
-  const handleDismissSummerNotice = () => {
-    setShowSummerNotice(false);
-  };
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -381,12 +300,7 @@ export default function Page() {
   };
 
   const handleClearConversation = () => {
-    setMessages([
-      createWelcomeMessage({
-        isReturningUser: true,
-        lastAction: lastActionRef.current
-      })
-    ]);
+    setMessages([]);
     setSuggestions([]);
     setHighlightedSuggestionIndex(-1);
     setInputValue('');
@@ -721,6 +635,7 @@ export default function Page() {
       email={data.email}
       department={normalizeDepartment(data.department)}
       office={data.office}
+      isNew={data.isNew}
       showTeamsButton={shouldShowTeamsButton(data.department)}
       emptyStateMessage={emptyStateMessage}
     />
@@ -829,6 +744,10 @@ export default function Page() {
   };
 
   const handleInputChange = (val) => {
+    if (contributeOpen) {
+      setContributeOpen(false);
+      setContributeName('');
+    }
     setInputValue(val);
     if (val.trim() && fuseInstance) {
       const results = fuseInstance.search(val).slice(0, 5);
@@ -888,6 +807,7 @@ export default function Page() {
                   email={hoursData[0].email}
                   department={hoursData[0].department || specificDoctor.department}
                   office={hoursData[0].office || specificDoctor.office}
+                  isNew={specificDoctor.isNew}
                   showTeamsButton={shouldShowTeamsButton(hoursData[0].department || specificDoctor.department)}
                 />
                 {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
@@ -911,6 +831,7 @@ export default function Page() {
                   email={specificDoctor.email}
                   department={normalizeDepartment(specificDoctor.department)}
                   office={specificDoctor.office}
+                  isNew={specificDoctor.isNew}
                   showTeamsButton={shouldShowTeamsButton(specificDoctor.department)}
                 />
                 {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
@@ -1181,15 +1102,14 @@ export default function Page() {
                 )}
                 <button
                   type="button"
-                  onClick={() => openFeedbackForm({
-                    category: 'missing_name',
-                    missingName: data.subject || data.message || '',
-                    userQuery: data.message || '',
-                    requestLabel: data.requestLabel || ''
-                  })}
+                  onClick={() => {
+                    const name = data.subject || data.message || '';
+                    setContributeName(name);
+                    setContributeOpen(true);
+                  }}
                   className="w-full text-left rounded-xl border border-[#DC2626]/30 bg-[#DC2626]/5 px-3 py-2.5 text-[13px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
                 >
-                  Missing name? Report it here
+                  Help add them to the directory
                 </button>
                 <button
                   type="button"
@@ -1313,6 +1233,7 @@ export default function Page() {
                 email={hoursData[0].email}
                 department={hoursData[0].department || doctor.department}
                 office={hoursData[0].office || doctor.office}
+                isNew={doctor.isNew}
                 showTeamsButton={shouldShowTeamsButton(hoursData[0].department || doctor.department)}
               />
               {renderResultActions(doctor)}
@@ -1336,6 +1257,7 @@ export default function Page() {
                 email={doctor.email}
                 department={normalizeDepartment(doctor.department)}
                 office={doctor.office}
+                isNew={doctor.isNew}
                 showTeamsButton={shouldShowTeamsButton(doctor.department)}
               />
               {renderResultActions(doctor)}
@@ -1467,27 +1389,7 @@ export default function Page() {
 
           {messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center">
-              <EmptyState />
-              <div className="px-3 sm:px-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {QUICK_ACTIONS.map((action) => (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={() => handleSendMessage(action.query)}
-                    className="min-h-14 rounded-xl border border-[#DC2626]/25 bg-white/70 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-colors px-3 py-2 text-left"
-                    aria-label={`${action.label} example`}
-                  >
-                    <div className="text-[13px] font-bold text-[#B91C1C] dark:text-[#FCA5A5]">{action.label}</div>
-                    <div className="text-[11px] opacity-75 mt-1">{action.query}</div>
-                  </button>
-                ))}
-              </div>
-              <div className="flex justify-center mt-4">
-                <QuickReplies 
-                  options={['By department']} 
-                  onSelect={(opt) => handleQuickReply(opt)}
-                />
-              </div>
+              <EmptyState onAsk={(query) => handleSendMessage(query)} />
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4 pb-2">
@@ -1545,6 +1447,17 @@ export default function Page() {
           </div>
         )}
 
+        {/* Contribute Bottom Sheet */}
+        <ContributeFlow
+          variant="modal"
+          open={contributeOpen}
+          onOpenChange={(v) => {
+            setContributeOpen(v);
+            if (!v) setContributeName('');
+          }}
+          initialName={contributeName}
+        />
+
         {/* Input Bar */}
         <ChatInput
           value={inputValue}
@@ -1553,6 +1466,15 @@ export default function Page() {
           onKeyDown={handleInputKeyDown}
           inlineSuggestion={inlineSuggestion}
           placeholder="Type an instructor's name"
+          accessoryOpen={contributeOpen}
+          onAccessoryClick={() => {
+            if (contributeOpen) {
+              setContributeOpen(false);
+              setContributeName('');
+            } else {
+              setContributeOpen(true);
+            }
+          }}
         />
 
       </div>
@@ -1631,59 +1553,6 @@ export default function Page() {
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[200] px-3 py-2 rounded-full bg-black/80 text-white text-[12px] font-medium shadow-lg">
           {toastMessage}
         </div>
-      )}
-
-      {showSummerNotice && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xl"
-        >
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
-          >
-            {/* Glowing radial background inside card */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-red-500/10 dark:bg-red-500/20 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-amber-500/10 dark:bg-amber-500/20 blur-3xl pointer-events-none" />
-
-            {/* Sun/Alert Icon block */}
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-red-500 flex items-center justify-center shadow-lg shadow-amber-500/20 animate-pulse relative z-10">
-              <Sun className="w-8 h-8 text-white stroke-[2.5]" />
-            </div>
-
-            {/* Text Content */}
-            <div className="space-y-3 relative z-10">
-              <h2 className="text-[24px] sm:text-[28px] font-black tracking-tight text-neutral-900 dark:text-white bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-600 dark:from-white dark:via-neutral-200 dark:to-neutral-400 bg-clip-text text-transparent">
-                Summer Data Update Pending
-              </h2>
-              <p className="text-[14px] sm:text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                The new summer data is not updated yet. Thank you for your support!
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-3 relative z-10 pt-2">
-              <a
-                href="mailto:omarmubaidincs@gmail.com?subject=MUBXBot%20Summer%20Data%20Contribution&body=Hi%20Omar,%0D%0A%0D%0AI%20would%20like%20to%20help%20provide%20or%20verify%20the%20summer%20data%20for%20MUBXBot.%20Here%20are%20the%20details:%0D%0A"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold px-4 py-3.5 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:opacity-95 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-              >
-                <Mail className="w-4 h-4" />
-                <span>Help Us Update Faster</span>
-              </a>
-              
-              <button
-                type="button"
-                onClick={handleDismissSummerNotice}
-                className="w-full rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-neutral-800 dark:text-neutral-200 font-bold px-4 py-3 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all duration-200"
-              >
-                Use the tool anyway
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
       )}
     </main>
   );

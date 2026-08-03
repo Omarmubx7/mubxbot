@@ -10,10 +10,30 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_UR
 const FILE_PATH = path.join(process.cwd(), 'data', 'feedback_submissions.json');
 const ALLOWED_CATEGORIES = new Set(['missing_name', 'general']);
 
+const FEEDBACK_LIMIT_PER_WINDOW = 10;
+const FEEDBACK_WINDOW_MS = 60 * 60 * 1000;
+const ipHits = new Map();
+
+function clientIp(req) {
+  const fwd = req.headers.get('x-forwarded-for') || '';
+  return fwd.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+}
+
+function rateLimit(req) {
+  const ip = clientIp(req);
+  const now = Date.now();
+  const windowStart = now - FEEDBACK_WINDOW_MS;
+  const hits = (ipHits.get(ip) || []).filter(t => t > windowStart);
+  ipHits.set(ip, hits);
+  if (hits.length >= FEEDBACK_LIMIT_PER_WINDOW) return true;
+  ipHits.set(ip, [...hits, now]);
+  return false;
+}
+
 async function withDb(fn) {
   const client = new Client({
     connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
   });
 
   await client.connect();
@@ -212,7 +232,19 @@ async function tryPersistToDb(record) {
 
 export async function POST(req) {
   try {
+    if (rateLimit(req)) {
+      return NextResponse.json(
+        { error: 'Too many submissions. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const payload = await req.json();
+
+    if (typeof payload?._hp === 'string' && payload._hp.length > 0) {
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
     const normalized = normalizePayload(payload);
 
     if (normalized.error) {
@@ -247,8 +279,9 @@ export async function POST(req) {
 
     return NextResponse.json(responseRecord, { status: 201 });
   } catch (error) {
+    console.warn('Failed to submit feedback', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to submit feedback', details: error.message },
+      { error: 'Failed to submit feedback' },
       { status: 500 }
     );
   }

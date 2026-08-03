@@ -1,7 +1,7 @@
 "use client";
 
 import PropTypes from 'prop-types';
-import { Send } from 'lucide-react';
+import { Plus, Send } from 'lucide-react';
 import { VoiceInput } from './VoiceInput';
  
 export function ChatInput({
@@ -10,7 +10,9 @@ export function ChatInput({
   onChange,
   onKeyDown,
   inlineSuggestion,
-  placeholder = "Type doctor name…"
+  placeholder = "Type doctor name…",
+  accessoryOpen = false,
+  onAccessoryClick
 }) {
   const message = value ?? '';
 
@@ -64,8 +66,25 @@ export function ChatInput({
       {/* Input field with inline autocomplete */}
       <div className="flex-1 h-[46px] sm:h-11 relative rounded-full bg-white/50 dark:bg-black/40 border border-black/5 dark:border-white/5 focus-within:bg-white dark:focus-within:bg-black focus-within:border-red-500/30 focus-within:ring-2 focus-within:ring-red-500/20 transition-all shadow-inner my-1 flex items-center pr-2">
         
+        {onAccessoryClick && (
+          <button
+            type="button"
+            onClick={onAccessoryClick}
+            className={`ml-1.5 sm:ml-2 w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-all ${
+              accessoryOpen
+                ? 'bg-[#DC2626] text-white shadow-md shadow-red-500/25 rotate-45'
+                : 'bg-black/5 dark:bg-white/10 text-[#3C3C43] dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/20 active:scale-90'
+            }`}
+            aria-label="Add office hours"
+            aria-expanded={accessoryOpen}
+            title="Add office hours"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        )}
+
         {inlineRemainder && (
-          <div className="absolute inset-y-0 left-0 px-4 flex items-center pointer-events-none text-[15px]">
+          <div className={`absolute inset-y-0 ${onAccessoryClick ? 'left-[58px]' : 'left-0 px-4'} flex items-center pointer-events-none text-[15px]`}>
             <span className="invisible whitespace-pre">{message}</span>
             <span className="text-[#8E8E93] dark:text-[#98989D] whitespace-pre opacity-60">{inlineRemainder}</span>
           </div>
@@ -115,4 +134,6 @@ ChatInput.propTypes = {
   onKeyDown: PropTypes.func,
   inlineSuggestion: PropTypes.string,
   placeholder: PropTypes.string,
+  accessoryOpen: PropTypes.bool,
+  onAccessoryClick: PropTypes.func,
 };

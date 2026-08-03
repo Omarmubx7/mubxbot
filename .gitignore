@@ -47,3 +47,9 @@ __pycache__/
 
 # Watcher state
 data/snapshot.json
+data/new_data_names.json
+
+# Runtime user-submitted data (PII) - never commit
+data/user_feedback.json
+data/feedback_submissions.json
+data/instructor_submissions.json

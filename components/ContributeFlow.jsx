@@ -1,0 +1,345 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X, ChevronLeft, Search, CheckCircle2, AlertTriangle, UserPlus } from 'lucide-react';
+import InstructorForm from './InstructorForm';
+import { useContribute } from '../lib/useContribute';
+
+export default function ContributeFlow({
+  variant = 'modal',
+  open = false,
+  onOpenChange,
+  initialName = '',
+  prefillFromUrl = false
+}) {
+  const {
+    missingNames,
+    staleInstructors,
+    departments,
+    counts,
+    loading,
+    loadError,
+    formData,
+    submitting,
+    formError,
+    submitted,
+    setFormData,
+    pickName,
+    pickInstructor,
+    submit,
+    resetForm
+  } = useContribute({ prefillName: initialName, prefillFromUrl });
+
+  const [step, setStep] = useState('pick');
+  const [tab, setTab] = useState('add');
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (variant === 'modal' && !open) return;
+    const urlName = prefillFromUrl
+      ? (new URLSearchParams(globalThis.location?.search || '')).get('name') || ''
+      : '';
+    setStep(initialName || urlName ? 'form' : 'pick');
+    setQuery('');
+  }, [open, initialName, variant, prefillFromUrl]);
+
+  const close = () => {
+    if (variant === 'modal' && onOpenChange) onOpenChange(false);
+  };
+
+  const handlePickMissing = (name) => {
+    pickName(name);
+    setStep('form');
+  };
+
+  const handlePickStale = (instructor) => {
+    pickInstructor(instructor);
+    setStep('form');
+  };
+
+  const handleSubmit = async (e) => {
+    const ok = await submit(e);
+    if (ok) setStep('done');
+  };
+
+  const handleDone = () => {
+    resetForm();
+    if (variant === 'modal') {
+      close();
+    } else {
+      setStep('pick');
+    }
+  };
+
+  const addList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return missingNames;
+    return missingNames.filter(item =>
+      String(item.name || '').toLowerCase().includes(q) ||
+      String(item.department || '').toLowerCase().includes(q)
+    );
+  }, [missingNames, query]);
+
+  const updateList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return staleInstructors;
+    return staleInstructors.filter(item =>
+      String(item.name || '').toLowerCase().includes(q) ||
+      String(item.department || '').toLowerCase().includes(q)
+    );
+  }, [staleInstructors, query]);
+
+  const title = step === 'pick' ? 'Help keep the directory fresh' : (formData.name?.trim() || 'Office hours');
+
+  const header = (
+    <>
+      <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-black/10 dark:bg-white/15 sm:hidden" />
+      <div className="flex items-center gap-2 px-4 sm:px-6 py-3">
+        {step !== 'pick' && (
+          <button
+            type="button"
+            onClick={() => { resetForm(); setStep('pick'); }}
+            aria-label="Back"
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-[15px] font-black tracking-tight text-[var(--text-primary)] truncate">{title}</div>
+          {step === 'pick' && (
+            <div className="text-[12px] font-medium text-[var(--text-tertiary)]">
+              {counts.missing} missing · {counts.old} outdated · {counts.new} up to date
+            </div>
+          )}
+        </div>
+        {variant === 'modal' && (
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close"
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+    </>
+  );
+
+  const pickBody = (
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-1 chat-scroll">
+      {loading && <div className="text-[13px] text-[var(--text-tertiary)] py-2">Loading...</div>}
+      {loadError && <div className="text-[13px] text-[var(--text-tertiary)] py-2">{loadError}</div>}
+      {!loading && !loadError && (
+        <>
+          <div className="flex gap-1 p-1 rounded-2xl bg-black/5 dark:bg-white/10 mb-3">
+            <button
+              type="button"
+              onClick={() => setTab('add')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                tab === 'add' ? 'bg-white dark:bg-[#2C2C2E] shadow-sm text-[#B91C1C] dark:text-[#F87171]' : 'text-[var(--text-secondary)]'
+              }`}
+            >
+              Add new
+              {counts.missing > 0 && (
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${tab === 'add' ? 'bg-[#DC2626]/10 text-[#DC2626]' : 'bg-black/5 dark:bg-white/10'}`}>{counts.missing}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('update')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                tab === 'update' ? 'bg-white dark:bg-[#2C2C2E] shadow-sm text-amber-600 dark:text-amber-400' : 'text-[var(--text-secondary)]'
+              }`}
+            >
+              Update old
+              {counts.old > 0 && (
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${tab === 'update' ? 'bg-amber-500/10 text-amber-600' : 'bg-black/5 dark:bg-white/10'}`}>{counts.old}</span>
+              )}
+            </button>
+          </div>
+
+          <div className="relative mb-3">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tab === 'update' ? 'Search instructors to update…' : 'Search names…'}
+              className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-full py-3 pl-10 pr-4 text-[15px] outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+            />
+          </div>
+
+          {tab === 'add' && addList.length > 0 && (
+            <div className="space-y-1">
+              {addList.map((item) => (
+                <button
+                  key={item.key || item.name}
+                  type="button"
+                  onClick={() => handlePickMissing(item.name)}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.99] transition-all text-left"
+                >
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[15px]">
+                    {String(item.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
+                    <div className="text-[12px] text-[var(--text-tertiary)]">Not in the directory yet</div>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#DC2626]/10 text-[#B91C1C] dark:text-[#F87171]">Missing</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === 'add' && addList.length === 0 && (
+            <div className="text-center py-8">
+              {query.trim()
+                ? <div className="text-[14px] font-bold text-[var(--text-primary)]">No matches for "{query.trim()}"</div>
+                : <div className="text-[14px] font-bold text-[var(--text-primary)]">All caught up 🎉</div>}
+              <div className="text-[13px] text-[var(--text-tertiary)] mt-1">
+                {query.trim() ? 'Add this name to the directory.' : 'Everyone is listed. You can still submit updates.'}
+              </div>
+              <button
+                type="button"
+                onClick={() => { pickName(query.trim()); setStep('form'); }}
+                className="inline-flex items-center gap-1.5 mt-3 px-4 py-2.5 rounded-full bg-[#DC2626] text-white text-[13px] font-bold hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <UserPlus size={15} /> {query.trim() ? `Add "${query.trim()}"` : 'Add someone else'}
+              </button>
+            </div>
+          )}
+
+          {tab === 'update' && updateList.length > 0 && (
+            <div className="space-y-1">
+              {updateList.map((item) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => handlePickStale(item)}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.99] transition-all text-left"
+                >
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-[15px]">
+                    {String(item.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
+                    <div className="text-[12px] text-[var(--text-tertiary)] truncate">
+                      {item.department || 'Faculty'}{item.existingDays?.length ? ` · hours on ${item.existingDays.join(', ')}` : ''}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">Update</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === 'update' && updateList.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-[14px] font-bold text-[var(--text-primary)]">
+                {query.trim() ? `No matches for "${query.trim()}"` : 'All data is up to date 🎉'}
+              </div>
+              <div className="text-[13px] text-[var(--text-tertiary)] mt-1">
+                Nothing flagged as outdated right now.
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const formBody = (
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-2 chat-scroll">
+      {submitted && (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 flex items-start gap-2.5 mb-3">
+          <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
+          <div className="text-[13px] text-[#1F2937] dark:text-[#E5E7EB]">
+            <span className="font-bold">Thank you!</span> Sent for review — the team will publish it to the bot shortly.
+          </div>
+        </div>
+      )}
+
+      {formError && (
+        <div className="rounded-xl border border-red-300/40 bg-red-50 dark:bg-red-900/20 p-3 flex items-start gap-2.5 mb-3">
+          <AlertTriangle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="text-[13px] text-red-700 dark:text-red-300">{formError}</div>
+        </div>
+      )}
+
+      <InstructorForm
+        formData={formData}
+        onChange={setFormData}
+        onSubmit={handleSubmit}
+        submitLabel="Submit for review"
+        submitting={submitting}
+        departments={departments}
+        requiredFields={['name', 'email']}
+        stickyActions
+      />
+    </div>
+  );
+
+  const doneBody = (
+    <div className="flex-1 flex flex-col items-center justify-center px-8 py-10 text-center">
+      <div className="w-16 h-16 rounded-full bg-green-500/15 text-green-500 flex items-center justify-center mb-4">
+        <CheckCircle2 size={32} />
+      </div>
+      <div className="text-[18px] font-black text-[var(--text-primary)]">Sent for review</div>
+      <div className="text-[13px] text-[var(--text-tertiary)] mt-1 max-w-[260px]">
+        The team checks every entry before it goes live in the bot.
+      </div>
+      <button
+        type="button"
+        onClick={handleDone}
+        className="mt-6 px-8 py-3.5 rounded-full bg-[#DC2626] text-white text-[14px] font-bold hover:scale-[1.02] active:scale-95 transition-all"
+      >
+        Done
+      </button>
+    </div>
+  );
+
+  const body = (
+    <>
+      {header}
+      {step === 'pick' && pickBody}
+      {step === 'form' && formBody}
+      {step === 'done' && doneBody}
+    </>
+  );
+
+  if (variant === 'inline') {
+    return (
+      <div className="h-full flex flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] glass-surface border border-black/[0.03] dark:border-white/[0.05]">
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center p-0 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={close}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+            className="relative w-full sm:max-w-lg h-[88dvh] sm:h-auto sm:max-h-[85dvh] sm:min-h-0 rounded-t-[28px] sm:rounded-[32px] glass-surface overflow-hidden flex flex-col shadow-2xl"
+          >
+            {body}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

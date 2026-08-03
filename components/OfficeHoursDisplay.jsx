@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { TeamsButton } from './TeamsButton';
 import { InstructorShareButton } from './InstructorShareButton';
 import { MapPin, Clock, Calendar, Mail } from 'lucide-react';
+import { isNewDataName } from '../lib/updateList';
 
 /**
  * OfficeHoursDisplay Component
@@ -16,7 +17,7 @@ import { MapPin, Clock, Calendar, Mail } from 'lucide-react';
  * - office: faculty office location
  * - emptyStateMessage: custom no-hours message
  */
-export function OfficeHoursDisplay({ officeHours, faculty, email, department, office, emptyStateMessage = 'No office hours available', showTeamsButton = true }) {
+export function OfficeHoursDisplay({ officeHours, faculty, email, department, office, emptyStateMessage = 'No office hours available', showTeamsButton = true, isNew }) {
   // Get unique days
   const uniqueHours = [];
   if (officeHours && officeHours.length > 0) {
@@ -30,12 +31,28 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
     });
   }
 
+  const dataTag = faculty
+    ? (isNew === true ? 'new' : isNew === false ? 'old' : (isNewDataName(faculty) ? 'new' : 'old'))
+    : null;
+
   return (
     <div className="bg-linear-to-r from-[#DC2626]/5 to-[#DC2626]/2 dark:from-[#DC2626]/10 dark:to-[#DC2626]/5 border border-[#DC2626]/20 dark:border-[#DC2626]/30 rounded-xl flex flex-col relative z-0">
       {/* Header with Teams Button */}
       <div className="p-3.5 sm:p-4 border-b border-[#DC2626]/15 dark:border-[#DC2626]/25 flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 bg-white/40 dark:bg-black/20 rounded-t-xl">
         <div className="flex-1">
-          <h3 className="text-[17px] sm:text-lg font-semibold text-slate-900 dark:text-white wrap-break-word">{faculty}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-[17px] sm:text-lg font-semibold text-slate-900 dark:text-white wrap-break-word">{faculty}</h3>
+            {dataTag === 'new' && (
+              <span className="inline-flex items-center rounded-full bg-green-500/15 text-green-700 dark:text-green-400 text-[10px] font-black tracking-wide px-2 py-0.5">
+                NEW DATA
+              </span>
+            )}
+            {dataTag === 'old' && (
+              <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black tracking-wide px-2 py-0.5">
+                OLD DATA
+              </span>
+            )}
+          </div>
           {department && (
             <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 wrap-break-word">{department}</div>
           )}
@@ -123,4 +140,5 @@ OfficeHoursDisplay.propTypes = {
   office: PropTypes.string,
   emptyStateMessage: PropTypes.string,
   showTeamsButton: PropTypes.bool,
+  isNew: PropTypes.bool,
 };

@@ -18,7 +18,7 @@ export async function GET() {
 
   const client = new Client({
     connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
   });
 
   try {
@@ -35,11 +35,12 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.warn('Database health check failed', error?.message || error);
     return NextResponse.json(
       {
         ok: false,
         source: 'postgres',
-        error: error.message || 'Database health check failed.'
+        error: 'Database health check failed.'
       },
       { status: 500 }
     );

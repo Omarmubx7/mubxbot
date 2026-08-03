@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 const client = new Client({
   connectionString: process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
 });
 client.connect()
   .then(() => client.query(
