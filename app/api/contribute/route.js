@@ -8,6 +8,8 @@ import { aggregateOfficeHours } from '../../../lib/officeHours';
 import { isNewDataName } from '../../../lib/updateList';
 import { loadNewDataNames } from '../../../lib/newDataStore';
 import { isLikelyJunkName } from '../../../lib/nameFilters';
+import { normalizeNameKey, isLikelyJunkName as isLikelyJunkNameShared } from '../../../lib/names';
+import { getHotMissing, upsertSearch } from '../../../lib/missingNameMetrics.js';
 import { DEPARTMENTS, normalizeDepartmentName, formatRoom, parseRoom } from '../../../lib/directoryLists';
 
 export const dynamic = 'force-dynamic';
@@ -20,19 +22,18 @@ const OFFICE_HOURS_FILE_PATH = path.join(process.cwd(), 'data', 'office_hours.js
 const SUBMISSION_LIMIT_PER_IP = 5;
 const ipHits = new Map();
 
+const HOT_SEARCH_THRESHOLD = Number(process.env.MISSING_NAME_HOT_THRESHOLD || 3);
+
 function normalizeName(value = '') {
   return String(value || '').trim().toLowerCase();
 }
 
 function normalizeText(value = '') {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b(dr|doctor|eng|prof|professor)\.?\b/g, ' ')
-    .replace(/[^a-z0-9\s-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return normalizeNameKey(value);
+}
+
+function isJunk(value = '') {
+  return isLikelyJunkName(value) || isLikelyJunkNameShared(value);
 }
 
 async function withDb(fn) {
@@ -59,6 +60,8 @@ async function ensureTable() {
         office TEXT,
         office_hours JSONB NOT NULL DEFAULT '{}'::jsonb,
         missing_name_link TEXT,
+        missing_name_report_id TEXT,
+        origin TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
         ip_hash TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -66,9 +69,31 @@ async function ensureTable() {
         reviewed_by TEXT
       )
     `);
+    await client.query('ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS missing_name_report_id TEXT');
+    await client.query('ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS origin TEXT');
     await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_status ON instructor_submissions (status)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_name ON instructor_submissions (name)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_created_at ON instructor_submissions (created_at)');
+  });
+}
+
+async function ensureMetricsTable() {
+  return withDb(async (client) => {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS missing_name_metrics (
+        name_norm TEXT PRIMARY KEY,
+        display_name TEXT,
+        search_count INTEGER NOT NULL DEFAULT 0,
+        report_count INTEGER NOT NULL DEFAULT 0,
+        first_reported_at TIMESTAMPTZ,
+        last_reported_at TIMESTAMPTZ,
+        first_searched_at TIMESTAMPTZ,
+        last_searched_at TIMESTAMPTZ,
+        resolved_at TIMESTAMPTZ,
+        status TEXT NOT NULL DEFAULT 'reported',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
   });
 }
 
@@ -160,6 +185,8 @@ function normalizePayload(payload) {
       office,
       office_hours: cleanedHours,
       missing_name_link: String(payload?.missing_name_link || '').trim() || null,
+      missing_name_report_id: String(payload?.missing_name_report_id || '').trim() || null,
+      origin: String(payload?.origin || '').trim() || null,
       status: 'pending',
       ip_hash: String(payload?.ip_hash || '').trim() || null,
       created_at: new Date().toISOString(),
@@ -176,9 +203,9 @@ async function tryPersistToDb(record) {
     const result = await client.query(
       `
         INSERT INTO instructor_submissions
-          (id, name, department, email, office, office_hours, missing_name_link, status, ip_hash, created_at, reviewed_at, reviewed_by)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-        RETURNING id, name, department, email, office, office_hours, missing_name_link, status, created_at, reviewed_at, reviewed_by
+          (id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, ip_hash, created_at, reviewed_at, reviewed_by)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        RETURNING id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, created_at, reviewed_at, reviewed_by
       `,
       [
         record.id,
@@ -188,6 +215,8 @@ async function tryPersistToDb(record) {
         record.office,
         JSON.stringify(record.office_hours),
         record.missing_name_link,
+        record.missing_name_report_id,
+        record.origin,
         record.status,
         record.ip_hash,
         record.created_at,
@@ -256,14 +285,16 @@ export async function GET() {
         const rawName = String(row.missing_name || '').trim();
         const key = normalizeText(rawName);
         if (!key || key.length < 2) continue;
-        if (isLikelyJunkName(rawName)) continue;
+        if (isJunk(rawName)) continue;
         if (!map.has(key)) {
           map.set(key, {
             name: row.missing_name,
             count: 0,
             last_reported: row.created_at,
             resolved: existingNames.has(normalizeName(row.missing_name)),
-            sample_message: row.message || null
+            sample_message: row.message || null,
+            searchCount: 0,
+            isHot: false
           });
         }
         map.get(key).count += 1;
@@ -277,6 +308,36 @@ export async function GET() {
 
       missingNames.push(...Array.from(map.values())
         .sort((a, b) => new Date(b.last_reported) - new Date(a.last_reported)));
+    }
+
+    let hotMissing = [];
+    try {
+      const hot = await getHotMissing({ limit: 50, minSearch: 1, days: 30 });
+      hotMissing = hot
+        .filter((h) => !isJunk(h.display_name || h.name_norm))
+        .map((h) => ({
+          name: h.display_name || h.name_norm,
+          nameKey: h.name_norm,
+          searchCount: h.search_count || 0,
+          reportCount: h.report_count || 0,
+          isHot: (h.search_count || 0) >= HOT_SEARCH_THRESHOLD,
+          lastSeen: h.last_searched_at || h.last_reported_at || null
+        }));
+
+      const metricsByKey = new Map(hotMissing.map((h) => [h.nameKey, h]));
+      for (const item of missingNames) {
+        const metric = metricsByKey.get(normalizeText(item.name));
+        if (metric) {
+          item.searchCount = metric.searchCount;
+          item.isHot = metric.isHot;
+        }
+      }
+      missingNames.sort((a, b) => {
+        if (b.isHot !== a.isHot) return b.isHot ? 1 : -1;
+        return new Date(b.last_reported) - new Date(a.last_reported);
+      });
+    } catch (error) {
+      console.warn('Failed to load hot missing names', error?.message || error);
     }
 
     let staleInstructors = [];
@@ -324,16 +385,46 @@ export async function GET() {
       console.warn('Failed to build stale instructor list', error?.message || error);
     }
 
-    const fileRows = await readFileRows().catch(() => []);
-    const submissionsCount = fileRows.filter(r => r?.status === 'pending').length;
+    let submissionsCount = 0;
+    try {
+      if (DATABASE_URL) {
+        submissionsCount = await withDb(async (client) => {
+          try {
+            const result = await client.query(
+              "SELECT COUNT(*)::int AS c FROM instructor_submissions WHERE status = 'pending'"
+            );
+            return result.rows[0]?.c || 0;
+          } catch (error) {
+            if (error?.code !== '42P01' && error?.code !== '42703') throw error;
+            return 0;
+          }
+        });
+      } else {
+        const fileRows = await readFileRows().catch(() => []);
+        submissionsCount = fileRows.filter(r => r?.status === 'pending').length;
+      }
+    } catch (error) {
+      console.warn('Failed to count pending submissions', error?.message || error);
+    }
+
+    const progressTotal = counts.total + missingNames.length;
+    const progressDone = counts.total;
 
     return NextResponse.json({
       missingNames,
+      hotMissing,
       staleInstructors,
       newDataNames,
       departments,
       counts,
       submissionsCount,
+      progress: {
+        total: progressTotal,
+        filled: progressDone,
+        missing: missingNames.length,
+        percent: progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 100
+      },
+      hotThreshold: HOT_SEARCH_THRESHOLD,
       generatedAt: new Date().toISOString(),
       source: DATABASE_URL ? 'database' : 'file'
     }, { status: 200 });
@@ -386,13 +477,23 @@ export async function POST(req) {
       }
     }
 
+    upsertSearch(record.name).catch((error) => {
+      console.warn('contribute metric update failed', error?.message || error);
+    });
+
     notifyDataSubmission(responseRecord, {
       baseUrl: new URL(req.url).origin
     }).catch((error) => {
       console.warn('data submission notification email failed', error?.message || error);
     });
 
-    return NextResponse.json(responseRecord, { status: 201 });
+    return NextResponse.json({
+      ...responseRecord,
+      celebration: {
+        message: `Thanks! ${record.name} is on the way into the directory.`,
+        thanks: 'You just saved the next person a search.'
+      }
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to submit data', details: error.message },

@@ -198,3 +198,20 @@ CREATE TABLE IF NOT EXISTS instructor_submissions (
 CREATE INDEX IF NOT EXISTS idx_instructor_submissions_status ON instructor_submissions (status);
 CREATE INDEX IF NOT EXISTS idx_instructor_submissions_name ON instructor_submissions (name);
 CREATE INDEX IF NOT EXISTS idx_instructor_submissions_created_at ON instructor_submissions (created_at);
+CREATE TABLE IF NOT EXISTS missing_name_metrics (
+  name_norm TEXT PRIMARY KEY,
+  display_name TEXT,
+  search_count INTEGER NOT NULL DEFAULT 0,
+  report_count INTEGER NOT NULL DEFAULT 0,
+  first_reported_at TIMESTAMPTZ,
+  last_reported_at TIMESTAMPTZ,
+  first_searched_at TIMESTAMPTZ,
+  last_searched_at TIMESTAMPTZ,
+  resolved_at TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'reported' CHECK (status IN ('reported','hot','in_progress','resolved','ignored')),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE instructor_submissions
+  ADD COLUMN IF NOT EXISTS missing_name_report_id TEXT,
+  ADD COLUMN IF NOT EXISTS origin TEXT;

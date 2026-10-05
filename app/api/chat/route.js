@@ -13,6 +13,9 @@ import {
   generateDisambiguationMessage 
 } from '../../../lib/getOfficeHours.js';
 import { chatMetricsStore as chatMetrics, pendingDisambiguationsStore as pendingDisambiguations } from '../../../lib/chatMetricsStore.js';
+import { upsertSearch } from '../../../lib/missingNameMetrics.js';
+
+const HOT_SEARCH_THRESHOLD = Number(process.env.MISSING_NAME_HOT_THRESHOLD || 3);
 
 const DISAMBIGUATION_TTL_MS = 5 * 60 * 1000;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
@@ -602,6 +605,26 @@ export async function POST(req) {
             'Use "By department" to browse all available records.'
           ];
 
+      let missingNameStats = null;
+      try {
+        const record = await upsertSearch(subject);
+        if (record) {
+          missingNameStats = {
+            searchCount: record.search_count || 0,
+            reportCount: record.report_count || 0,
+            isHot: (record.search_count || 0) >= HOT_SEARCH_THRESHOLD,
+            searchThreshold: HOT_SEARCH_THRESHOLD
+          };
+        }
+      } catch (e) {
+        // metrics are best-effort; never block the response
+      }
+
+      const requestCount = missingNameStats ? missingNameStats.searchCount : 0;
+      const requesterLine = requestCount > 1
+        ? `${requestCount} people have looked this up recently — we'd love your help filling it in.`
+        : 'Know the answer? Adding it takes about a minute and helps the next person instantly.';
+
       return sendStructuredResponse({
         type: 'no_results',
         message: effectiveMessage,
@@ -611,6 +634,8 @@ export async function POST(req) {
         context,
         guidance,
         hints,
+        requesterLine,
+        missingNameStats,
         datasetCount: allProfessors.length,
         suggestions: suggestions.map(item => ({
           professor: item.professor,

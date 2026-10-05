@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
 import { notifyFeedbackSubmission } from '../../../lib/notifications';
+import { upsertReport } from '../../../lib/missingNameMetrics.js';
 
 const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
@@ -271,6 +272,12 @@ export async function POST(req) {
         }
         throw fileError;
       }
+    }
+
+    if (responseRecord && responseRecord.category === 'missing_name' && responseRecord.missing_name) {
+      upsertReport(responseRecord.missing_name).catch((e) => {
+        console.warn('upsertReport failed', e?.message || e);
+      });
     }
 
     notifyFeedbackSubmission(responseRecord).catch((error) => {

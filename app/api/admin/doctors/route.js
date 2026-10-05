@@ -4,6 +4,7 @@ import path from 'node:path';
 import pg from 'pg';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
 import { markNewData, removeNewDataName } from '../../../../lib/newDataStore';
+import { markResolved as markMissingNameResolved } from '../../../../lib/missingNameMetrics.js';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -274,6 +275,7 @@ export async function POST(req) {
       marked = false;
       console.error('Failed to mark name as new data', error?.message || error);
     }
+    await markMissingNameResolved(doctor.name);
     return NextResponse.json({ ok: true, marked }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create doctor', details: error.message }, { status: 500 });
@@ -306,6 +308,7 @@ export async function PUT(req) {
       marked = false;
       console.error('Failed to mark name as new data', error?.message || error);
     }
+    await markMissingNameResolved(doctor.name);
     return NextResponse.json({ ok: true, marked });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update doctor', details: error.message }, { status: 500 });

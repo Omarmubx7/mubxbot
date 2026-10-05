@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, UserPlus, CheckCircle2, XCircle, Inbox, Search, Copy, Check, RefreshCw } from 'lucide-react';
+import { ClipboardList, UserPlus, CheckCircle2, XCircle, Inbox, Search, Copy, Check, RefreshCw, Flame } from 'lucide-react';
 import { AdminHeader } from '../../../components/AdminHeader.jsx';
 import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
 import InstructorForm, { ALL_DAYS } from '../../../components/InstructorForm.jsx';
@@ -73,6 +73,10 @@ export default function AdminMissingNamesPage() {
   const [submissions, setSubmissions] = useState([]);
   const [staleInstructors, setStaleInstructors] = useState([]);
   const [counts, setCounts] = useState({ new: 0, old: 0, missing: 0, total: 0 });
+  const [hotMissing, setHotMissing] = useState([]);
+  const [progress, setProgress] = useState(null);
+  const [recentlyFilled, setRecentlyFilled] = useState([]);
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -81,6 +85,7 @@ export default function AdminMissingNamesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedHot, setCopiedHot] = useState(false);
   const [flippedNames, setFlippedNames] = useState([]);
   const flippedAtRef = useRef({});
 
@@ -119,6 +124,9 @@ export default function AdminMissingNamesPage() {
       const stale = Array.isArray(contributeData?.staleInstructors) ? contributeData.staleInstructors : [];
       setStaleInstructors(stale);
       if (contributeData?.counts) setCounts(contributeData.counts);
+      if (Array.isArray(contributeData?.hotMissing)) setHotMissing(contributeData.hotMissing);
+      if (contributeData?.progress) setProgress(contributeData.progress);
+      if (Array.isArray(contributeData?.newDataNames)) setRecentlyFilled(contributeData.newDataNames.slice(0, 10));
 
       const now = Date.now();
       setFlippedNames(prev => prev.filter(key =>
@@ -146,6 +154,15 @@ export default function AdminMissingNamesPage() {
     loadAll();
   }, []);
 
+  const hotByKey = useMemo(() => {
+    const map = new Map();
+    for (const h of hotMissing) {
+      const key = normalizeName(h?.name || '');
+      if (key) map.set(key, h);
+    }
+    return map;
+  }, [hotMissing]);
+
   const aggregated = useMemo(() => {
     const map = new Map();
     for (const row of reports) {
@@ -160,7 +177,9 @@ export default function AdminMissingNamesPage() {
           count: 0,
           last_reported: row.created_at,
           sample_message: row.message || null,
-          resolved: false
+          resolved: false,
+          searchCount: 0,
+          isHot: false
         });
       }
       const item = map.get(key);
@@ -174,13 +193,32 @@ export default function AdminMissingNamesPage() {
     const existingNames = new Set(doctors.map(d => normalizeName(d.name)));
     for (const item of map.values()) {
       item.resolved = existingNames.has(normalizeName(item.name));
+      const metric = hotByKey.get(item.key);
+      if (metric) {
+        item.searchCount = metric.searchCount || 0;
+        item.isHot = metric.isHot || false;
+        item.lastSearched = metric.lastSeen || null;
+      }
     }
 
-    return Array.from(map.values()).sort((a, b) => new Date(b.last_reported || 0) - new Date(a.last_reported || 0));
-  }, [reports, doctors]);
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.resolved !== b.resolved) return a.resolved ? 1 : -1;
+      if (b.isHot !== a.isHot) return b.isHot ? 1 : -1;
+      if (b.searchCount !== a.searchCount) return b.searchCount - a.searchCount;
+      return new Date(b.last_reported || 0) - new Date(a.last_reported || 0);
+    });
+  }, [reports, doctors, hotByKey]);
+
+  const filteredAggregated = useMemo(() => {
+    if (priorityFilter === 'hot') return aggregated.filter(i => i.isHot && !i.resolved);
+    if (priorityFilter === 'missing') return aggregated.filter(i => !i.resolved);
+    if (priorityFilter === 'filled') return aggregated.filter(i => i.resolved);
+    return aggregated;
+  }, [aggregated, priorityFilter]);
 
   const pendingSubmissions = useMemo(() => submissions.filter(s => s?.status === 'pending'), [submissions]);
   const openCount = aggregated.filter(i => !i.resolved).length;
+  const hotCount = aggregated.filter(i => i.isHot && !i.resolved).length;
 
   const doctorsByKey = useMemo(() => {
     const map = new Map();
@@ -366,6 +404,21 @@ export default function AdminMissingNamesPage() {
     }
   };
 
+  const copyHotNames = async () => {
+    const text = aggregated
+      .filter(i => i.isHot && !i.resolved)
+      .map(i => `${i.name} (${i.searchCount} lookups)`)
+      .join('\n');
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedHot(true);
+      setTimeout(() => setCopiedHot(false), 1600);
+    } catch {
+      setError('Could not copy to clipboard');
+    }
+  };
+
   return (
     <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
@@ -404,6 +457,33 @@ export default function AdminMissingNamesPage() {
           </div>
         </div>
 
+        {progress && (
+          <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                Directory coverage
+              </span>
+              <span className="text-[13px] font-bold text-[var(--text-primary)]">
+                {progress.filled} filled · {progress.missing} missing · {progress.percent}%
+              </span>
+            </div>
+            <div className="h-2.5 w-full rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#DC2626] transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, progress.percent))}%` }}
+              />
+            </div>
+            {recentlyFilled.length > 0 && (
+              <div className="mt-2 text-[12px] text-[var(--text-tertiary)]">
+                Recently filled:{' '}
+                <span className="font-semibold text-[var(--text-secondary)]">
+                  {recentlyFilled.map(n => String(n).split('\n')[0]).filter(Boolean).slice(0, 6).join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
           <AutoSyncControls
             autoSyncEnabled={autoSyncEnabled}
@@ -415,13 +495,38 @@ export default function AdminMissingNamesPage() {
             syncing={syncing}
             onRefresh={performSync}
           />
-          <button
-            onClick={copyAllNames}
-            className="flex items-center gap-2 rounded-xl bg-black/5 dark:bg-white/10 px-4 py-2.5 text-[13px] font-bold text-[var(--text-primary)] hover:bg-black/10 dark:hover:bg-white/20 transition-all"
-          >
-            {copied ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
-            {copied ? 'Copied' : 'Copy missing names'}
-          </button>
+          <div className="flex gap-1 p-1 rounded-2xl bg-black/5 dark:bg-white/10">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'hot', label: `🔥 Hot${hotCount ? ` (${hotCount})` : ''}` },
+              { key: 'missing', label: `Missing (${openCount})` },
+              { key: 'filled', label: 'In directory' }
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setPriorityFilter(f.key)}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all ${priorityFilter === f.key ? 'bg-white dark:bg-[#2C2C2E] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        <button
+          onClick={copyAllNames}
+          disabled={openCount === 0}
+          className="flex items-center gap-2 rounded-xl bg-black/5 dark:bg-white/10 px-4 py-2.5 text-[13px] font-bold text-[var(--text-primary)] hover:bg-black/10 dark:hover:bg-white/20 transition-all disabled:opacity-40"
+        >
+          {copied ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
+          {copied ? 'Copied' : 'Copy missing names'}
+        </button>
+        <button
+          onClick={copyHotNames}
+          disabled={hotCount === 0}
+          className="flex items-center gap-2 rounded-xl bg-amber-500/15 px-4 py-2.5 text-[13px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 transition-all disabled:opacity-40"
+        >
+          <Flame size={15} />
+          {copiedHot ? 'Copied hot list' : `Copy ${hotCount} hottest`}
+        </button>
           <span className="text-[12px] text-[var(--text-tertiary)] font-medium">
             Share the missing names with students to gather office-hours data via /contribute
           </span>
@@ -441,8 +546,15 @@ export default function AdminMissingNamesPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[15px] font-black text-[var(--text-primary)]">{sub.name}</span>
                     <span className="text-[11px] text-[var(--text-tertiary)]">{formatDateTime(sub.created_at)}</span>
-                    {sub.missing_name_link && (
-                      <span className="text-[11px] px-2 py-1 rounded-md bg-[#DC2626]/10 text-[#B91C1C] dark:text-[#F87171] font-bold">Linked: {sub.missing_name_link}</span>
+                    {(sub.missing_name_link || sub.missing_name_report_id) && (
+                      <span className="text-[11px] px-2 py-1 rounded-md bg-[#DC2626]/10 text-[#B91C1C] dark:text-[#F87171] font-bold">
+                        Linked: {sub.missing_name_link || sub.missing_name_report_id}
+                      </span>
+                    )}
+                    {sub.origin && (
+                      <span className="text-[11px] px-2 py-1 rounded-md bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] font-bold">
+                        via {sub.origin.replace(/_/g, ' ')}
+                      </span>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[13px] text-[var(--text-secondary)]">
@@ -528,24 +640,31 @@ export default function AdminMissingNamesPage() {
 
           {loading && <div className="text-sm text-[var(--text-secondary)]">Loading...</div>}
 
-          {!loading && aggregated.length === 0 && (
+          {!loading && filteredAggregated.length === 0 && (
             <div className="rounded-xl border border-black/10 dark:border-white/10 p-6 text-sm text-[var(--text-secondary)] flex items-center gap-2">
-              <Search size={16} /> No missing-name reports yet.
+              <Search size={16} />
+              {aggregated.length === 0 ? 'No missing-name reports yet.' : 'Nothing matches this filter.'}
             </div>
           )}
 
-          {!loading && aggregated.length > 0 && (
+          {!loading && filteredAggregated.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {aggregated.map((item) => (
-                <div key={item.key} className={`rounded-xl border p-4 space-y-2 ${item.resolved ? 'border-green-500/20 bg-green-500/5' : 'border-[#DC2626]/20 bg-[#DC2626]/5'}`}>
+              {filteredAggregated.map((item) => (
+                <div key={item.key} className={`rounded-xl border p-4 space-y-2 ${item.resolved ? 'border-green-500/20 bg-green-500/5' : (item.isHot ? 'border-amber-500/30 bg-amber-500/10' : 'border-[#DC2626]/20 bg-[#DC2626]/5')}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[15px] font-black text-[var(--text-primary)]">{item.name}</span>
                     <span className={`text-[11px] font-bold uppercase tracking-[0.12em] px-2 py-1 rounded-md ${item.resolved ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171]'}`}>
                       {item.resolved ? 'In directory' : 'Missing'}
                     </span>
+                    {item.isHot && !item.resolved && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.12em] px-2 py-1 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        <Flame size={11} /> {item.searchCount} lookups
+                      </span>
+                    )}
                   </div>
                   <div className="text-[12px] text-[var(--text-secondary)]">
                     {item.count} report{item.count > 1 ? 's' : ''} · last {formatDateTime(item.last_reported)}
+                    {item.lastSearched ? ` · last searched ${formatDateTime(item.lastSearched)}` : ''}
                   </div>
                   {item.sample_message && (
                     <div className="text-[12px] text-[var(--text-secondary)] truncate">Note: {item.sample_message}</div>

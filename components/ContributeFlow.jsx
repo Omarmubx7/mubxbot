@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, ChevronLeft, Search, CheckCircle2, AlertTriangle, UserPlus } from 'lucide-react';
+import { X, ChevronLeft, Search, CheckCircle2, AlertTriangle, UserPlus, Flame } from 'lucide-react';
 import InstructorForm from './InstructorForm';
 import { useContribute } from '../lib/useContribute';
 
@@ -15,15 +15,19 @@ export default function ContributeFlow({
 }) {
   const {
     missingNames,
+    hotMissing,
     staleInstructors,
     departments,
     counts,
+    progress,
+    recentlyFilled,
     loading,
     loadError,
     formData,
     submitting,
     formError,
     submitted,
+    celebration,
     setFormData,
     pickName,
     pickInstructor,
@@ -48,8 +52,8 @@ export default function ContributeFlow({
     if (variant === 'modal' && onOpenChange) onOpenChange(false);
   };
 
-  const handlePickMissing = (name) => {
-    pickName(name);
+  const handlePickMissing = (name, meta = {}) => {
+    pickName(name, meta);
     setStep('form');
   };
 
@@ -80,6 +84,26 @@ export default function ContributeFlow({
       String(item.department || '').toLowerCase().includes(q)
     );
   }, [missingNames, query]);
+
+  const hotList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return hotMissing.filter(item => {
+      if (item.resolved) return false;
+      if (!q) return true;
+      return String(item.name || '').toLowerCase().includes(q);
+    });
+  }, [hotMissing, query]);
+
+  const coldList = useMemo(() => {
+    const hotKeys = new Set(hotList.map(item => String(item.name || '').toLowerCase()));
+    return addList.filter(item => !hotKeys.has(String(item.name || '').toLowerCase()));
+  }, [addList, hotList]);
+
+  const totalMissing = Math.max(counts.missing || 0, missingNames.length);
+  const filledCount = Math.max(0, (counts.total || 0));
+  const progressPercent = progress?.percent ?? (filledCount + totalMissing > 0
+    ? Math.round((filledCount / (filledCount + totalMissing)) * 100)
+    : 100);
 
   const updateList = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -172,9 +196,68 @@ export default function ContributeFlow({
             />
           </div>
 
-          {tab === 'add' && addList.length > 0 && (
+          {tab === 'add' && (
+            <div className="mb-3 rounded-2xl border border-black/5 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[12px] font-bold text-[var(--text-secondary)]">
+                  {filledCount} filled · {totalMissing} still missing
+                </span>
+                <span className="text-[12px] font-bold text-[#B91C1C] dark:text-[#F87171]">{progressPercent}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#DC2626] transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+                />
+              </div>
+              {recentlyFilled.length > 0 && (
+                <div className="mt-2 text-[12px] text-[var(--text-tertiary)]">
+                  Recently filled:{' '}
+                  <span className="font-semibold text-[var(--text-secondary)]">
+                    {recentlyFilled.map(n => String(n).split('\n')[0]).filter(Boolean).slice(0, 3).join(', ')}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'add' && hotList.length > 0 && (
+            <div className="space-y-1 mb-3">
+              <div className="flex items-center gap-1.5 px-1 pb-1">
+                <Flame size={14} className="text-amber-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                  Most searched — help these first
+                </span>
+              </div>
+              {hotList.map((item) => (
+                <button
+                  key={`hot-${item.name}`}
+                  type="button"
+                  onClick={() => handlePickMissing(item.name, { isHot: true })}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left"
+                >
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-[15px]">
+                    {String(item.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
+                    <div className="text-[12px] text-[var(--text-tertiary)]">
+                      {item.searchCount > 0
+                        ? `${item.searchCount} ${item.searchCount === 1 ? 'person' : 'people'} looked this up`
+                        : 'Reported as missing'}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                    🔥 {item.searchCount || 1}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === 'add' && coldList.length > 0 && (
             <div className="space-y-1">
-              {addList.map((item) => (
+              {coldList.map((item) => (
                 <button
                   key={item.key || item.name}
                   type="button"
@@ -194,13 +277,17 @@ export default function ContributeFlow({
             </div>
           )}
 
-          {tab === 'add' && addList.length === 0 && (
+          {tab === 'add' && coldList.length === 0 && hotList.length === 0 && (
             <div className="text-center py-8">
               {query.trim()
                 ? <div className="text-[14px] font-bold text-[var(--text-primary)]">No matches for "{query.trim()}"</div>
                 : <div className="text-[14px] font-bold text-[var(--text-primary)]">All caught up 🎉</div>}
               <div className="text-[13px] text-[var(--text-tertiary)] mt-1">
-                {query.trim() ? 'Add this name to the directory.' : 'Everyone is listed. You can still submit updates.'}
+                {query.trim()
+                  ? 'Add this name to the directory.'
+                  : hotMissing.length === 0
+                    ? 'Everyone is listed. You can still submit updates.'
+                    : 'Everyone on the list is already filled in. Nice work.'}
               </div>
               <button
                 type="button"
@@ -253,7 +340,17 @@ export default function ContributeFlow({
 
   const formBody = (
     <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-2 chat-scroll">
-      {submitted && (
+      {celebration && (
+        <div className="rounded-xl border border-[#DC2626]/25 bg-[#DC2626]/5 p-3 flex items-start gap-2.5 mb-3">
+          <Flame size={18} className="text-[#DC2626] flex-shrink-0 mt-0.5" />
+          <div className="text-[13px] text-[var(--text-secondary)]">
+            <span className="font-bold">{celebration.message}</span>{' '}
+            <span className="opacity-80">{celebration.thanks}</span>
+          </div>
+        </div>
+      )}
+
+      {submitted && !celebration && (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 flex items-start gap-2.5 mb-3">
           <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
           <div className="text-[13px] text-[#1F2937] dark:text-[#E5E7EB]">
@@ -287,9 +384,13 @@ export default function ContributeFlow({
       <div className="w-16 h-16 rounded-full bg-green-500/15 text-green-500 flex items-center justify-center mb-4">
         <CheckCircle2 size={32} />
       </div>
-      <div className="text-[18px] font-black text-[var(--text-primary)]">Sent for review</div>
-      <div className="text-[13px] text-[var(--text-tertiary)] mt-1 max-w-[260px]">
-        The team checks every entry before it goes live in the bot.
+      <div className="text-[18px] font-black text-[var(--text-primary)]">
+        {celebration ? "You're a hero 🎉" : 'Sent for review'}
+      </div>
+      <div className="text-[13px] text-[var(--text-tertiary)] mt-1 max-w-[280px]">
+        {celebration
+          ? celebration.thanks
+          : 'The team checks every entry before it goes live in the bot.'}
       </div>
       <button
         type="button"

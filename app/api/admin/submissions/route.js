@@ -4,6 +4,7 @@ import path from 'node:path';
 import pg from 'pg';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
 import { applyInstructorToDirectory } from '../../../../lib/instructorWriter.js';
+import { markResolved } from '../../../../lib/missingNameMetrics.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,8 @@ async function findSubmissionById(id) {
     return withDb(async (client) => {
       const result = await client.query(
         `
-          SELECT id, name, department, email, office, office_hours, missing_name_link, status, created_at, reviewed_at, reviewed_by
+          SELECT id, name, department, email, office, office_hours, missing_name_link,
+                 missing_name_report_id, origin, status, created_at, reviewed_at, reviewed_by
           FROM instructor_submissions
           WHERE id = $1
         `,
@@ -93,7 +95,8 @@ export async function GET(req) {
       const result = await withDb(async (client) => {
         const r = await client.query(
           `
-            SELECT id, name, department, email, office, office_hours, missing_name_link, status, created_at, reviewed_at, reviewed_by
+            SELECT id, name, department, email, office, office_hours, missing_name_link,
+                   missing_name_report_id, origin, status, created_at, reviewed_at, reviewed_by
             FROM instructor_submissions
             ${where}
             ORDER BY created_at DESC
@@ -163,6 +166,9 @@ export async function PATCH(req) {
         email: existing.email,
         office: existing.office,
         office_hours: existing.office_hours
+      });
+      markResolved(existing.name).catch((error) => {
+        console.warn('failed to mark missing name resolved', error?.message || error);
       });
     }
 

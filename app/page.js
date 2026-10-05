@@ -14,6 +14,7 @@ import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 import ContributeFlow from '../components/ContributeFlow';
+import { NoticeModal } from '../components/NoticeModal';
 
 const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
   <motion.div 
@@ -134,6 +135,7 @@ export default function Page() {
   const [feedbackError, setFeedbackError] = useState('');
   const [contributeOpen, setContributeOpen] = useState(false);
   const [contributeName, setContributeName] = useState('');
+  const [noticeOpen, setNoticeOpen] = useState(true);
   
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
@@ -405,6 +407,56 @@ export default function Page() {
     );
   };
 
+  const recordMissingNameSearch = async (name) => {
+    const value = String(name || '').trim();
+    if (!value) return;
+    try {
+      const res = await fetch('/api/missing-names/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: value, source: 'client_search' })
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      if (!data?.isHot) return;
+
+      const key = `hot-prompt-${value.toLowerCase()}`;
+      if (globalThis.sessionStorage?.getItem(key)) return;
+      globalThis.sessionStorage?.setItem(key, '1');
+
+      setMessages(prev => [...prev, {
+        id: `hot-${Date.now()}`,
+        type: 'bot',
+        content: (
+          <div className="space-y-2">
+            <div className="text-[14px] leading-relaxed">
+              Heads up: <span className="font-bold">{data.name || value}</span> is one of the most searched missing names right now
+              ({data.searchCount} {data.searchCount === 1 ? 'person has' : 'people have'} looked it up recently).
+            </div>
+            <div className="text-[13px] opacity-75">
+              If you know their office hours, filling it in takes about a minute and gets them off this list for good.
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setContributeName(data.name || value);
+                setContributeOpen(true);
+              }}
+              className="text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
+            >
+              ✨ Fill in {data.name || value}
+            </button>
+          </div>
+        ),
+        timestamp: getCurrentTime(),
+        variant: 'hot_prompt',
+        rawText: `${data.name || value} is a heavily searched missing name.`
+      }]);
+    } catch {
+      // tracking is best-effort
+    }
+  };
+
   const openFeedbackForm = ({
     category = 'general',
     missingName = '',
@@ -466,13 +518,35 @@ export default function Page() {
         throw new Error(body?.error || body?.details || 'Could not submit feedback');
       }
 
+      const reportedName = feedbackMissingName.trim();
       closeFeedbackForm();
       setMessages((prev) => ([
         ...prev,
         {
           id: `feedback-${Date.now()}`,
           type: 'bot',
-          content: 'Thanks for the feedback. It has been sent to the admin dashboard for review.',
+          content: feedbackCategory === 'missing_name' && reportedName
+            ? (
+              <div className="space-y-2">
+                <div className="text-[14px] leading-relaxed">
+                  <span className="font-bold">{reportedName}</span> is now on the missing list.
+                </div>
+                <div className="text-[13px] opacity-75">
+                  If you happen to know their email or office hours, filling it in takes about a minute and the next person who searches gets an instant answer.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setContributeName(reportedName);
+                    setContributeOpen(true);
+                  }}
+                  className="text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
+                >
+                  ✨ Fill in {reportedName} now
+                </button>
+              </div>
+            )
+            : 'Thanks for the feedback. It has been sent to the admin dashboard for review.',
           timestamp: getCurrentTime(),
           quickReplies: ['By department']
         }
@@ -969,7 +1043,7 @@ export default function Page() {
                           <div className="text-[12px] opacity-60 mb-1">{prof.department}</div>
                         )}
                         {prof.office && (
-                          <div className="text-[11px] opacity-50">🏢 {prof.office}</div>
+                          <div className="text-[11px] opacity-50">Office: {prof.office}</div>
                         )}
                       </div>
                       <div className="text-[#DC2626] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1100,17 +1174,44 @@ export default function Page() {
                     ))}
                   </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const name = data.subject || data.message || '';
-                    setContributeName(name);
-                    setContributeOpen(true);
-                  }}
-                  className="w-full text-left rounded-xl border border-[#DC2626]/30 bg-[#DC2626]/5 px-3 py-2.5 text-[13px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
-                >
-                  Help add them to the directory
-                </button>
+                <div className="rounded-xl border border-[#DC2626]/25 bg-[#DC2626]/5 px-3 py-2.5 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171]">
+                      Needs a hand
+                    </span>
+                    {data.missingNameStats?.isHot && (
+                      <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        🔥 {data.missingNameStats.searchCount} lookups
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[13px] leading-relaxed text-[#7F1D1D] dark:text-[#FECACA]">
+                    {data.requesterLine || 'Know the answer? Adding it takes about a minute.'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = data.subject || data.message || '';
+                      setContributeName(name);
+                      setContributeOpen(true);
+                    }}
+                    className="w-full text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
+                  >
+                    ✨ Fill in {data.subject || data.message || 'their details'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openFeedbackForm({
+                      category: 'missing_name',
+                      missingName: data.subject || data.message || '',
+                      userQuery: userText,
+                      requestLabel: data.requestLabel || ''
+                    })}
+                    className="w-full text-left rounded-lg border border-[#DC2626]/30 bg-white/60 dark:bg-black/20 px-3 py-2 text-[12px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
+                  >
+                    Not sure? Flag it as missing instead
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleBotResponse('by department')}
@@ -1206,10 +1307,47 @@ export default function Page() {
         reason: `No instructor match found for "${userText}"`
       });
 
+      recordMissingNameSearch(userText);
+
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
-        content: `I couldn't find any instructors matching '${userText}'. Try checking the spelling or browse by department.`,
+        content: (
+          <div className="space-y-3">
+            <div className="text-[14px] leading-relaxed">
+              I couldn't find any instructors matching '{userText}'. Check the spelling, or help us add them.
+            </div>
+            <div className="rounded-xl border border-[#DC2626]/25 bg-[#DC2626]/5 px-3 py-2.5 space-y-2">
+              <div className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171] inline-block">
+                Needs a hand
+              </div>
+              <div className="text-[13px] leading-relaxed text-[#7F1D1D] dark:text-[#FECACA]">
+                Know the answer? Adding it takes about a minute and helps the next person instantly.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setContributeName(userText);
+                  setContributeOpen(true);
+                }}
+                className="w-full text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
+              >
+                ✨ Fill in {userText}
+              </button>
+              <button
+                type="button"
+                onClick={() => openFeedbackForm({
+                  category: 'missing_name',
+                  missingName: userText,
+                  userQuery: userText
+                })}
+                className="w-full text-left rounded-lg border border-[#DC2626]/30 bg-white/60 dark:bg-black/20 px-3 py-2 text-[12px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
+              >
+                Not sure? Flag it as missing instead
+              </button>
+            </div>
+          </div>
+        ),
         timestamp: getCurrentTime(),
         variant: 'no_results',
         rawText: `No instructors found for ${userText}`,
@@ -1341,7 +1479,12 @@ export default function Page() {
       {/* Main Container */}
       <div className="w-full max-w-[960px] h-[100dvh] md:h-[90vh] md:rounded-[32px] md:shadow-2xl relative z-10 overflow-hidden flex flex-col bg-white dark:bg-black">
         {/* Header */}
-        <ChatHeader theme={theme} onToggleTheme={toggleTheme} onOpenFeedback={() => openFeedbackForm({ category: 'general' })} />
+        <ChatHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenFeedback={() => openFeedbackForm({ category: 'general' })}
+          onOpenNotice={() => setNoticeOpen(true)}
+        />
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
@@ -1488,9 +1631,37 @@ export default function Page() {
           />
           <div className="relative w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className="text-[20px] font-black tracking-tight text-[var(--text-primary)]">Send Feedback</h2>
+              <h2 className="text-[20px] font-black tracking-tight text-[var(--text-primary)]">
+                {feedbackCategory === 'missing_name' ? 'Add a missing name' : 'Send Feedback'}
+              </h2>
               <button onClick={closeFeedbackForm} className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10">✕</button>
             </div>
+
+            {feedbackCategory === 'missing_name' && (
+              <div className="mb-4 rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 px-3 py-2.5 text-[13px] leading-relaxed">
+                <div className="font-bold text-[#B91C1C] dark:text-[#F87171]">
+                  {feedbackMissingName ? `${feedbackMissingName} isn't in the directory yet.` : 'Which instructor is missing?'}
+                </div>
+                <div className="opacity-80 mt-0.5">
+                  Flagging it bumps them up our list, so the next person searching that name gets a real answer.
+                </div>
+              </div>
+            )}
+
+            {feedbackCategory === 'missing_name' && (
+              <div className="mb-4 flex flex-wrap gap-1.5">
+                {(contributeName ? [contributeName] : []).filter(Boolean).map((n) => (
+                  <span key={n} className="text-[11px] px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
+                    from your search: {n}
+                  </span>
+                ))}
+                {feedbackContext?.requestLabel && (
+                  <span className="text-[11px] px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">
+                    asked for: {feedbackContext.requestLabel}
+                  </span>
+                )}
+              </div>
+            )}
 
             <form onSubmit={submitFeedback} className="space-y-4">
               <div>
@@ -1542,7 +1713,11 @@ export default function Page() {
                 disabled={feedbackSubmitting}
                 className="w-full rounded-xl bg-[#DC2626] text-white font-bold px-4 py-3 disabled:opacity-60"
               >
-                {feedbackSubmitting ? 'Submitting...' : 'Submit feedback'}
+                {feedbackSubmitting
+                  ? 'Sending...'
+                  : feedbackCategory === 'missing_name'
+                    ? 'Add to the missing list'
+                    : 'Submit feedback'}
               </button>
             </form>
           </div>
@@ -1554,6 +1729,8 @@ export default function Page() {
           {toastMessage}
         </div>
       )}
+
+      <NoticeModal isOpen={noticeOpen} onClose={() => setNoticeOpen(false)} />
     </main>
   );
 }
