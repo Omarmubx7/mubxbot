@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { TeamsButton } from './TeamsButton';
 import { InstructorShareButton } from './InstructorShareButton';
-import { MapPin, Clock, Calendar, Mail } from 'lucide-react';
+import { MapPin, Clock, Calendar, Mail, PencilLine } from 'lucide-react';
 import { isNewDataName } from '../lib/updateList';
 
 /**
@@ -17,7 +17,7 @@ import { isNewDataName } from '../lib/updateList';
  * - office: faculty office location
  * - emptyStateMessage: custom no-hours message
  */
-export function OfficeHoursDisplay({ officeHours, faculty, email, department, office, emptyStateMessage = 'No office hours available', showTeamsButton = true, isNew }) {
+export function OfficeHoursDisplay({ officeHours, faculty, email, department, office, emptyStateMessage = 'No office hours available', showTeamsButton = true, isNew, onUpdate }) {
   // Get unique days
   const uniqueHours = [];
   if (officeHours && officeHours.length > 0) {
@@ -51,6 +51,17 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
               <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black tracking-wide px-2 py-0.5">
                 OLD DATA
               </span>
+            )}
+            {dataTag === 'old' && onUpdate && (
+              <button
+                type="button"
+                onClick={() => onUpdate({ name: faculty, email, department, office, officeHours })}
+                className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black tracking-wide px-2.5 py-1 hover:bg-amber-500/25 active:scale-95 transition-all"
+                title="Update this professor's data"
+              >
+                <PencilLine size={11} />
+                UPDATE
+              </button>
             )}
           </div>
           {department && (
@@ -141,4 +152,5 @@ OfficeHoursDisplay.propTypes = {
   emptyStateMessage: PropTypes.string,
   showTeamsButton: PropTypes.bool,
   isNew: PropTypes.bool,
+  onUpdate: PropTypes.func,
 };

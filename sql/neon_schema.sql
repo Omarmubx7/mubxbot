@@ -215,3 +215,10 @@ CREATE TABLE IF NOT EXISTS missing_name_metrics (
 ALTER TABLE instructor_submissions
   ADD COLUMN IF NOT EXISTS missing_name_report_id TEXT,
   ADD COLUMN IF NOT EXISTS origin TEXT;
+
+-- NEW-data name store (dynamic source of truth for NEW DATA badges).
+-- Populated by the admin approval flow and the sync workflow's name-diff step.
+CREATE TABLE IF NOT EXISTS new_data_names (
+  name TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

@@ -28,10 +28,13 @@ jobs:
           python scripts/parse_office_hours.py
           python scripts/generate_doctors_json.py
 
+      - name: Detect newly appeared instructor names
+        run: node scripts/detect_new_names.mjs
+
       - name: Commit updated JSON if changed
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add data/office_hours.json public/office_hours.json public/doctors.json
+          git add data/office_hours.json public/office_hours.json public/doctors.json data/new_data_names.json
           git diff --cached --quiet || git commit -m "chore: auto-update office hours data"
           git push

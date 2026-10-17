@@ -11,6 +11,8 @@ export default function ContributeFlow({
   open = false,
   onOpenChange,
   initialName = '',
+  initialInstructor = null,
+  initialTab = 'add',
   prefillFromUrl = false
 }) {
   const {
@@ -44,9 +46,15 @@ export default function ContributeFlow({
     const urlName = prefillFromUrl
       ? (new URLSearchParams(globalThis.location?.search || '')).get('name') || ''
       : '';
-    setStep(initialName || urlName ? 'form' : 'pick');
+    if (initialInstructor?.name) {
+      pickInstructor(initialInstructor);
+      setStep('form');
+    } else {
+      setStep(initialName || urlName ? 'form' : 'pick');
+    }
+    if (initialTab === 'update' || initialTab === 'add') setTab(initialTab);
     setQuery('');
-  }, [open, initialName, variant, prefillFromUrl]);
+  }, [open, initialName, initialInstructor, initialTab, variant, prefillFromUrl, pickInstructor]);
 
   const close = () => {
     if (variant === 'modal' && onOpenChange) onOpenChange(false);

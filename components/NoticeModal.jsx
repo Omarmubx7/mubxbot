@@ -3,9 +3,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, X, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { CalendarDays, X, CheckCircle2, Clock, AlertTriangle, PencilLine } from 'lucide-react';
 
-export function NoticeModal({ isOpen, onClose }) {
+export function NoticeModal({ isOpen, onClose, onContribute }) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -51,7 +51,7 @@ export function NoticeModal({ isOpen, onClose }) {
                   Semester Data Notice
                 </span>
                 <h2 className="text-[18px] font-bold leading-tight">
-                  Summer &apos;26 Data Active
+                  Fall &apos;27 Data Active
                 </h2>
               </div>
             </div>
@@ -61,8 +61,8 @@ export function NoticeModal({ isOpen, onClose }) {
               <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3.5 flex items-start gap-3 text-amber-900 dark:text-amber-200 text-[13px]">
                 <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="font-semibold block text-amber-800 dark:text-amber-300 mb-0.5">Fall Data Not Uploaded Yet</strong>
-                  Fall semester data is not available yet. The current data displayed across MUBXBot is for <strong>Summer &apos;26</strong>.
+                  <strong className="font-semibold block text-amber-800 dark:text-amber-300 mb-0.5">Help Refresh the Fall &apos;27 Data</strong>
+                  The Fall &apos;27 directory is live, but many instructor profiles still show older details. Help us keep it accurate — open a profile, tap <strong>Update</strong>, and send the corrected data for review.
                 </div>
               </div>
 
@@ -74,30 +74,40 @@ export function NoticeModal({ isOpen, onClose }) {
                     Current Active Data
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">
-                    Summer &apos;26
+                    Fall &apos;27
                   </span>
                 </div>
                 <div className="h-px bg-black/5 dark:bg-white/5" />
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 font-medium text-gray-600 dark:text-gray-400">
                     <Clock size={15} className="text-amber-500" />
-                    Fall Semester Data
+                    Profile Freshness
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-[11px]">
-                    Not Here Yet
+                    Needs Updates
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Action Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full py-3 px-4 rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] active:scale-[0.99] text-white font-bold text-[14px] transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              Got it
-            </button>
+            {/* Action Buttons */}
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => { onClose(); onContribute?.(); }}
+                className="w-full py-3 px-4 rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] active:scale-[0.99] text-white font-bold text-[14px] transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <PencilLine size={16} />
+                Help update the data
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-3 px-4 rounded-2xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 active:scale-[0.99] text-[var(--text-primary)] font-bold text-[14px] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                Got it
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
@@ -108,4 +118,5 @@ export function NoticeModal({ isOpen, onClose }) {
 NoticeModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onContribute: PropTypes.func,
 };

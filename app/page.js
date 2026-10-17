@@ -135,6 +135,8 @@ export default function Page() {
   const [feedbackError, setFeedbackError] = useState('');
   const [contributeOpen, setContributeOpen] = useState(false);
   const [contributeName, setContributeName] = useState('');
+  const [contributeTab, setContributeTab] = useState('add');
+  const [contributeInstructor, setContributeInstructor] = useState(null);
   const [noticeOpen, setNoticeOpen] = useState(true);
   
   const messagesEndRef = useRef(null);
@@ -712,6 +714,7 @@ export default function Page() {
       isNew={data.isNew}
       showTeamsButton={shouldShowTeamsButton(data.department)}
       emptyStateMessage={emptyStateMessage}
+      onUpdate={(instructor) => openInstructorUpdate(instructor)}
     />
   );
 
@@ -726,6 +729,27 @@ export default function Page() {
     }).isRequired,
     officeHoursOverride: PropTypes.array,
     emptyStateMessage: PropTypes.string,
+  };
+
+  const openInstructorUpdate = (instructor, extraHours) => {
+    const slots = extraHours || instructor?.officeHours || [];
+    const hoursMap = {};
+    (Array.isArray(slots) ? slots : []).forEach((slot) => {
+      if (!slot?.day) return;
+      const range = `${slot.start || ''}${slot.start && slot.end ? ' - ' : ''}${slot.end || ''}`.trim();
+      if (!range) return;
+      hoursMap[slot.day] = hoursMap[slot.day] ? `${hoursMap[slot.day]}, ${range}` : range;
+    });
+
+    setContributeInstructor({
+      name: instructor?.name || instructor?.professor || '',
+      department: instructor?.department || '',
+      email: instructor?.email || '',
+      office: instructor?.office || '',
+      office_hours: hoursMap
+    });
+    setContributeTab('update');
+    setContributeOpen(true);
   };
 
   const SmartAnswerCard = ({ professor, response, context }) => {
@@ -883,6 +907,7 @@ export default function Page() {
                   office={hoursData[0].office || specificDoctor.office}
                   isNew={specificDoctor.isNew}
                   showTeamsButton={shouldShowTeamsButton(hoursData[0].department || specificDoctor.department)}
+                  onUpdate={(instructor) => openInstructorUpdate(instructor)}
                 />
                 {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
               </div>
@@ -907,6 +932,7 @@ export default function Page() {
                   office={specificDoctor.office}
                   isNew={specificDoctor.isNew}
                   showTeamsButton={shouldShowTeamsButton(specificDoctor.department)}
+                  onUpdate={(instructor) => openInstructorUpdate(instructor)}
                 />
                 {renderResultActions({ name: specificDoctor.name, email: specificDoctor.email })}
               </div>
@@ -1373,6 +1399,7 @@ export default function Page() {
                 office={hoursData[0].office || doctor.office}
                 isNew={doctor.isNew}
                 showTeamsButton={shouldShowTeamsButton(hoursData[0].department || doctor.department)}
+                onUpdate={(instructor) => openInstructorUpdate(instructor)}
               />
               {renderResultActions(doctor)}
             </div>
@@ -1397,6 +1424,7 @@ export default function Page() {
                 office={doctor.office}
                 isNew={doctor.isNew}
                 showTeamsButton={shouldShowTeamsButton(doctor.department)}
+                onUpdate={(instructor) => openInstructorUpdate(instructor)}
               />
               {renderResultActions(doctor)}
             </div>
@@ -1596,9 +1624,15 @@ export default function Page() {
           open={contributeOpen}
           onOpenChange={(v) => {
             setContributeOpen(v);
-            if (!v) setContributeName('');
+            if (!v) {
+              setContributeName('');
+              setContributeInstructor(null);
+              setContributeTab('add');
+            }
           }}
           initialName={contributeName}
+          initialInstructor={contributeInstructor}
+          initialTab={contributeTab}
         />
 
         {/* Input Bar */}
@@ -1730,7 +1764,16 @@ export default function Page() {
         </div>
       )}
 
-      <NoticeModal isOpen={noticeOpen} onClose={() => setNoticeOpen(false)} />
+      <NoticeModal
+        isOpen={noticeOpen}
+        onClose={() => setNoticeOpen(false)}
+        onContribute={() => {
+          setContributeInstructor(null);
+          setContributeName('');
+          setContributeTab('update');
+          setContributeOpen(true);
+        }}
+      />
     </main>
   );
 }

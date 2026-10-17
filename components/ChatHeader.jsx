@@ -24,7 +24,7 @@ export function ChatHeader({ theme, onToggleTheme, onOpenFeedback, onOpenNotice 
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
             <span className="text-[11px] leading-tight text-[#8E8E93] dark:text-[#98989D] truncate font-medium">
-              Online • Summer 26
+              Online • Fall 27
             </span>
           </button>
           <a
