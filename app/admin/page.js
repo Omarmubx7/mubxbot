@@ -79,6 +79,35 @@ DataStatusBadge.propTypes = {
   isNew: PropTypes.bool.isRequired
 };
 
+function DataStatusToggle({ isNew, onToggle, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      role="switch"
+      aria-checked={isNew}
+      aria-label={isNew ? 'Mark as old data' : 'Mark as new data'}
+      title={isNew ? 'Switch to OLD data' : 'Switch to NEW data'}
+      className="inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+    >
+      <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${isNew ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+        {isNew ? 'New' : 'Old'}
+      </span>
+      <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${isNew ? 'bg-green-500' : 'bg-black/20 dark:bg-white/25'}`}>
+        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${isNew ? 'left-3.5' : 'left-0.5'}`} />
+      </span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Test</span>
+    </button>
+  );
+}
+
+DataStatusToggle.propTypes = {
+  isNew: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func.isRequired,
+  disabled: PropTypes.bool
+};
+
 export default function AdminPage() {
   const { instructors, setInstructors, loading } = useDoctors() || { instructors: [], loading: true };
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,6 +116,7 @@ export default function AdminPage() {
   const [isDeleting, setIsDeleting] = useState(null);
   const [deleteInFlight, setDeleteInFlight] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [togglingName, setTogglingName] = useState(null);
   const [usageSnapshot, setUsageSnapshot] = useState(null);
 
   const refreshInstructors = async () => {
@@ -279,6 +309,35 @@ export default function AdminPage() {
     }
   };
 
+  const handleToggleDataStatus = async (doc) => {
+    if (togglingName) return;
+    const nextIsNew = !doc.isNew;
+    setTogglingName(doc.name);
+
+    // Optimistic flip so the switch feels instant.
+    setInstructors(prev => prev.map(d =>
+      String(d?.name || '').toLowerCase() === String(doc.name || '').toLowerCase()
+        ? { ...d, isNew: nextIsNew }
+        : d
+    ));
+
+    try {
+      await requestDoctorMutation('PATCH', { name: doc.name, isNew: nextIsNew });
+      await refreshInstructors();
+    } catch (err) {
+      console.error(err);
+      // Revert on failure.
+      setInstructors(prev => prev.map(d =>
+        String(d?.name || '').toLowerCase() === String(doc.name || '').toLowerCase()
+          ? { ...d, isNew: !nextIsNew }
+          : d
+      ));
+      alert('Failed to switch data status: ' + (err.message || err));
+    } finally {
+      setTogglingName(null);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -442,6 +501,13 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 mt-2 opacity-70 text-[var(--text-primary)] break-all">
                     <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[12px] font-medium underline decoration-transparent hover:decoration-current" />
                   </div>
+                  <div className="mt-3">
+                    <DataStatusToggle
+                      isNew={!!doc.isNew}
+                      onToggle={() => handleToggleDataStatus(doc)}
+                      disabled={togglingName === doc.name}
+                    />
+                  </div>
                 </div>
                 <div>
                   <span className="bg-[var(--primary)]/10 text-[var(--primary)] text-[12px] font-bold px-3 py-1 rounded-full inline-flex">
@@ -472,6 +538,13 @@ export default function AdminPage() {
                       <div className={`font-bold ${doc.isNew ? 'text-[20px]' : 'text-[16px]'} text-[var(--text-primary)] leading-tight`}>{doc.name}</div>
                       <div className="flex items-center gap-2 mt-1.5 opacity-60 text-[var(--text-primary)]">
                         <Mail size={12} /> <ClickableEmail email={doc.email} className="text-[13px] font-medium underline decoration-transparent hover:decoration-current" />
+                      </div>
+                      <div className="mt-3">
+                        <DataStatusToggle
+                          isNew={!!doc.isNew}
+                          onToggle={() => handleToggleDataStatus(doc)}
+                          disabled={togglingName === doc.name}
+                        />
                       </div>
                     </td>
                     <td className="px-8 py-6">

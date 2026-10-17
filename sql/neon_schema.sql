@@ -222,3 +222,39 @@ CREATE TABLE IF NOT EXISTS new_data_names (
   name TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ==============================
+-- LIVE CHAT / ADMIN OPERATOR TAKEOVER
+-- ==============================
+-- One row per browser tab currently using the bot. Heartbeated by
+-- POST /api/presence. Powers the admin "Live Chat" console and the
+-- per-session takeover flag that pauses automatic bot replies.
+CREATE TABLE IF NOT EXISTS live_sessions (
+    session_id TEXT PRIMARY KEY,
+    conversation_id TEXT,
+    user_id TEXT,
+    label TEXT,
+    last_path TEXT,
+    user_agent TEXT,
+    takeover BOOLEAN NOT NULL DEFAULT false,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_live_sessions_last_seen ON live_sessions (last_seen_at);
+CREATE INDEX IF NOT EXISTS idx_live_sessions_conversation ON live_sessions (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_live_sessions_takeover ON live_sessions (takeover) WHERE takeover;
+
+-- Operator replies queued for a live session. The client polls and pulls
+-- undelivered rows, then acks them so they are only rendered once.
+CREATE TABLE IF NOT EXISTS session_inbox (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    conversation_id TEXT,
+    sender TEXT NOT NULL DEFAULT 'operator',
+    text TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    delivered_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_inbox_pending ON session_inbox (session_id, created_at) WHERE delivered_at IS NULL;

@@ -14,6 +14,7 @@ import {
 } from '../../../lib/getOfficeHours.js';
 import { chatMetricsStore as chatMetrics, pendingDisambiguationsStore as pendingDisambiguations } from '../../../lib/chatMetricsStore.js';
 import { upsertSearch } from '../../../lib/missingNameMetrics.js';
+import { isUnderTakeover } from '../../../lib/liveSessions.js';
 
 const HOT_SEARCH_THRESHOLD = Number(process.env.MISSING_NAME_HOT_THRESHOLD || 3);
 
@@ -329,6 +330,43 @@ export async function POST(req) {
       userId: analyticsUserId,
       environment
     }).catch(() => {});
+
+    // Admin operator takeover: while a live session is under takeover, pause
+    // automatic bot replies so the operator's messages are the only answers.
+    // The user's message is still logged and they get a short holding reply.
+    if (hasMessage && await isUnderTakeover(analyticsConversationId).catch(() => false)) {
+      const holdUserMessageId = crypto.randomUUID();
+      await logMessageEvent({
+        id: holdUserMessageId,
+        conversationId: analyticsConversationId,
+        sender: 'user',
+        text: message,
+        tags: { underOperatorTakeover: true }
+      }).catch(() => {});
+
+      const holdBotMessageId = crypto.randomUUID();
+      const holdText = 'One moment — checking that for you.';
+      await logMessageEvent({
+        id: holdBotMessageId,
+        conversationId: analyticsConversationId,
+        sender: 'bot',
+        text: holdText,
+        tags: { type: 'operator_hold' }
+      }).catch(() => {});
+
+      await updateConversationAggregate({
+        conversationId: analyticsConversationId,
+        incrementMessages: 2,
+        success: true
+      }).catch(() => {});
+
+      return NextResponse.json({
+        type: 'ai_response',
+        response: holdText,
+        conversationId: analyticsConversationId,
+        operatorTakeover: true
+      });
+    }
 
     let effectiveMessage = hasMessage ? message : '';
     let normalizedNameForSearch = null;

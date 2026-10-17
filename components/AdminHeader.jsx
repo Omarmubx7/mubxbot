@@ -84,6 +84,12 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
         >
           Missing Names
         </Link>
+        <Link
+          href="/admin/live"
+          className="whitespace-nowrap rounded-xl bg-[#DC2626]/10 text-[#B91C1C] dark:text-[#F87171] border border-[#DC2626]/20 px-4 py-3 text-[13px] font-bold hover:bg-[#DC2626]/20 transition-all"
+        >
+          Live Chat
+        </Link>
         <div className="whitespace-nowrap rounded-xl border border-dashed border-black/10 dark:border-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-tertiary)] bg-white/30 dark:bg-black/10">
           No placeholder analytics
         </div>

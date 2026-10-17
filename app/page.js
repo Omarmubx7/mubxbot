@@ -142,6 +142,8 @@ export default function Page() {
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
   const analyticsUserIdRef = useRef('');
+  const seenOperatorMessageIdsRef = useRef(new Set());
+  const pendingOperatorAckRef = useRef([]);
   const lastActionRef = useRef('');
 
   const homeStructuredDataJson = useMemo(() => JSON.stringify({
@@ -214,6 +216,80 @@ export default function Page() {
       globalThis.clearTimeout(timerId);
     };
   }, [toastMessage]);
+
+  // Live channel: heartbeat this tab and pull any operator messages the admin
+  // queued from the Live Chat console. Renders them as normal bot replies so
+  // the takeover is seamless. A no-op when the server has no live-chat store.
+  useEffect(() => {
+    let stopped = false;
+
+    const getSessionId = () => {
+      try {
+        let sid = globalThis.sessionStorage.getItem('mubx_session_id');
+        if (!sid) {
+          sid = globalThis.crypto?.randomUUID?.() || `sess-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          globalThis.sessionStorage.setItem('mubx_session_id', sid);
+        }
+        return sid;
+      } catch {
+        return `sess-${Date.now()}`;
+      }
+    };
+
+    const timeLabel = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    const tick = async () => {
+      if (stopped) return;
+      const sessionId = getSessionId();
+      const ackIds = pendingOperatorAckRef.current;
+      pendingOperatorAckRef.current = [];
+
+      try {
+        const res = await fetch('/api/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            conversationId: conversationIdRef.current || '',
+            userId: analyticsUserIdRef.current || '',
+            path: globalThis.location?.pathname || '/',
+            ackIds
+          }),
+          keepalive: true
+        });
+        const data = await res.json().catch(() => ({}));
+        const incoming = Array.isArray(data?.messages) ? data.messages : [];
+        const fresh = incoming.filter(m => m && m.id && !seenOperatorMessageIdsRef.current.has(m.id));
+        if (fresh.length === 0) return;
+
+        const appended = fresh.map(m => ({
+          id: `operator-${m.id}`,
+          type: 'bot',
+          content: String(m.text || ''),
+          timestamp: timeLabel(),
+          variant: 'smart',
+          rawText: String(m.text || '')
+        }));
+
+        for (const m of fresh) {
+          seenOperatorMessageIdsRef.current.add(m.id);
+          pendingOperatorAckRef.current.push(m.id);
+        }
+
+        setMessages(prev => [...prev, ...appended]);
+      } catch {
+        // Retry acks next tick if the request failed outright.
+        pendingOperatorAckRef.current = [...ackIds, ...pendingOperatorAckRef.current];
+      }
+    };
+
+    tick();
+    const interval = globalThis.setInterval(tick, 5000);
+    return () => {
+      stopped = true;
+      globalThis.clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (instructors && instructors.length > 0) {

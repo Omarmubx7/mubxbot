@@ -344,3 +344,35 @@ export async function DELETE(req) {
     return NextResponse.json({ error: 'Failed to delete doctor', details: error.message }, { status: 500 });
   }
 }
+
+/**
+ * Flips a single instructor between NEW DATA and OLD DATA by adding/removing
+ * their name in the new-data store. Used by the admin directory's status
+ * toggle (test/triage use case) — it does not touch office-hours rows.
+ */
+export async function PATCH(req) {
+  try {
+    if (unauthorized(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { name, isNew } = await req.json();
+    const trimmed = String(name || '').trim();
+    if (!trimmed) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+    if (typeof isNew !== 'boolean') {
+      return NextResponse.json({ error: 'isNew must be a boolean' }, { status: 400 });
+    }
+
+    if (isNew) {
+      await markNewData(trimmed);
+    } else {
+      await removeNewDataName(trimmed);
+    }
+
+    return NextResponse.json({ ok: true, name: trimmed, isNew });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update data status', details: error.message }, { status: 500 });
+  }
+}
