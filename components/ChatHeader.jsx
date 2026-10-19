@@ -4,7 +4,7 @@ import { Moon, Sun, GraduationCap, MessageSquareText } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { BotShareButton } from './BotShareButton';
 
-export function ChatHeader({ theme, onToggleTheme, onOpenFeedback, onOpenNotice }) {
+export function ChatHeader({ theme, onToggleTheme, onOpenFeedback }) {
   return (
     <header className="flex items-center gap-2 px-3 pt-safe pb-2.5 min-h-[54px] bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
       {/* Identity cluster */}
@@ -16,17 +16,12 @@ export function ChatHeader({ theme, onToggleTheme, onOpenFeedback, onOpenNotice 
           <span className="text-[16px] font-semibold leading-tight text-[#1C1C1E] dark:text-white truncate">
             MUBXBot
           </span>
-          <button
-            type="button"
-            onClick={onOpenNotice}
-            className="flex items-center gap-1.5 min-w-0 text-left hover:opacity-80 transition-opacity cursor-pointer"
-            title="View semester data notice"
-          >
+          <div className="flex items-center gap-1.5 min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
             <span className="text-[11px] leading-tight text-[#8E8E93] dark:text-[#98989D] truncate font-medium">
               Online • Fall 27
             </span>
-          </button>
+          </div>
           <a
             href="https://mubx.dev/links"
             target="_blank"
@@ -70,5 +65,4 @@ ChatHeader.propTypes = {
   theme: PropTypes.oneOf(['light', 'dark']).isRequired,
   onToggleTheme: PropTypes.func.isRequired,
   onOpenFeedback: PropTypes.func.isRequired,
-  onOpenNotice: PropTypes.func,
 };

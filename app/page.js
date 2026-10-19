@@ -14,7 +14,7 @@ import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 import ContributeFlow from '../components/ContributeFlow';
-import { NoticeModal } from '../components/NoticeModal';
+import { UpdateBanner } from '../components/UpdateBanner';
 
 const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
   <motion.div 
@@ -137,7 +137,6 @@ export default function Page() {
   const [contributeName, setContributeName] = useState('');
   const [contributeTab, setContributeTab] = useState('add');
   const [contributeInstructor, setContributeInstructor] = useState(null);
-  const [noticeOpen, setNoticeOpen] = useState(true);
   
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef('');
@@ -1587,8 +1586,10 @@ export default function Page() {
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenFeedback={() => openFeedbackForm({ category: 'general' })}
-          onOpenNotice={() => setNoticeOpen(true)}
         />
+
+        {/* Data update announcement banner */}
+        <UpdateBanner />
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
@@ -1839,17 +1840,6 @@ export default function Page() {
           {toastMessage}
         </div>
       )}
-
-      <NoticeModal
-        isOpen={noticeOpen}
-        onClose={() => setNoticeOpen(false)}
-        onContribute={() => {
-          setContributeInstructor(null);
-          setContributeName('');
-          setContributeTab('update');
-          setContributeOpen(true);
-        }}
-      />
     </main>
   );
 }
