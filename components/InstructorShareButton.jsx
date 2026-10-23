@@ -138,6 +138,16 @@ export function InstructorShareButton({ faculty, email, department, office, offi
 
         try {
           const blob = await (await fetch(dataUrl)).blob();
+          try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+              const item = new ClipboardItem({ 'image/png': blob });
+              await navigator.clipboard.write([item]);
+              showFeedback('Screenshot copied to clipboard');
+            }
+          } catch (clipErr) {
+            // ignore clipboard errors
+          }
+
           const file = new File([blob], fileName, { type: 'image/png' });
           if (typeof navigator !== 'undefined' && navigator.share) {
             if (typeof navigator.canShare === 'function') {
