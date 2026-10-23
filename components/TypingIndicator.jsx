@@ -4,24 +4,25 @@ import { motion } from "framer-motion";
 
 export function TypingIndicator() {
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="flex justify-start px-4 mb-2"
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="mb-5 flex justify-start px-4 sm:px-6"
     >
-      <div className="rounded-2xl px-4 py-3 glass-surface border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-center h-[42px]">
-        <div className="flex gap-1.5 items-center">
+      <div className="flex h-7 items-center gap-2 text-[13px] text-[var(--muted)]">
+        <span>Thinking</span>
+        <div className="flex items-center gap-1">
           {[0, 1, 2].map((i) => (
             <motion.span
               key={i}
-              className="w-2.5 h-2.5 rounded-full bg-black/40 dark:bg-white/50"
-              animate={{ y: [0, -6, 0] }}
+              className="h-1.5 w-1.5 rounded-full bg-[var(--muted)]"
+              animate={{ y: [0, -3, 0], opacity: [0.35, 1, 0.35] }}
               transition={{
-                duration: 0.6,
+                duration: 0.7,
                 repeat: Infinity,
-                delay: i * 0.15,
+                delay: i * 0.14,
                 ease: "easeInOut"
               }}
             />

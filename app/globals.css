@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Bitcount+Prop+Double+Ink:wght@100..900&display=swap");
 @plugin "tailwindcss-animate";
 
 
@@ -8,95 +7,138 @@
 :root {
   color-scheme: light;
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #DC2626;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
+  --background: #fbf8f6;
+  --foreground: #211a18;
+  --card: #fffdfc;
+  --card-foreground: #211a18;
+  --popover: #fffdfc;
+  --popover-foreground: #211a18;
+  --primary: #c8102e;
+  --primary-foreground: #ffffff;
+  --secondary: #f3ede9;
+  --secondary-foreground: #211a18;
+  --muted: #7c6f69;
+  --muted-foreground: #7c6f69;
+  --accent: #c8102e;
+  --accent-foreground: #ffffff;
+  --destructive: #b3122a;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --border: #e4d8d3;
+  --input: #e4d8d3;
+  --input-background: #f3ede9;
+  --switch-background: #d9cbc5;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: #c8102e;
+
+  /* Warm chat surface tokens */
+  --paper: #fbf8f6;
+  --panel: #fffdfc;
+  --surface: #f3ede9;
+  --surface-strong: #e9e0db;
+  --ink: #211a18;
+  --ink-soft: #4a403c;
+  --muted: #7c6f69;
+  --rule: #e4d8d3;
+  --accent: #c8102e;
+  --accent-dark: #96121f;
+  --accent-soft: #fbe9e7;
+  --accent-line: rgba(200, 16, 46, 0.22);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f7f2ef;
+  --sidebar-foreground: #211a18;
+  --sidebar-primary: #c8102e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3ede9;
+  --sidebar-accent-foreground: #211a18;
+  --sidebar-border: #e4d8d3;
+  --sidebar-ring: #c8102e;
 
   /* Mesh Colors */
-  --mesh-1: rgba(220, 38, 38, 0.12);
-  --mesh-2: rgba(239, 68, 68, 0.12);
-  --mesh-3: rgba(255, 45, 85, 0.08);
+  --mesh-1: rgba(200, 16, 46, 0.10);
+  --mesh-2: rgba(225, 29, 46, 0.08);
+  --mesh-3: rgba(150, 18, 31, 0.06);
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #EF4444;
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --background: #171211;
+  --foreground: #f5ede9;
+  --card: #201917;
+  --card-foreground: #f5ede9;
+  --popover: #271f1c;
+  --popover-foreground: #f5ede9;
+  --primary: #f05252;
+  --primary-foreground: #ffffff;
+  --secondary: #2a211e;
+  --secondary-foreground: #f5ede9;
+  --muted: #a99790;
+  --muted-foreground: #a99790;
+  --accent: #f05252;
+  --accent-foreground: #ffffff;
+  --destructive: #f05252;
+  --destructive-foreground: #ffffff;
+  --border: #3b2e2a;
+  --input: #3b2e2a;
+  --input-background: #2a211e;
+  --switch-background: #4a3b36;
+  --ring: #f05252;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
+
+  /* Warm chat surface tokens */
+  --paper: #171211;
+  --panel: #201917;
+  --surface: #2a211e;
+  --surface-strong: #352925;
+  --ink: #f5ede9;
+  --ink-soft: #d8c7c0;
+  --muted: #a99790;
+  --rule: #3b2e2a;
+  --accent: #f05252;
+  --accent-dark: #b91c1c;
+  --accent-soft: rgba(240, 82, 82, 0.12);
+  --accent-line: rgba(240, 82, 82, 0.28);
+
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar: #1f1816;
+  --sidebar-foreground: #f5ede9;
+  --sidebar-primary: #f05252;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a211e;
+  --sidebar-accent-foreground: #f5ede9;
+  --sidebar-border: #3b2e2a;
+  --sidebar-ring: #f05252;
 
   /* Mesh Colors - Dark */
-  --mesh-1: rgba(239, 68, 68, 0.15);
-  --mesh-2: rgba(185, 28, 28, 0.15);
-  --mesh-3: rgba(255, 55, 95, 0.1);
+  --mesh-1: rgba(240, 82, 82, 0.14);
+  --mesh-2: rgba(185, 28, 28, 0.14);
+  --mesh-3: rgba(255, 55, 95, 0.08);
 }
 
 @theme inline {
-  --font-sans: var(--font-roboto), "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;
+  --font-sans: var(--font-geist), "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: var(--font-geist), "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -153,15 +195,19 @@
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
     overscroll-behavior: none;
-    
-    /* Dynamic Theme Blended Mesh Background */
-    background-image: 
-      radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, var(--mesh-1) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, var(--mesh-3) 0px, transparent 50%);
-    background-attachment: fixed;
-    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+    background-color: var(--paper);
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   html {
@@ -179,23 +225,6 @@
 }
 
 @layer components {
-  .font-bitcount {
-    font-family: "Bitcount Prop Double Ink", system-ui;
-    font-optical-sizing: auto;
-    font-style: normal;
-    font-variation-settings:
-      "slnt" 0,
-      "CRSV" 0.5,
-      "ELSH" 0,
-      "ELXP" 0,
-      "SZP1" 0,
-      "SZP2" 0,
-      "XPN1" 0,
-      "XPN2" 0,
-      "YPN1" 0,
-      "YPN2" 0;
-  }
-
   .glass-surface {
     background: rgba(255, 255, 255, 0.4) !important;
     backdrop-filter: blur(30px) saturate(190%) !important;
@@ -214,5 +243,34 @@
 
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .brand-wash {
+    background-image: linear-gradient(180deg, var(--accent-soft) 0%, transparent 72%);
+  }
+
+  .chat-canvas {
+    background-color: var(--paper);
+    background-image: radial-gradient(70% 42% at 50% 0%, var(--mesh-1), transparent 72%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

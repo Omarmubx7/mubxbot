@@ -119,7 +119,7 @@ export function InstructorShareButton({ faculty, email, department, office, offi
       {/* Share Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full sm:w-auto flex items-center justify-center text-[#DC2626] dark:text-[#EF4444] hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 p-2.5 sm:p-2 rounded-lg border border-[#DC2626]/30 dark:border-[#DC2626]/40 transition-colors min-h-11 sm:min-h-0 aspect-square relative z-10"
+        className="relative z-10 flex aspect-square min-h-11 w-full items-center justify-center rounded-full border border-[var(--rule)] p-2.5 text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] sm:min-h-0 sm:w-auto sm:p-2"
         title="Share instructor info"
       >
         <Share2 className="w-4 h-4" />
@@ -133,7 +133,7 @@ export function InstructorShareButton({ faculty, email, department, office, offi
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute top-full right-0 mt-3 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 z-50 overflow-hidden origin-top-right"
+            className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-[var(--rule)] bg-[var(--panel)] shadow-[0_16px_50px_rgba(0,0,0,0.12)]"
           >
             <div className="p-2 space-y-1">
               <button

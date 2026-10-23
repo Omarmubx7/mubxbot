@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Fuse from 'fuse.js';
-import { Search, X, Copy, Pin, RotateCcw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, X, Copy, Pin } from 'lucide-react';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatMessage } from '../components/ChatMessage';
 import { QuickReplies } from '../components/QuickReplies';
@@ -14,35 +13,41 @@ import { EmptyState } from '../components/EmptyState';
 import { useDoctors } from '../components/Providers';
 import { OfficeHoursDisplay } from '../components/OfficeHoursDisplay';
 import ContributeFlow from '../components/ContributeFlow';
-import { UpdateBanner } from '../components/UpdateBanner';
+import { AcademicStatusBanner } from '../components/AcademicStatusBanner';
+import {
+  ResponseActions,
+  ResponseAvatar,
+  ResponseBody,
+  ResponseCard,
+  ResponseFact,
+  ResponseGrid,
+  ResponseHeader,
+  ResponseNote,
+  ResponseRow,
+  ResponseText
+} from '../components/ResponseCard';
 
-const SmartFieldCard = ({ title, value, subtitle, accent = 'text-[#DC2626] dark:text-[#EF4444]' }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="space-y-3 py-2 px-3 rounded-xl bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/10"
-  >
-    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8E8E93] dark:text-[#98989D]">
-      {title}
-    </div>
-    <div className={`text-[16px] font-bold break-words ${accent}`}>
-      {typeof value === 'string' && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)
-        ? <a href={`mailto:${value}`} className="underline decoration-current/30 hover:decoration-current">{value}</a>
-        : value}
-    </div>
-    {subtitle && (
-      <div className="text-[13px] opacity-70 break-words">
-        {subtitle}
-      </div>
-    )}
-  </motion.div>
+const SmartFieldCard = ({ title, value, subtitle }) => (
+  <ResponseCard>
+    <ResponseHeader label="Faculty" meta="Directory profile" />
+    <ResponseBody>
+      <ResponseFact
+        label={title}
+        value={typeof value === 'string' && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)
+          ? <a href={`mailto:${value}`} className="text-[var(--accent)] underline decoration-current/25 hover:decoration-current">{value}</a>
+          : value}
+        detail={subtitle}
+        accent={typeof value === 'string' && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)}
+        hero
+      />
+    </ResponseBody>
+  </ResponseCard>
 );
 
 SmartFieldCard.propTypes = {
   title: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
   subtitle: PropTypes.string,
-  accent: PropTypes.string,
 };
 
 const capitalizeDay = (value) => {
@@ -144,6 +149,9 @@ export default function Page() {
   const seenOperatorMessageIdsRef = useRef(new Set());
   const pendingOperatorAckRef = useRef([]);
   const lastActionRef = useRef('');
+  const messagesRef = useRef([]);
+  const lastProfessorRef = useRef('');
+  const [missingFlow, setMissingFlow] = useState(null);
 
   const homeStructuredDataJson = useMemo(() => JSON.stringify({
     '@context': 'https://schema.org',
@@ -264,7 +272,14 @@ export default function Page() {
         const appended = fresh.map(m => ({
           id: `operator-${m.id}`,
           type: 'bot',
-          content: String(m.text || ''),
+          content: (
+            <ResponseCard>
+              <ResponseHeader label="MUBX team" meta="Live reply" />
+              <ResponseBody>
+                <ResponseText className="text-[13px]">{String(m.text || '')}</ResponseText>
+              </ResponseBody>
+            </ResponseCard>
+          ),
           timestamp: timeLabel(),
           variant: 'smart',
           rawText: String(m.text || '')
@@ -308,8 +323,34 @@ export default function Page() {
   }, [instructors]);
 
   useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  const buildAssistantHistory = (currentText = '') => {
+    const entries = [];
+
+    for (const item of messagesRef.current) {
+      const text = item.rawText || (typeof item.content === 'string' ? item.content : '');
+      if (!text || !String(text).trim()) continue;
+      entries.push({
+        role: item.type === 'user' ? 'user' : 'assistant',
+        text: String(text).slice(0, 800)
+      });
+    }
+
+    if (currentText) {
+      const last = entries.at(-1);
+      if (last?.role === 'user' && last.text.trim() === String(currentText).trim()) {
+        entries.pop();
+      }
+    }
+
+    return entries.slice(-8);
+  };
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -436,51 +477,53 @@ export default function Page() {
     const email = professor?.email || '';
 
     return (
-      <div className="rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-3 space-y-2">
-        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B91C1C] dark:text-[#FCA5A5]">Quick actions</div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => copyText(email, 'Email copied')}
-            disabled={!email}
-            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
-          >
-            Copy email
-          </button>
-          <button
-            type="button"
-            onClick={() => openTeamsFromEmail(email)}
-            disabled={!email}
-            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
-          >
-            Open Teams
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSendMessage(`what ${displayName} email`)}
-            disabled={!displayName}
-            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
-          >
-            Ask email
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSendMessage(`when ${displayName} free`)}
-            disabled={!displayName}
-            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
-          >
-            Ask hours
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSendMessage(`where ${displayName} office`)}
-            disabled={!displayName}
-            className="min-h-10 px-3 rounded-full border border-[#DC2626]/40 text-[12px] font-semibold text-[#B91C1C] dark:text-[#FCA5A5] disabled:opacity-40"
-          >
-            Ask office
-          </button>
-        </div>
-      </div>
+      <ResponseCard>
+        <ResponseHeader label="Quick actions" meta="Faculty" />
+        <ResponseBody>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => copyText(email, 'Email copied')}
+              disabled={!email}
+              className="min-h-8 rounded-full border border-[var(--rule)] px-3 text-[12px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              Copy email
+            </button>
+            <button
+              type="button"
+              onClick={() => openTeamsFromEmail(email)}
+              disabled={!email}
+              className="min-h-8 rounded-full border border-[var(--rule)] px-3 text-[12px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              Open Teams
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendMessage(`what ${displayName} email`)}
+              disabled={!displayName}
+              className="min-h-8 rounded-full border border-[var(--rule)] px-3 text-[12px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              Ask email
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendMessage(`when ${displayName} free`)}
+              disabled={!displayName}
+              className="min-h-8 rounded-full border border-[var(--rule)] px-3 text-[12px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              Ask hours
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendMessage(`where ${displayName} office`)}
+              disabled={!displayName}
+              className="min-h-8 rounded-full border border-[var(--rule)] px-3 text-[12px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] disabled:opacity-40"
+            >
+              Ask office
+            </button>
+          </div>
+        </ResponseBody>
+      </ResponseCard>
     );
   };
 
@@ -505,25 +548,35 @@ export default function Page() {
         id: `hot-${Date.now()}`,
         type: 'bot',
         content: (
-          <div className="space-y-2">
-            <div className="text-[14px] leading-relaxed">
-              Heads up: <span className="font-bold">{data.name || value}</span> is one of the most searched missing names right now
-              ({data.searchCount} {data.searchCount === 1 ? 'person has' : 'people have'} looked it up recently).
+          <ResponseCard>
+            <ResponseHeader
+              label="Directory"
+              meta="Frequently searched"
+              badge={`${data.searchCount} ${data.searchCount === 1 ? 'lookup' : 'lookups'}`}
+              badgeTone="amber"
+            />
+            <ResponseBody>
+              <ResponseText className="text-[13px]">
+                <span className="font-semibold">{data.name || value}</span> is one of the most searched missing names right now
+                ({data.searchCount} {data.searchCount === 1 ? 'person has' : 'people have'} looked it up recently).
+              </ResponseText>
+              <ResponseText className="mt-1.5 text-[11.5px] text-[var(--muted)]">
+                If you know their office hours, adding them takes about a minute and gets them off this list.
+              </ResponseText>
+            </ResponseBody>
+            <div className="border-t border-[var(--rule)] bg-[var(--surface)]/50 px-3.5 py-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setContributeName(data.name || value);
+                  setContributeOpen(true);
+                }}
+                className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+              >
+                Add {data.name || value}
+              </button>
             </div>
-            <div className="text-[13px] opacity-75">
-              If you know their office hours, filling it in takes about a minute and gets them off this list for good.
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setContributeName(data.name || value);
-                setContributeOpen(true);
-              }}
-              className="text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
-            >
-              ✨ Fill in {data.name || value}
-            </button>
-          </div>
+          </ResponseCard>
         ),
         timestamp: getCurrentTime(),
         variant: 'hot_prompt',
@@ -604,26 +657,40 @@ export default function Page() {
           type: 'bot',
           content: feedbackCategory === 'missing_name' && reportedName
             ? (
-              <div className="space-y-2">
-                <div className="text-[14px] leading-relaxed">
-                  <span className="font-bold">{reportedName}</span> is now on the missing list.
+              <ResponseCard>
+                <ResponseHeader label="Thanks" meta="Missing name reported" />
+                <ResponseBody>
+                  <ResponseText className="text-[13px]">
+                    <span className="font-semibold">{reportedName}</span> is now on the missing list.
+                  </ResponseText>
+                  <ResponseText className="mt-1.5 text-[11.5px] text-[var(--muted)]">
+                    If you know their email or office hours, adding them takes about a minute and the next person who searches gets an instant answer.
+                  </ResponseText>
+                </ResponseBody>
+                <div className="border-t border-[var(--rule)] bg-[var(--surface)]/50 px-3.5 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContributeName(reportedName);
+                      setContributeOpen(true);
+                    }}
+                    className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                  >
+                    Add {reportedName}
+                  </button>
                 </div>
-                <div className="text-[13px] opacity-75">
-                  If you happen to know their email or office hours, filling it in takes about a minute and the next person who searches gets an instant answer.
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setContributeName(reportedName);
-                    setContributeOpen(true);
-                  }}
-                  className="text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
-                >
-                  ✨ Fill in {reportedName} now
-                </button>
-              </div>
+              </ResponseCard>
             )
-            : 'Thanks for the feedback. It has been sent to the admin dashboard for review.',
+            : (
+              <ResponseCard>
+                <ResponseHeader label="Thanks" meta="Feedback sent" />
+                <ResponseBody>
+                  <ResponseText className="text-[13px]">
+                    Thanks for the feedback. It has been sent to the admin dashboard for review.
+                  </ResponseText>
+                </ResponseBody>
+              </ResponseCard>
+            ),
           timestamp: getCurrentTime(),
           quickReplies: ['By department']
         }
@@ -736,8 +803,14 @@ export default function Page() {
   };
 
   const sanitizeInput = (query) => {
-    const cleaned = query.replaceAll(/[^a-zA-Z0-9\s@.-]/g, '').trim();
-    if (cleaned.length < 2) return null;
+    const cleaned = String(query ?? '')
+      .replaceAll(/[<>]/g, '')
+      .replaceAll(/[\u0000-\u001F\u007F]/g, ' ')
+      .replaceAll(/\s+/g, ' ')
+      .trim()
+      .slice(0, 500);
+
+    if (cleaned.length < 1) return null;
     return cleaned;
   };
 
@@ -837,7 +910,6 @@ export default function Page() {
           title={context?.specificDay ? `${capitalizeDay(context.specificDay)} Office Hours` : 'Office Hours'}
           value={response}
           subtitle={facultyName ? `${facultyName}` : null}
-          accent="text-[var(--text-primary)]"
         />
       );
     }
@@ -868,7 +940,6 @@ export default function Page() {
           title="Department"
           value={response}
           subtitle={facultyName ? `${facultyName}` : null}
-          accent="text-[var(--text-primary)]"
         />
       );
     }
@@ -894,22 +965,35 @@ export default function Page() {
     const emailChunkRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
     const isEmail = (value) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
 
+    const renderEmailChunks = (line, lineIndex) => line.split(emailChunkRegex).map((chunk, chunkIndex) => {
+      const key = `chunk-${lineIndex}-${chunkIndex}`;
+      if (!chunk) return null;
+      if (isEmail(chunk)) {
+        return (
+          <a
+            key={key}
+            href={`mailto:${chunk}`}
+            className="text-[var(--accent)] underline decoration-[var(--accent)]/25"
+          >
+            {chunk}
+          </a>
+        );
+      }
+      return <React.Fragment key={key}>{chunk}</React.Fragment>;
+    });
+
     return text.split('\n').map((line, lineIndex) => (
       <React.Fragment key={`line-${lineIndex}`}>
-        {line.split(emailChunkRegex).map((chunk, chunkIndex) => {
-          if (isEmail(chunk)) {
+        {line.split(/(\*\*[^*]+\*\*)/g).map((segment, segmentIndex) => {
+          const key = `segment-${lineIndex}-${segmentIndex}`;
+          if (/^\*\*[^*]+\*\*$/.test(segment)) {
             return (
-              <a
-                key={`chunk-${lineIndex}-${chunkIndex}`}
-                href={`mailto:${chunk}`}
-                className="text-[#DC2626] dark:text-[#EF4444] underline decoration-[#DC2626]/30"
-              >
-                {chunk}
-              </a>
+              <strong key={key} className="font-semibold text-[var(--ink)]">
+                {segment.slice(2, -2)}
+              </strong>
             );
           }
-
-          return <React.Fragment key={`chunk-${lineIndex}-${chunkIndex}`}>{chunk}</React.Fragment>;
+          return <React.Fragment key={key}>{renderEmailChunks(segment, `${lineIndex}-${segmentIndex}`)}</React.Fragment>;
         })}
         {lineIndex < text.split('\n').length - 1 && <br />}
       </React.Fragment>
@@ -933,6 +1017,7 @@ export default function Page() {
   };
 
   const handleQuickReply = (action) => {
+    setMissingFlow(null);
     recordLastAction(action);
     if (action === 'By department') {
       // Trigger department list
@@ -946,6 +1031,7 @@ export default function Page() {
   const handleSendMessage = (text, specificDoctor = null, displayText = null, apiPayload = null) => {
     if (!text.trim() && !specificDoctor) return;
 
+    setMissingFlow(null);
     recordLastAction(displayText || text);
 
     const userMessage = {
@@ -959,6 +1045,10 @@ export default function Page() {
     setSuggestions([]);
     setHighlightedSuggestionIndex(-1);
     setInputValue('');
+
+    if (specificDoctor?.name) {
+      lastProfessorRef.current = specificDoctor.name;
+    }
 
     setIsTyping(true);
     setTimeout(async () => {
@@ -1033,10 +1123,17 @@ export default function Page() {
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
-        content: "Please type a valid instructor name (at least 2 letters).",
+        content: (
+          <ResponseCard>
+            <ResponseHeader label="Try again" meta="Empty message" />
+            <ResponseBody>
+              <ResponseText className="text-[13px]">Please type a message.</ResponseText>
+            </ResponseBody>
+          </ResponseCard>
+        ),
         timestamp: getCurrentTime(),
         variant: 'error',
-        rawText: 'Please type a valid instructor name (at least 2 letters).',
+        rawText: 'Please type a message.',
         quickReplies: ['By department']
       }]);
       return;
@@ -1058,7 +1155,12 @@ export default function Page() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(withAnalyticsMeta(apiPayload || { message: userText }))
+          body: JSON.stringify(withAnalyticsMeta({
+            ...(apiPayload || { message: userText }),
+            message: apiPayload?.message || userText,
+            history: buildAssistantHistory(userText),
+            lastProfessor: lastProfessorRef.current || null
+          }))
         });
         
         const data = await response.json();
@@ -1069,6 +1171,7 @@ export default function Page() {
         if (data.type === 'ai_response' || data.type === 'smart_response') {
           // Render a focused answer card for clear intents and the full profile card otherwise.
           if (Array.isArray(data.results) && data.results.length === 1) {
+            lastProfessorRef.current = data.results[0]?.professor || data.results[0]?.name || lastProfessorRef.current;
             setMessages(prev => [...prev, {
               id: Date.now(),
               type: 'bot',
@@ -1081,7 +1184,7 @@ export default function Page() {
               timestamp: getCurrentTime(),
               variant: 'smart',
               rawText: data.response,
-              quickReplies: ['By department']
+              quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
             }]);
           } else {
             // Keep free-form text rendering for non-profile responses.
@@ -1090,17 +1193,80 @@ export default function Page() {
               type: 'bot',
               content: (
                 <div className="space-y-3">
-                  <div className="text-[14px] whitespace-pre-wrap leading-relaxed">
-                    {renderTextWithClickableEmails(data.response)}
-                  </div>
+                  <ResponseCard>
+                    <ResponseHeader label="MUBX assistant" meta="Answer" />
+                    <ResponseBody>
+                      <ResponseText>
+                        {renderTextWithClickableEmails(data.response)}
+                      </ResponseText>
+                    </ResponseBody>
+                  </ResponseCard>
                 </div>
               ),
               timestamp: getCurrentTime(),
               variant: 'smart',
               rawText: data.response,
-              quickReplies: ['By department']
+              quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
             }]);
           }
+        } else if (data.type === 'assistant') {
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <ResponseCard>
+                  <ResponseHeader label="MUBX assistant" meta="Answer" />
+                  <ResponseBody>
+                    <ResponseText>
+                      {renderTextWithClickableEmails(data.response)}
+                    </ResponseText>
+                  </ResponseBody>
+                </ResponseCard>
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            variant: 'smart',
+            rawText: data.response,
+            quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
+          }]);
+        } else if (data.type === 'calendar') {
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <ResponseCard>
+                  <ResponseHeader
+                    label="Academic snapshot"
+                    meta={data.snapshot?.dateLabel || 'Amman time'}
+                  />
+                  <ResponseBody>
+                    <ResponseText className="mb-3 text-[13px]">
+                      {renderTextWithClickableEmails(data.response)}
+                    </ResponseText>
+                    {Array.isArray(data.facts) && data.facts.length > 0 && (
+                      <ResponseGrid>
+                        {data.facts.map((fact, index) => (
+                          <ResponseFact
+                            key={`${fact.label}-${index}`}
+                            label={fact.label}
+                            value={fact.value}
+                            detail={fact.detail}
+                            accent={fact.emphasis}
+                          />
+                        ))}
+                      </ResponseGrid>
+                    )}
+                  </ResponseBody>
+                </ResponseCard>
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            variant: 'smart',
+            rawText: data.response,
+            quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
+          }]);
         } else if (data.type === 'disambiguation') {
           // Multiple matches - ask which one they mean
           setMessages(prev => [...prev, {
@@ -1108,51 +1274,62 @@ export default function Page() {
             type: 'bot',
             content: (
               <div className="space-y-3">
-                <div className="text-[14px] font-medium">{data.message}</div>
-                <div className="grid gap-2">
-                  {data.options.map((prof, i) => (
-                    <button
-                      key={`${prof.professor}-${i}`}
-                      onClick={() => {
-                        const requestedField = describeRequestedField(data.context);
-                        setMessages(prev => [...prev, {
-                          id: Date.now(),
-                          type: 'bot',
-                          content: `Got it. I will answer your ${requestedField} question for ${prof.professor}.`,
-                          timestamp: getCurrentTime()
-                        }]);
+                <ResponseCard>
+                  <ResponseHeader
+                    label="Choose a match"
+                    meta={`${data.options.length} ${data.options.length === 1 ? 'match' : 'matches'}`}
+                  />
+                  <ResponseBody>
+                    <ResponseText className="text-[13px]">{data.message}</ResponseText>
+                  </ResponseBody>
+                  <div className="divide-y divide-[var(--rule)] border-t border-[var(--rule)]">
+                    {data.options.map((prof, i) => (
+                      <ResponseRow
+                        key={`${prof.professor}-${i}`}
+                        onClick={() => {
+                          const requestedField = describeRequestedField(data.context);
+                          setMessages(prev => [...prev, {
+                            id: Date.now(),
+                            type: 'bot',
+                            content: (
+                              <ResponseCard>
+                                <ResponseHeader label="MUBX assistant" meta="Selection" />
+                                <ResponseBody>
+                                  <ResponseText className="text-[13px]">
+                                    Got it. I will answer your {requestedField} question for {prof.professor}.
+                                  </ResponseText>
+                                </ResponseBody>
+                              </ResponseCard>
+                            ),
+                            timestamp: getCurrentTime()
+                          }]);
 
-                        handleSendMessage(
-                          prof.professor,
-                          null,
-                          prof.professor,
-                          {
-                            message: prof.professor,
-                            selectedProfessor: prof.professor,
-                            disambiguationToken: data.disambiguationToken
-                          }
-                        );
-                      }}
-                      className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-[#DC2626]/5 to-transparent hover:from-[#DC2626]/10 transition-all text-left group border border-[#DC2626]/20 hover:border-[#DC2626]/40"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-[#DC2626]/15 text-[#DC2626] flex items-center justify-center font-bold text-[15px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors flex-shrink-0">
-                        {prof.professor.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[14px] mb-0.5">{prof.professor}</div>
-                        {prof.department && (
-                          <div className="text-[12px] opacity-60 mb-1">{prof.department}</div>
-                        )}
-                        {prof.office && (
-                          <div className="text-[11px] opacity-50">Office: {prof.office}</div>
-                        )}
-                      </div>
-                      <div className="text-[#DC2626] opacity-0 group-hover:opacity-100 transition-opacity">
-                        →
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                          handleSendMessage(
+                            prof.professor,
+                            null,
+                            prof.professor,
+                            {
+                              message: prof.professor,
+                              selectedProfessor: prof.professor,
+                              disambiguationToken: data.disambiguationToken
+                            }
+                          );
+                        }}
+                      >
+                        <ResponseAvatar>{prof.professor.charAt(0)}</ResponseAvatar>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-medium text-[var(--ink)]">
+                            {prof.professor}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-[var(--muted)]">
+                            {[prof.department, prof.office ? `Office ${prof.office}` : null].filter(Boolean).join(' · ') || 'Faculty'}
+                          </span>
+                        </span>
+                        <span className="text-[13px] text-[var(--accent)]">→</span>
+                      </ResponseRow>
+                    ))}
+                  </div>
+                </ResponseCard>
               </div>
             ),
             timestamp: getCurrentTime(),
@@ -1164,15 +1341,155 @@ export default function Page() {
           setMessages(prev => [...prev, {
             id: Date.now(),
             type: 'bot',
-            content: data.message || 'That selection expired. Please ask your question again.',
+            content: (
+              <ResponseCard>
+                <ResponseHeader label="Try again" meta="Selection expired" />
+                <ResponseBody>
+                  <ResponseText className="text-[13px]">
+                    {data.message || 'That selection expired. Please ask your question again.'}
+                  </ResponseText>
+                </ResponseBody>
+              </ResponseCard>
+            ),
             timestamp: getCurrentTime(),
             variant: 'error',
             rawText: data.message || 'That selection expired. Please ask your question again.',
             quickReplies: ['By department']
           }]);
+        } else if (data.type === 'availability') {
+          const availabilityItems = Array.isArray(data.results) ? data.results : [];
+          if (data.person?.found && data.person.name) {
+            lastProfessorRef.current = data.person.name;
+          } else if (availabilityItems.length === 1) {
+            lastProfessorRef.current = availabilityItems[0].name;
+          }
+
+          const target = data.target || {};
+          const hasTargetResults = availabilityItems.length > 0;
+          let personStatusLabel = '';
+          let personStatusAccent = false;
+          if (data.person?.found) {
+            if (target.isNow) {
+              personStatusLabel = data.person?.freeNow ? 'Free now' : 'Not free right now';
+              personStatusAccent = Boolean(data.person?.freeNow);
+            } else if (target.targetLabel) {
+              personStatusLabel = hasTargetResults ? `Available ${target.targetLabel}` : `Not available ${target.targetLabel}`;
+              personStatusAccent = hasTargetResults;
+            } else {
+              personStatusLabel = hasTargetResults ? 'Available in this window' : 'Not available in this window';
+              personStatusAccent = hasTargetResults;
+            }
+          }
+
+          const availabilityMeta = [
+            data.currentTimeLabel,
+            (data.intent?.isNow || target.isNow) ? 'checked just now' : null
+          ].filter(Boolean).join(' · ');
+
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            type: 'bot',
+            content: (
+              <div className="space-y-3">
+                <ResponseCard>
+                  <ResponseHeader
+                    label="Availability"
+                    meta={availabilityMeta || data.targetLabel}
+                    badge={data.verifiedFilterApplied === false ? 'Directory data' : 'Verified only'}
+                  />
+                  <ResponseBody>
+                    {data.targetLabel && !data.person?.found && (
+                      <div className="mb-2 text-[11px] leading-snug text-[var(--muted)]">
+                        {data.targetLabel}
+                      </div>
+                    )}
+
+                    {data.person?.found && data.response && (
+                      <ResponseText className="mb-2 text-[13px] text-[var(--ink)]">
+                        {renderTextWithClickableEmails(data.response)}
+                      </ResponseText>
+                    )}
+
+                    {data.person?.found && (
+                      <ResponseGrid className="mb-1">
+                        {personStatusLabel && (
+                          <ResponseFact
+                            label="Status"
+                            value={personStatusLabel}
+                            accent={personStatusAccent}
+                            wide
+                          />
+                        )}
+                        {data.person.department && (
+                          <ResponseFact label="Department" value={data.person.department} />
+                        )}
+                        {data.person.office && (
+                          <ResponseFact label="Office" value={data.person.office} />
+                        )}
+                        {data.person.email && (
+                          <ResponseFact
+                            label="Email"
+                            value={(
+                              <a href={`mailto:${data.person.email}`} className="text-[var(--accent)] underline decoration-current/25">
+                                {data.person.email}
+                              </a>
+                            )}
+                            wide
+                          />
+                        )}
+                      </ResponseGrid>
+                    )}
+
+                    {availabilityItems.length === 0 && !data.person?.found && (
+                      <ResponseText className="text-[12.5px] text-[var(--ink-soft)]">
+                        {renderTextWithClickableEmails(data.response)}
+                      </ResponseText>
+                    )}
+                  </ResponseBody>
+
+                  {availabilityItems.length > 0 && (
+                    <div className="divide-y divide-[var(--rule)] border-t border-[var(--rule)]">
+                      {availabilityItems.map((item, idx) => (
+                        <ResponseRow
+                          key={`${item.name}-${idx}`}
+                          onClick={() => handleSendMessage(item.name)}
+                        >
+                          <ResponseAvatar>{String(item.name).charAt(0)}</ResponseAvatar>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-[13px] font-medium text-[var(--ink)]">{item.name}</span>
+                              <span className="shrink-0 rounded-full bg-[var(--accent)] px-2 py-0.5 text-[9.5px] font-semibold leading-none text-white">{item.statusLabel}</span>
+                            </span>
+                            <span className="mt-1 block truncate text-[10.5px] text-[var(--muted)]">
+                              {[item.department, item.office ? `Office ${item.office}` : null, `${item.day} ${item.start}–${item.end}`].filter(Boolean).join(' · ')}
+                            </span>
+                          </span>
+                        </ResponseRow>
+                      ))}
+                    </div>
+                  )}
+
+                  {availabilityItems.length > 0 && data.disclaimer && (
+                    <div className="border-t border-[var(--rule)] px-3.5 py-2">
+                      <ResponseText className="text-[10.5px] text-[var(--muted)]">{data.disclaimer}</ResponseText>
+                    </div>
+                  )}
+                </ResponseCard>
+              </div>
+            ),
+            timestamp: getCurrentTime(),
+            variant: 'smart',
+            rawText: data.response || (data.count > 0
+              ? `Available for ${data.targetLabel}: ${availabilityItems.map(r => r.name).join(', ')}`
+              : `No verified instructors available for ${data.targetLabel}.`),
+            quickReplies: data.quickReplies?.length
+              ? data.quickReplies
+              : (availabilityItems.length > 0 ? ['By department'] : ['Who is free now?', 'By department'])
+          }]);
         } else if (data.type === 'office_hours') {
           if (data.results.length === 1) {
             // Single result - show card
+            lastProfessorRef.current = data.results[0]?.professor || data.results[0]?.name || lastProfessorRef.current;
             setMessages(prev => [...prev, {
               id: Date.now(),
               type: 'bot',
@@ -1194,24 +1511,31 @@ export default function Page() {
               type: 'bot',
               content: (
                 <div className="space-y-3">
-                  <div className="text-[14px] opacity-70">Found {data.results.length} professors:</div>
-                  <div className="grid gap-2">
-                    {data.results.slice(0, 5).map((prof, i) => (
-                      <button
-                        key={`${prof.professor}-${i}`}
-                        onClick={() => handleSendMessage(prof.professor)}
-                        className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
-                          {prof.professor.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[14px] truncate">{prof.professor}</div>
-                          <div className="text-[11px] opacity-50 truncate uppercase tracking-tight">{prof.department || prof.school}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                  <ResponseCard>
+                    <ResponseHeader
+                      label="Choose a match"
+                      meta={`${data.results.length} ${data.results.length === 1 ? 'match' : 'matches'}`}
+                    />
+                    <div className="divide-y divide-[var(--rule)]">
+                      {data.results.slice(0, 5).map((prof, i) => (
+                        <ResponseRow
+                          key={`${prof.professor}-${i}`}
+                          onClick={() => handleSendMessage(prof.professor)}
+                        >
+                          <ResponseAvatar>{prof.professor.charAt(0)}</ResponseAvatar>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[13px] font-medium text-[var(--ink)]">
+                              {prof.professor}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11px] text-[var(--muted)]">
+                              {prof.department || prof.school || 'Faculty'}
+                            </span>
+                          </span>
+                          <span className="text-[13px] text-[var(--accent)]">→</span>
+                        </ResponseRow>
+                      ))}
+                    </div>
+                  </ResponseCard>
                 </div>
               ),
               timestamp: getCurrentTime(),
@@ -1228,103 +1552,293 @@ export default function Page() {
             reason: data.summary || `No result matched the query "${userText}"`
           });
 
-          // No results found
+          const noResultSubject = String(data.subject || data.message || userText || '').trim();
+          setMissingFlow({
+            name: noResultSubject,
+            step: 'ask_computing',
+            source: 'api',
+            rawQuery: userText
+          });
+
           setMessages(prev => [...prev, {
             id: Date.now(),
             type: 'bot',
             content: (
               <div className="space-y-3">
-                <div className="text-[14px] leading-relaxed">
-                  {data.summary || (
-                    data.suggestions?.length > 0
-                      ? `I couldn't find an exact match for '${data.message}'. Try checking the spelling or pick one of these close matches:`
-                      : `I couldn't find a faculty match for '${data.message}'. Try checking the spelling or browse by department.`
-                  )}
-                </div>
-                {data.guidance && (
-                  <div className="text-[13px] opacity-80 bg-[#DC2626]/5 border border-[#DC2626]/20 rounded-lg px-3 py-2">
-                    {data.guidance}
-                  </div>
-                )}
-                {data.hints?.length > 0 && (
-                  <div className="space-y-1">
-                    {data.hints.map((hint, idx) => (
-                      <div key={idx} className="text-[12px] opacity-70">• {hint}</div>
-                    ))}
-                  </div>
-                )}
-                {data.suggestions?.length > 0 && (
-                  <div className="grid gap-2">
-                    {data.suggestions.map((prof, i) => (
-                      <button
-                        key={`sugg-${prof.professor}-${i}`}
-                        onClick={() => {
-                          const followupQuery = buildContextualFollowupQuery(prof.professor, data.context);
-                          handleSendMessage(followupQuery, null, prof.professor);
-                        }}
-                        className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
-                          {prof.professor.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[14px] truncate">{prof.professor}</div>
-                          <div className="text-[11px] opacity-50 truncate uppercase tracking-tight">{prof.department || 'Faculty'}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="rounded-xl border border-[#DC2626]/25 bg-[#DC2626]/5 px-3 py-2.5 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171]">
-                      Needs a hand
-                    </span>
-                    {data.missingNameStats?.isHot && (
-                      <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                        🔥 {data.missingNameStats.searchCount} lookups
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[13px] leading-relaxed text-[#7F1D1D] dark:text-[#FECACA]">
-                    {data.requesterLine || 'Know the answer? Adding it takes about a minute.'}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = data.subject || data.message || '';
-                      setContributeName(name);
-                      setContributeOpen(true);
-                    }}
-                    className="w-full text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
-                  >
-                    ✨ Fill in {data.subject || data.message || 'their details'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openFeedbackForm({
-                      category: 'missing_name',
-                      missingName: data.subject || data.message || '',
-                      userQuery: userText,
-                      requestLabel: data.requestLabel || ''
-                    })}
-                    className="w-full text-left rounded-lg border border-[#DC2626]/30 bg-white/60 dark:bg-black/20 px-3 py-2 text-[12px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
-                  >
-                    Not sure? Flag it as missing instead
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleBotResponse('by department')}
-                  className="w-full text-left rounded-xl border border-black/15 dark:border-white/15 bg-white/60 dark:bg-black/20 px-3 py-2.5 text-[13px] font-semibold hover:bg-white dark:hover:bg-black/30 transition-colors"
-                >
-                  Browse by department now
-                </button>
+                <ResponseCard>
+                  <ResponseHeader label="Directory" meta="School of Computing" />
+                  <ResponseBody>
+                    <ResponseText className="text-[13px]">
+                      I couldn't find <strong>"{noResultSubject}"</strong> in the <strong>School of Computing</strong> directory.
+                    </ResponseText>
+                    <ResponseText className="mt-2 text-[13px] text-[var(--ink-soft)]">
+                      Is this person in the <strong>School of Computing</strong>?
+                    </ResponseText>
+                  </ResponseBody>
+                  <ResponseActions className="px-3.5 pb-3.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMissingFlow({ name: noResultSubject, step: 'allow_add', source: 'api', rawQuery: userText });
+                        setMessages(p => [...p, {
+                          id: Date.now(),
+                          type: 'bot',
+                          content: (
+                            <ResponseCard>
+                              <ResponseHeader label="Directory" meta="School of Computing" />
+                              <ResponseBody>
+                                <ResponseText className="text-[13px]">
+                                  Got it. If <strong>"{noResultSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                                </ResponseText>
+                                <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                                  Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                                </ResponseText>
+                              </ResponseBody>
+                              <ResponseActions className="px-3.5 pb-3.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setContributeName(noResultSubject);
+                                    setContributeOpen(true);
+                                    setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                  }}
+                                  className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                                >
+                                  Add {noResultSubject || 'this instructor'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    openFeedbackForm({
+                                      category: 'missing_name',
+                                      missingName: noResultSubject,
+                                      userQuery: userText,
+                                      requestLabel: data.requestLabel || ''
+                                    });
+                                    setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                  }}
+                                  className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                >
+                                  Report as missing
+                                </button>
+                              </ResponseActions>
+                            </ResponseCard>
+                          ),
+                          timestamp: getCurrentTime(),
+                          variant: 'no_results',
+                          rawText: `Add or report ${noResultSubject}`,
+                          quickReplies: ['By department']
+                        }]);
+                      }}
+                      className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMissingFlow({ name: noResultSubject, step: 'ask_other_school', source: 'api', rawQuery: userText });
+                        setMessages(p => [...p, {
+                          id: Date.now(),
+                          type: 'bot',
+                          content: (
+                            <ResponseCard>
+                              <ResponseHeader label="Directory" meta="School check" />
+                              <ResponseBody>
+                                <ResponseText className="text-[13px]">Which school are they in?</ResponseText>
+                              </ResponseBody>
+                              <ResponseActions className="px-3.5 pb-3.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMissingFlow({ name: noResultSubject, step: 'allow_add', source: 'api', rawQuery: userText });
+                                    setMessages(pp => [...pp, {
+                                      id: Date.now(),
+                                      type: 'bot',
+                                      content: (
+                                        <ResponseCard>
+                                          <ResponseHeader label="Directory" meta="School of Computing" />
+                                          <ResponseBody>
+                                            <ResponseText className="text-[13px]">
+                                              Got it. If <strong>"{noResultSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                                            </ResponseText>
+                                            <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                                              Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                                            </ResponseText>
+                                          </ResponseBody>
+                                          <ResponseActions className="px-3.5 pb-3.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setContributeName(noResultSubject);
+                                                setContributeOpen(true);
+                                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                              }}
+                                              className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                                            >
+                                              Add {noResultSubject || 'this instructor'}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                openFeedbackForm({
+                                                  category: 'missing_name',
+                                                  missingName: noResultSubject,
+                                                  userQuery: userText,
+                                                  requestLabel: data.requestLabel || ''
+                                                });
+                                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                              }}
+                                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                            >
+                                              Report as missing
+                                            </button>
+                                          </ResponseActions>
+                                        </ResponseCard>
+                                      ),
+                                      timestamp: getCurrentTime(),
+                                      variant: 'no_results',
+                                      rawText: `Add or report ${noResultSubject}`,
+                                      quickReplies: ['By department']
+                                    }]);
+                                  }}
+                                  className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                >
+                                  School of Basic Sciences and Humanities
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMissingFlow({ name: noResultSubject, step: 'engineering_only', source: 'api', rawQuery: userText });
+                                    setMessages(pp => [...pp, {
+                                      id: Date.now(),
+                                      type: 'bot',
+                                      content: (
+                                        <ResponseCard>
+                                          <ResponseHeader label="Directory" meta="Scope" />
+                                          <ResponseBody>
+                                            <ResponseText className="text-[13px]">
+                                              <strong>MUBXBot only supports the School of Computing.</strong> We don't have a directory for the <strong>School of Engineering</strong> yet.
+                                            </ResponseText>
+                                          </ResponseBody>
+                                          <ResponseActions className="px-3.5 pb-3.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                openFeedbackForm({
+                                                  category: 'missing_name',
+                                                  missingName: noResultSubject,
+                                                  userQuery: userText,
+                                                  requestLabel: data.requestLabel || '',
+                                                  note: 'Engineering - out of scope'
+                                                });
+                                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                              }}
+                                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                            >
+                                              Report this request
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setMissingFlow(null);
+                                                handleBotResponse('Ask something else');
+                                              }}
+                                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                            >
+                                              Ask something else
+                                            </button>
+                                          </ResponseActions>
+                                        </ResponseCard>
+                                      ),
+                                      timestamp: getCurrentTime(),
+                                      variant: 'no_results',
+                                      rawText: `Out of scope for ${noResultSubject}`,
+                                      quickReplies: ['By department']
+                                    }]);
+                                  }}
+                                  className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                >
+                                  School of Engineering
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMissingFlow({ name: noResultSubject, step: 'allow_add', source: 'api', rawQuery: userText });
+                                    setMessages(pp => [...pp, {
+                                      id: Date.now(),
+                                      type: 'bot',
+                                      content: (
+                                        <ResponseCard>
+                                          <ResponseHeader label="Directory" meta="School of Computing" />
+                                          <ResponseBody>
+                                            <ResponseText className="text-[13px]">
+                                              Got it. If <strong>"{noResultSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                                            </ResponseText>
+                                            <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                                              Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                                            </ResponseText>
+                                          </ResponseBody>
+                                          <ResponseActions className="px-3.5 pb-3.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setContributeName(noResultSubject);
+                                                setContributeOpen(true);
+                                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                              }}
+                                              className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                                            >
+                                              Add {noResultSubject || 'this instructor'}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                openFeedbackForm({
+                                                  category: 'missing_name',
+                                                  missingName: noResultSubject,
+                                                  userQuery: userText,
+                                                  requestLabel: data.requestLabel || ''
+                                                });
+                                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                              }}
+                                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                            >
+                                              Report as missing
+                                            </button>
+                                          </ResponseActions>
+                                        </ResponseCard>
+                                      ),
+                                      timestamp: getCurrentTime(),
+                                      variant: 'no_results',
+                                      rawText: `Add or report ${noResultSubject}`,
+                                      quickReplies: ['By department']
+                                    }]);
+                                  }}
+                                  className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                >
+                                  Not sure / Other
+                                </button>
+                              </ResponseActions>
+                            </ResponseCard>
+                          ),
+                          timestamp: getCurrentTime(),
+                          variant: 'no_results',
+                          rawText: 'Which school?',
+                          quickReplies: ['By department']
+                        }]);
+                      }}
+                      className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                    >
+                      No
+                    </button>
+                  </ResponseActions>
+                </ResponseCard>
               </div>
             ),
             timestamp: getCurrentTime(),
             variant: 'no_results',
-            rawText: data.summary || 'No matching faculty found.',
+            rawText: `Not found: ${noResultSubject}`,
             quickReplies: ['By department']
           }]);
         } else {
@@ -1332,7 +1846,22 @@ export default function Page() {
           setMessages(prev => [...prev, {
             id: Date.now(),
             type: 'bot',
-            content: "Try this pattern for consistent results:\n• what + name = email\n• when + name = office hours\n• where + name = office code\n• Or just type a professor's name",
+            content: (
+              <ResponseCard>
+                <ResponseHeader label="MUBX assistant" meta="Help" />
+                <ResponseBody>
+                  <ResponseText className="text-[13px]">
+                    Quick patterns:{'\n'}
+                    • what + name = email{'\n'}
+                    • when + name = office hours{'\n'}
+                    • where + name = office code{'\n'}
+                    • Who is free now / Who is free today at 10:00 AM = availability (schedule only){'\n'}
+                    • By department = browse{'\n'}
+                    • Type help for examples
+                  </ResponseText>
+                </ResponseBody>
+              </ResponseCard>
+            ),
             timestamp: getCurrentTime(),
             variant: 'smart',
             rawText: 'Try what/when/where + name for consistent results.',
@@ -1353,7 +1882,8 @@ export default function Page() {
       }
     }
 
-    if (lowerText === "by department") {
+    if (lowerText === "by department" || lowerText === "ask something else") {
+      setMissingFlow(null);
       // Normalize departments and get unique list (Bug #10)
       const departments = [...new Set(instructors.map(i => normalizeDepartment(i.department)))].sort((a, b) => a.localeCompare(b));
       setIsTyping(false);
@@ -1361,19 +1891,29 @@ export default function Page() {
         id: Date.now(),
         type: 'bot',
         content: (
-          <div className="space-y-2">
-            <div className="font-bold text-[14px]">Explore Departments:</div>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {departments.map(dept => (
-                <button
-                  key={`dept-${dept}`}
-                  onClick={() => handleSendMessage(dept)}
-                  className="px-3 py-1.5 rounded-full border border-[#DC2626] text-[#DC2626] dark:text-[#EF4444] text-[13px] font-medium hover:bg-[#DC2626]/5 active:scale-95 transition-all"
-                >
-                  {dept}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-3">
+            <ResponseCard>
+              <ResponseHeader
+                label="Explore departments"
+                meta={`${departments.length} ${departments.length === 1 ? 'department' : 'departments'}`}
+              />
+              <ResponseBody>
+                <ResponseText className="mb-2 text-[12px] text-[var(--muted)]">
+                  Browse the School of Computing by department.
+                </ResponseText>
+                <div className="flex flex-wrap gap-2">
+                  {departments.map(dept => (
+                    <button
+                      key={`dept-${dept}`}
+                      onClick={() => handleSendMessage(dept)}
+                      className="rounded-full border border-[var(--rule)] bg-[var(--panel)] px-3 py-1.5 text-[11.5px] font-medium text-[var(--ink-soft)] transition-all hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:scale-95"
+                    >
+                      {dept}
+                    </button>
+                  ))}
+                </div>
+              </ResponseBody>
+            </ResponseCard>
           </div>
         ),
         timestamp: getCurrentTime(),
@@ -1388,7 +1928,16 @@ export default function Page() {
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
-        content: "I'm still preparing the directory. Please wait just a second.",
+        content: (
+          <ResponseCard>
+            <ResponseHeader label="Please wait" meta="Directory loading" />
+            <ResponseBody>
+              <ResponseText className="text-[13px]">
+                I'm still preparing the directory. Please wait just a second.
+              </ResponseText>
+            </ResponseBody>
+          </ResponseCard>
+        ),
         timestamp: getCurrentTime(),
         variant: 'error',
         rawText: "I'm still preparing the directory. Please wait just a second."
@@ -1409,49 +1958,272 @@ export default function Page() {
       });
 
       recordMissingNameSearch(userText);
+      const missingSubject = String(userText || '').trim();
+      setMissingFlow({
+        name: missingSubject,
+        step: 'ask_computing',
+        source: 'fallback',
+        rawQuery: userText
+      });
 
       setMessages(prev => [...prev, {
         id: Date.now(),
         type: 'bot',
         content: (
           <div className="space-y-3">
-            <div className="text-[14px] leading-relaxed">
-              I couldn't find any instructors matching '{userText}'. Check the spelling, or help us add them.
-            </div>
-            <div className="rounded-xl border border-[#DC2626]/25 bg-[#DC2626]/5 px-3 py-2.5 space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171] inline-block">
-                Needs a hand
-              </div>
-              <div className="text-[13px] leading-relaxed text-[#7F1D1D] dark:text-[#FECACA]">
-                Know the answer? Adding it takes about a minute and helps the next person instantly.
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setContributeName(userText);
-                  setContributeOpen(true);
-                }}
-                className="w-full text-left rounded-lg bg-[#DC2626] px-3 py-2 text-[13px] font-bold text-white hover:bg-[#B91C1C] transition-colors"
-              >
-                ✨ Fill in {userText}
-              </button>
-              <button
-                type="button"
-                onClick={() => openFeedbackForm({
-                  category: 'missing_name',
-                  missingName: userText,
-                  userQuery: userText
-                })}
-                className="w-full text-left rounded-lg border border-[#DC2626]/30 bg-white/60 dark:bg-black/20 px-3 py-2 text-[12px] font-semibold text-[#B91C1C] dark:text-[#F87171] hover:bg-[#DC2626]/10 transition-colors"
-              >
-                Not sure? Flag it as missing instead
-              </button>
-            </div>
+            <ResponseCard>
+              <ResponseHeader label="Directory" meta="School of Computing" />
+              <ResponseBody>
+                <ResponseText className="text-[13px]">
+                  I couldn't find <strong>"{missingSubject}"</strong> in the <strong>School of Computing</strong> directory.
+                </ResponseText>
+                <ResponseText className="mt-2 text-[13px] text-[var(--ink-soft)]">
+                  Is this person in the <strong>School of Computing</strong>?
+                </ResponseText>
+              </ResponseBody>
+              <ResponseActions className="px-3.5 pb-3.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMissingFlow({ name: missingSubject, step: 'allow_add', source: 'fallback', rawQuery: userText });
+                    setMessages(p => [...p, {
+                      id: Date.now(),
+                      type: 'bot',
+                      content: (
+                        <ResponseCard>
+                          <ResponseHeader label="Directory" meta="School of Computing" />
+                          <ResponseBody>
+                            <ResponseText className="text-[13px]">
+                              Got it. If <strong>"{missingSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                            </ResponseText>
+                            <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                              Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                            </ResponseText>
+                          </ResponseBody>
+                          <ResponseActions className="px-3.5 pb-3.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setContributeName(missingSubject);
+                                setContributeOpen(true);
+                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                              }}
+                              className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                            >
+                              Add {missingSubject || 'this instructor'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                openFeedbackForm({ category: 'missing_name', missingName: missingSubject, userQuery: userText });
+                                setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                              }}
+                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                            >
+                              Report as missing
+                            </button>
+                          </ResponseActions>
+                        </ResponseCard>
+                      ),
+                      timestamp: getCurrentTime(),
+                      variant: 'no_results',
+                      rawText: `Add or report ${missingSubject}`,
+                      quickReplies: ['By department']
+                    }]);
+                  }}
+                  className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMissingFlow({ name: missingSubject, step: 'ask_other_school', source: 'fallback', rawQuery: userText });
+                    setMessages(p => [...p, {
+                      id: Date.now(),
+                      type: 'bot',
+                      content: (
+                        <ResponseCard>
+                          <ResponseHeader label="Directory" meta="School check" />
+                          <ResponseBody>
+                            <ResponseText className="text-[13px]">Which school are they in?</ResponseText>
+                          </ResponseBody>
+                          <ResponseActions className="px-3.5 pb-3.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMissingFlow({ name: missingSubject, step: 'allow_add', source: 'fallback', rawQuery: userText });
+                                setMessages(pp => [...pp, {
+                                  id: Date.now(),
+                                  type: 'bot',
+                                  content: (
+                                    <ResponseCard>
+                                      <ResponseHeader label="Directory" meta="School of Computing" />
+                                      <ResponseBody>
+                                        <ResponseText className="text-[13px]">
+                                          Got it. If <strong>"{missingSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                                        </ResponseText>
+                                        <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                                          Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                                        </ResponseText>
+                                      </ResponseBody>
+                                      <ResponseActions className="px-3.5 pb-3.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setContributeName(missingSubject);
+                                            setContributeOpen(true);
+                                            setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                          }}
+                                          className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                                        >
+                                          Add {missingSubject || 'this instructor'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            openFeedbackForm({ category: 'missing_name', missingName: missingSubject, userQuery: userText });
+                                            setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                          }}
+                                          className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                        >
+                                          Report as missing
+                                        </button>
+                                      </ResponseActions>
+                                    </ResponseCard>
+                                  ),
+                                  timestamp: getCurrentTime(),
+                                  variant: 'no_results',
+                                  rawText: `Add or report ${missingSubject}`,
+                                  quickReplies: ['By department']
+                                }]);
+                              }}
+                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                            >
+                              School of Basic Sciences and Humanities
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMissingFlow({ name: missingSubject, step: 'engineering_only', source: 'fallback', rawQuery: userText });
+                                setMessages(pp => [...pp, {
+                                  id: Date.now(),
+                                  type: 'bot',
+                                  content: (
+                                    <ResponseCard>
+                                      <ResponseHeader label="Directory" meta="Scope" />
+                                      <ResponseBody>
+                                        <ResponseText className="text-[13px]">
+                                          <strong>MUBXBot only supports the School of Computing.</strong> We don't have a directory for the <strong>School of Engineering</strong> yet.
+                                        </ResponseText>
+                                      </ResponseBody>
+                                      <ResponseActions className="px-3.5 pb-3.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            openFeedbackForm({ category: 'missing_name', missingName: missingSubject, userQuery: userText, note: 'Engineering - out of scope' });
+                                            setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                          }}
+                                          className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                        >
+                                          Report this request
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setMissingFlow(null);
+                                            handleBotResponse('Ask something else');
+                                          }}
+                                          className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                        >
+                                          Ask something else
+                                        </button>
+                                      </ResponseActions>
+                                    </ResponseCard>
+                                  ),
+                                  timestamp: getCurrentTime(),
+                                  variant: 'no_results',
+                                  rawText: `Out of scope for ${missingSubject}`,
+                                  quickReplies: ['By department']
+                                }]);
+                              }}
+                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                            >
+                              School of Engineering
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMissingFlow({ name: missingSubject, step: 'allow_add', source: 'fallback', rawQuery: userText });
+                                setMessages(pp => [...pp, {
+                                  id: Date.now(),
+                                  type: 'bot',
+                                  content: (
+                                    <ResponseCard>
+                                      <ResponseHeader label="Directory" meta="School of Computing" />
+                                      <ResponseBody>
+                                        <ResponseText className="text-[13px]">
+                                          Got it. If <strong>"{missingSubject}"</strong> <strong>teaches in the School of Computing</strong>, I can collect the name for the directory.
+                                        </ResponseText>
+                                        <ResponseText className="mt-2 text-[12.5px] text-[var(--ink-soft)]">
+                                          Just the name is enough to add it. If they're only in another school, <strong>reporting</strong> still helps us track the request.
+                                        </ResponseText>
+                                      </ResponseBody>
+                                      <ResponseActions className="px-3.5 pb-3.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setContributeName(missingSubject);
+                                            setContributeOpen(true);
+                                            setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                          }}
+                                          className="w-full rounded-xl bg-[var(--accent)] px-3 py-2 text-left text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-dark)]"
+                                        >
+                                          Add {missingSubject || 'this instructor'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            openFeedbackForm({ category: 'missing_name', missingName: missingSubject, userQuery: userText });
+                                            setMissingFlow(f => f ? { ...f, step: 'done' } : f);
+                                          }}
+                                          className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[11.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                                        >
+                                          Report as missing
+                                        </button>
+                                      </ResponseActions>
+                                    </ResponseCard>
+                                  ),
+                                  timestamp: getCurrentTime(),
+                                  variant: 'no_results',
+                                  rawText: `Add or report ${missingSubject}`,
+                                  quickReplies: ['By department']
+                                }]);
+                              }}
+                              className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                            >
+                              Not sure / Other
+                            </button>
+                          </ResponseActions>
+                        </ResponseCard>
+                      ),
+                      timestamp: getCurrentTime(),
+                      variant: 'no_results',
+                      rawText: 'Which school?',
+                      quickReplies: ['By department']
+                    }]);
+                  }}
+                  className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                >
+                  No
+                </button>
+              </ResponseActions>
+            </ResponseCard>
           </div>
         ),
         timestamp: getCurrentTime(),
         variant: 'no_results',
-        rawText: `No instructors found for ${userText}`,
+        rawText: `Not found: ${missingSubject}`,
         quickReplies: ['By department']
       }]);
     } else if (results.length === 1) {
@@ -1516,24 +2288,28 @@ export default function Page() {
         type: 'bot',
         content: (
           <div className="space-y-3">
-            <div className="text-[14px] opacity-70">Matches found:</div>
-            <div className="grid gap-2">
-              {results.slice(0, 5).map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSendMessage(r.item.name, r.item)}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-[#DC2626]/10 transition-all text-left group border border-black/5 dark:border-white/5"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px] group-hover:bg-[#DC2626] group-hover:text-white transition-colors">
-                    {r.item.name.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[14px] truncate">{r.item.name}</div>
-                    <div className="text-[11px] opacity-50 truncate uppercase tracking-tight">{r.item.department}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <ResponseCard>
+              <ResponseHeader
+                label="Choose a match"
+                meta={`${results.length} ${results.length === 1 ? 'match' : 'matches'}`}
+              />
+              <div className="divide-y divide-[var(--rule)]">
+                {results.slice(0, 5).map((r, i) => (
+                  <ResponseRow key={i} onClick={() => handleSendMessage(r.item.name, r.item)}>
+                    <ResponseAvatar>{r.item.name.charAt(0)}</ResponseAvatar>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium text-[var(--ink)]">
+                        {r.item.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-[var(--muted)]">
+                        {r.item.department || 'Faculty'}
+                      </span>
+                    </span>
+                    <span className="text-[13px] text-[var(--accent)]">→</span>
+                  </ResponseRow>
+                ))}
+              </div>
+            </ResponseCard>
           </div>
         ),
         timestamp: getCurrentTime(),
@@ -1545,10 +2321,10 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-white dark:bg-black">
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-[var(--paper)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-red-500/20 border-t-red-500 animate-spin" />
-          <p className="text-gray-400 font-medium animate-pulse tracking-tight">Initializing MUBXBot...</p>
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-[var(--rule)] border-t-[var(--accent)]" />
+          <p className="animate-pulse text-[12.5px] text-[var(--muted)]">Getting things ready…</p>
         </div>
       </div>
     );
@@ -1564,7 +2340,7 @@ export default function Page() {
   const hasConversationHistory = messages.some((message) => message.type === 'user');
 
   return (
-    <main className="h-[100dvh] w-full flex justify-center items-center overflow-hidden bg-[#F2F2F7] dark:bg-[#000000] relative">
+    <main className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[var(--paper)]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: homeStructuredDataJson }}
@@ -1574,60 +2350,51 @@ export default function Page() {
         MUBXBot is the HTU School of Computing and Informatics assistant for finding instructor emails, office hours, departments, and office locations.
       </noscript>
 
-      {/* Background Mesh */}
-      <div className="absolute inset-0 pointer-events-none z-0" style={{ 
-        backgroundImage: 'radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(185, 28, 28, 0.15) 0px, transparent 50%)' 
-      }} />
-      
-      {/* Main Container */}
-      <div className="w-full max-w-[960px] h-[100dvh] md:h-[90vh] md:rounded-[32px] md:shadow-2xl relative z-10 overflow-hidden flex flex-col bg-white dark:bg-black">
-        {/* Header */}
-        <ChatHeader
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onOpenFeedback={() => openFeedbackForm({ category: 'general' })}
-        />
+      {/* Header */}
+      <ChatHeader
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onOpenFeedback={() => openFeedbackForm({ category: 'general' })}
+        onNewChat={handleClearConversation}
+        showNewChat={hasConversationHistory}
+      />
 
-        {/* Data update announcement banner */}
-        <UpdateBanner />
+      {/* Live academic calendar banner */}
+      <AcademicStatusBanner />
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto bg-[#F8F9FA] dark:bg-[#1C1C1E] py-3 sm:py-4 chat-scroll relative">
-          {(hasConversationHistory || pinnedResponses.length > 0) && (
-            <div className="px-3 sm:px-4 pb-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleClearConversation}
-                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
-                aria-label="Clear conversation"
-              >
-                <RotateCcw className="w-3.5 h-3.5 inline mr-1" /> Clear chat
-              </button>
+      {/* Messages Area */}
+      <div className="relative flex-1 overflow-y-auto bg-[var(--paper)] chat-scroll">
+        <div className="mx-auto flex min-h-full w-full max-w-[768px] flex-col py-4 sm:py-6">
+          {hasConversationHistory && (
+            <div className="flex flex-wrap items-center justify-end gap-1 px-4 pb-1 sm:px-6">
               <button
                 type="button"
                 onClick={handleCopyLastAnswer}
-                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)]"
                 aria-label="Copy last answer"
               >
-                <Copy className="w-3.5 h-3.5 inline mr-1" /> Copy last answer
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.8} /> Copy
               </button>
               <button
                 type="button"
                 onClick={handlePinLastAnswer}
-                className="min-h-10 px-3 rounded-full border border-black/15 dark:border-white/15 text-[12px] font-semibold text-[#1F2937] dark:text-[#E5E7EB] hover:bg-white dark:hover:bg-white/10 transition-colors"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)]"
                 aria-label="Pin useful result"
               >
-                <Pin className="w-3.5 h-3.5 inline mr-1" /> Pin useful result
+                <Pin className="h-3.5 w-3.5" strokeWidth={1.8} /> Pin
               </button>
             </div>
           )}
 
           {pinnedResponses.length > 0 && (
-            <div className="px-3 sm:px-4 pb-3">
-              <div className="rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 p-3 space-y-2">
-                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#B91C1C] dark:text-[#FCA5A5]">Pinned notes</div>
+            <div className="px-4 pb-3 sm:px-6">
+              <div className="space-y-2 rounded-2xl border border-[var(--rule)] bg-[var(--surface)]/50 p-3">
+                <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--ink-soft)]">
+                  <Pin className="h-3.5 w-3.5 text-[var(--accent)]" strokeWidth={1.8} />
+                  Pinned notes
+                </div>
                 {pinnedResponses.map((item) => (
-                  <div key={item} className="text-[12px] leading-relaxed text-[#1F2937] dark:text-[#E5E7EB] border-b border-[#DC2626]/10 last:border-0 pb-2 last:pb-0">
+                  <div key={item} className="border-b border-[var(--rule)] pb-2 text-[12.5px] leading-relaxed text-[var(--ink-soft)] last:border-0 last:pb-0">
                     {item}
                   </div>
                 ))}
@@ -1636,13 +2403,13 @@ export default function Page() {
           )}
 
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col justify-center">
+            <div className="flex flex-1 flex-col justify-center">
               <EmptyState onAsk={(query) => handleSendMessage(query)} />
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4 pb-2">
+            <div className="space-y-3 pb-2 sm:space-y-4">
               {messages.map((message, index) => (
-                <div key={message.id} className="space-y-4">
+                <div key={message.id} className="space-y-3 sm:space-y-4">
                   <ChatMessage
                     type={message.type}
                     content={message.content}
@@ -1663,97 +2430,101 @@ export default function Page() {
             </div>
           )}
         </div>
-
-        {/* Suggestions Overlay */}
-        {suggestions.length > 0 && (
-          <div className="absolute bottom-[84px] sm:bottom-[88px] left-2 right-2 sm:left-4 sm:right-4 md:left-1/2 md:right-auto md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <div className="px-4 py-2 border-b border-black/5 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-black/50">
-              <span className="text-[10px] font-bold uppercase tracking-wider opacity-40 text-black dark:text-white">Suggestions</span>
-              <button onClick={() => { setSuggestions([]); setHighlightedSuggestionIndex(-1); }} className="opacity-40 hover:opacity-100 transition-opacity text-black dark:text-white"><X size={14} /></button>
-            </div>
-            <div className="max-h-[45dvh] sm:max-h-[240px] overflow-y-auto">
-              {suggestions.map((s, index) => (
-                <button
-                  key={`${s.item?.name || 'suggestion'}-${index}`}
-                  onClick={() => handleSendMessage(s.item.name, s.item)}
-                  className={`w-full text-left p-3.5 sm:p-3 transition-all flex items-center gap-3 border-b border-black/[0.02] dark:border-white/[0.02] last:border-0 ${
-                    highlightedSuggestionIndex === index ? 'bg-[#DC2626]/15' : 'hover:bg-[#DC2626]/10'
-                  }`}
-                  aria-label={`Choose ${s.item.name}`}
-                >
-                  <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-bold text-[14px]">
-                    {s.item.name.charAt(0)}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <div className="text-[15px] sm:text-[14px] font-bold truncate text-black dark:text-white">{highlightQueryMatch(s.item.name, inputValue)}</div>
-                    <div className="text-[10px] uppercase tracking-widest opacity-50 truncate text-black dark:text-white">{s.item.department}</div>
-                  </div>
-                  <Search size={14} className="opacity-20 text-black dark:text-white" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Contribute Bottom Sheet */}
-        <ContributeFlow
-          variant="modal"
-          open={contributeOpen}
-          onOpenChange={(v) => {
-            setContributeOpen(v);
-            if (!v) {
-              setContributeName('');
-              setContributeInstructor(null);
-              setContributeTab('add');
-            }
-          }}
-          initialName={contributeName}
-          initialInstructor={contributeInstructor}
-          initialTab={contributeTab}
-        />
-
-        {/* Input Bar */}
-        <ChatInput
-          value={inputValue}
-          onSend={handleSendMessage}
-          onChange={handleInputChange}
-          onKeyDown={handleInputKeyDown}
-          inlineSuggestion={inlineSuggestion}
-          placeholder="Type an instructor's name"
-          accessoryOpen={contributeOpen}
-          onAccessoryClick={() => {
-            if (contributeOpen) {
-              setContributeOpen(false);
-              setContributeName('');
-            } else {
-              setContributeOpen(true);
-            }
-          }}
-        />
-
       </div>
+
+      {/* Suggestions Overlay */}
+      {suggestions.length > 0 && (
+        <div className="absolute bottom-[92px] left-3 right-3 z-50 overflow-hidden rounded-2xl border border-[var(--rule)] bg-[var(--panel)] shadow-[0_18px_50px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-200 sm:bottom-[96px] sm:left-1/2 sm:right-auto sm:w-[min(720px,calc(100%-2rem))] sm:-translate-x-1/2">
+          <div className="flex items-center justify-between border-b border-[var(--rule)] px-3.5 py-2.5">
+            <span className="text-[11.5px] font-medium text-[var(--muted)]">Suggestions</span>
+            <button onClick={() => { setSuggestions([]); setHighlightedSuggestionIndex(-1); }} className="rounded-full p-1 text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)]" aria-label="Close suggestions"><X size={14} /></button>
+          </div>
+          <div className="max-h-[45dvh] overflow-y-auto p-1.5 sm:max-h-[240px]">
+            {suggestions.map((s, index) => (
+              <button
+                key={`${s.item?.name || 'suggestion'}-${index}`}
+                onClick={() => handleSendMessage(s.item.name, s.item)}
+                className={`group flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors ${
+                  highlightedSuggestionIndex === index ? 'bg-[var(--surface)]' : 'hover:bg-[var(--surface)]'
+                }`}
+                aria-label={`Choose ${s.item.name}`}
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] transition-colors group-hover:bg-[var(--paper)]">
+                  {s.item.name.charAt(0)}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <div className="truncate text-[13.5px] font-medium text-[var(--ink)]">{highlightQueryMatch(s.item.name, inputValue)}</div>
+                  <div className="truncate text-[11px] text-[var(--muted)]">{s.item.department}</div>
+                </div>
+                <Search size={14} className="shrink-0 text-[var(--muted)] opacity-50" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Contribute Bottom Sheet */}
+      <ContributeFlow
+        variant="modal"
+        open={contributeOpen}
+        onOpenChange={(v) => {
+          setContributeOpen(v);
+          if (!v) {
+            setContributeName('');
+            setContributeInstructor(null);
+            setContributeTab('add');
+          }
+        }}
+        initialName={contributeName}
+        initialInstructor={contributeInstructor}
+        initialTab={contributeTab}
+      />
+
+      {/* Input Bar */}
+      <ChatInput
+        value={inputValue}
+        onSend={handleSendMessage}
+        onChange={handleInputChange}
+        onKeyDown={handleInputKeyDown}
+        inlineSuggestion={inlineSuggestion}
+        placeholder="Ask about an instructor, office, or department…"
+        accessoryOpen={contributeOpen}
+        onAccessoryClick={() => {
+          if (contributeOpen) {
+            setContributeOpen(false);
+            setContributeName('');
+          } else {
+            setContributeOpen(true);
+          }
+        }}
+      />
 
       {feedbackOpen && (
         <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <button
             aria-label="Close feedback modal"
             onClick={closeFeedbackForm}
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
           />
-          <div className="relative w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 p-5 sm:p-6 shadow-2xl">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className="text-[20px] font-black tracking-tight text-[var(--text-primary)]">
-                {feedbackCategory === 'missing_name' ? 'Add a missing name' : 'Send Feedback'}
-              </h2>
-              <button onClick={closeFeedbackForm} className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10">✕</button>
+          <div className="relative w-full rounded-t-3xl border border-[var(--rule)] bg-[var(--panel)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.2)] sm:max-w-xl sm:rounded-3xl sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[20px] font-semibold leading-tight tracking-[-0.01em] text-[var(--ink)]">
+                  {feedbackCategory === 'missing_name' ? 'Add a missing name' : 'Send feedback'}
+                </h2>
+                <p className="mt-1 text-[12.5px] text-[var(--muted)]">
+                  Help us keep the directory accurate for everyone.
+                </p>
+              </div>
+              <button onClick={closeFeedbackForm} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)]" aria-label="Close feedback">✕</button>
             </div>
 
             {feedbackCategory === 'missing_name' && (
-              <div className="mb-4 rounded-xl border border-[#DC2626]/20 bg-[#DC2626]/5 px-3 py-2.5 text-[13px] leading-relaxed">
-                <div className="font-bold text-[#B91C1C] dark:text-[#F87171]">
+              <div className="mb-4 rounded-xl border border-[var(--rule)] bg-[var(--surface)]/60 px-3.5 py-3 text-[13px] leading-relaxed">
+                <div className="font-medium text-[var(--ink)]">
                   {feedbackMissingName ? `${feedbackMissingName} isn't in the directory yet.` : 'Which instructor is missing?'}
                 </div>
-                <div className="opacity-80 mt-0.5">
+                <div className="mt-0.5 text-[var(--muted)]">
                   Flagging it bumps them up our list, so the next person searching that name gets a real answer.
                 </div>
               </div>
@@ -1776,12 +2547,12 @@ export default function Page() {
 
             <form onSubmit={submitFeedback} className="space-y-4">
               <div>
-                <label htmlFor="feedback-type" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Type</label>
+                <label htmlFor="feedback-type" className="text-[12px] font-medium text-[var(--ink-soft)]">Type</label>
                 <select
                   id="feedback-type"
                   value={feedbackCategory}
                   onChange={(e) => setFeedbackCategory(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                  className="mt-1.5 w-full rounded-xl border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[14px] text-[var(--ink)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
                 >
                   <option value="general">General feedback</option>
                   <option value="missing_name">Missing instructor name</option>
@@ -1790,26 +2561,26 @@ export default function Page() {
 
               {feedbackCategory === 'missing_name' && (
                 <div>
-                  <label htmlFor="feedback-missing-name" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Instructor name</label>
+                  <label htmlFor="feedback-missing-name" className="text-[12px] font-medium text-[var(--ink-soft)]">Instructor name</label>
                   <input
                     id="feedback-missing-name"
                     value={feedbackMissingName}
                     onChange={(e) => setFeedbackMissingName(e.target.value)}
                     placeholder="Example: Dr. Jane Doe"
-                    className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                    className="mt-1.5 w-full rounded-xl border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[14px] text-[var(--ink)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
                   />
                 </div>
               )}
 
               <div>
-                <label htmlFor="feedback-details" className="text-[12px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Details</label>
+                <label htmlFor="feedback-details" className="text-[12px] font-medium text-[var(--ink-soft)]">Details</label>
                 <textarea
                   id="feedback-details"
                   value={feedbackMessage}
                   onChange={(e) => setFeedbackMessage(e.target.value)}
                   rows={4}
                   placeholder="Tell us what is missing or how we can improve"
-                  className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2.5"
+                  className="mt-1.5 w-full rounded-xl border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[14px] text-[var(--ink)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
                 />
               </div>
 
@@ -1822,7 +2593,7 @@ export default function Page() {
               <button
                 type="submit"
                 disabled={feedbackSubmitting}
-                className="w-full rounded-xl bg-[#DC2626] text-white font-bold px-4 py-3 disabled:opacity-60"
+                className="w-full rounded-full bg-[var(--ink)] px-4 py-3 text-[13.5px] font-medium text-[var(--paper)] transition-all hover:opacity-85 active:scale-[0.99] disabled:opacity-50"
               >
                 {feedbackSubmitting
                   ? 'Sending...'
@@ -1836,7 +2607,7 @@ export default function Page() {
       )}
 
       {toastMessage && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[200] px-3 py-2 rounded-full bg-black/80 text-white text-[12px] font-medium shadow-lg">
+        <div className="fixed bottom-5 left-1/2 z-[200] -translate-x-1/2 rounded-full bg-[var(--ink)] px-4 py-2.5 text-[12px] font-medium text-[var(--paper)] shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
           {toastMessage}
         </div>
       )}

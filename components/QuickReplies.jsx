@@ -1,15 +1,18 @@
 "use client";
 
+import PropTypes from 'prop-types';
+
 export function QuickReplies({ options, onSelect }) {
   if (!options || options.length === 0) return null;
-  
+
   return (
-    <div className="flex flex-wrap gap-2 px-3 sm:px-4 pb-1 max-w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex max-w-full flex-wrap gap-1.5 px-4 pb-1 sm:px-6">
       {options.map((option, index) => (
         <button
-          key={index}
+          key={`${option}-${index}`}
+          type="button"
           onClick={() => onSelect(option)}
-          className="max-w-full px-3.5 sm:px-4 py-2.5 sm:py-2 rounded-[20px] border border-[#DC2626] dark:border-[#EF4444] text-[#DC2626] dark:text-[#EF4444] text-[14px] font-medium hover:bg-[#DC2626]/10 dark:hover:bg-[#EF4444]/10 transition-all active:scale-95 shadow-sm whitespace-normal leading-tight"
+          className="max-w-full whitespace-normal rounded-full border border-[var(--rule)] px-3 py-1.5 text-left text-[12.5px] font-medium leading-tight text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--ink)] active:scale-[0.98]"
         >
           {option}
         </button>
@@ -17,3 +20,8 @@ export function QuickReplies({ options, onSelect }) {
     </div>
   );
 }
+
+QuickReplies.propTypes = {
+  options: PropTypes.arrayOf(PropTypes.string),
+  onSelect: PropTypes.func.isRequired
+};

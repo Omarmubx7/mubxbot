@@ -1,59 +1,72 @@
 "use client";
 
-import { Moon, Sun, GraduationCap, MessageSquareText } from 'lucide-react';
+import { Moon, Sun, MessageSquareText, SquarePen } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { BotShareButton } from './BotShareButton';
 
-export function ChatHeader({ theme, onToggleTheme, onOpenFeedback }) {
+export function ChatHeader({ theme, onToggleTheme, onOpenFeedback, onNewChat, showNewChat = false }) {
   return (
-    <header className="flex items-center gap-2 px-3 pt-safe pb-2.5 min-h-[54px] bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
+    <header className="flex min-h-[56px] items-center gap-2 bg-[var(--paper)] px-2.5 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-4">
       {/* Identity cluster */}
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shrink-0">
-          <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.5} />
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--accent)] text-white" aria-hidden="true">
+          <span className="text-[15px] font-semibold leading-none">M</span>
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[16px] font-semibold leading-tight text-[#1C1C1E] dark:text-white truncate">
+
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[var(--ink)]">
             MUBXBot
           </span>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
-            <span className="text-[11px] leading-tight text-[#8E8E93] dark:text-[#98989D] truncate font-medium">
-              Online • Fall 27
+          <span className="mt-0.5 hidden items-center gap-1.5 sm:flex">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span className="truncate text-[11px] leading-none text-[var(--muted)]">
+              HTU School of Computing
             </span>
-          </div>
-          <a
-            href="https://mubx.dev/links"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-semibold leading-tight text-[#DC2626] dark:text-[#EF4444] hover:opacity-80 transition-opacity truncate"
-            title="Visit Omar Mubaidin's profile"
-          >
-            by Omar Mubaidin ↗
-          </a>
+            <a
+              href="https://mubx.dev/links"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] leading-none text-[var(--muted)] transition-colors hover:text-[var(--ink)]"
+              title="Visit Omar Mubaidin's profile"
+            >
+              OM ↗
+            </a>
+          </span>
         </div>
+
+        {showNewChat && onNewChat && (
+          <button
+            type="button"
+            onClick={onNewChat}
+            className="ml-0.5 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] active:scale-[0.98] sm:px-3"
+            aria-label="Start a new chat"
+          >
+            <SquarePen className="h-4 w-4" strokeWidth={1.9} />
+            <span className="hidden sm:inline">New chat</span>
+          </button>
+        )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
         <BotShareButton />
         <button
           onClick={onOpenFeedback}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--ink)] active:scale-95"
           title="Send feedback"
           aria-label="Send feedback"
         >
-          <MessageSquareText className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D]" strokeWidth={2} />
+          <MessageSquareText className="h-4 w-4" strokeWidth={1.9} />
         </button>
         <button
           onClick={onToggleTheme}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--ink)] active:scale-95"
           aria-label="Toggle theme"
         >
           {theme === 'light' ? (
-            <Sun className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D] transition-transform hover:rotate-180 duration-500" />
+            <Sun className="h-4 w-4 transition-transform duration-500 hover:rotate-180" strokeWidth={1.9} />
           ) : (
-            <Moon className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D] transition-transform hover:rotate-180 duration-500" />
+            <Moon className="h-4 w-4 transition-transform duration-500 hover:rotate-180" strokeWidth={1.9} />
           )}
         </button>
       </div>
@@ -65,4 +78,6 @@ ChatHeader.propTypes = {
   theme: PropTypes.oneOf(['light', 'dark']).isRequired,
   onToggleTheme: PropTypes.func.isRequired,
   onOpenFeedback: PropTypes.func.isRequired,
+  onNewChat: PropTypes.func,
+  showNewChat: PropTypes.bool,
 };

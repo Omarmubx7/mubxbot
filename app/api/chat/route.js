@@ -12,6 +12,9 @@ import {
   isSimpleNameSearch,
   generateDisambiguationMessage 
 } from '../../../lib/getOfficeHours.js';
+import { findAvailableInstructors } from '../../../lib/officeHoursAvailability.js';
+import { answer as answerAssistant } from '../../../lib/assistant/index.js';
+import { rememberConversation } from '../../../lib/assistant/conversationStore.js';
 import { chatMetricsStore as chatMetrics, pendingDisambiguationsStore as pendingDisambiguations } from '../../../lib/chatMetricsStore.js';
 import { upsertSearch } from '../../../lib/missingNameMetrics.js';
 import { isUnderTakeover } from '../../../lib/liveSessions.js';
@@ -136,6 +139,14 @@ function getIntentLabel(context) {
     default:
       return 'faculty details';
   }
+}
+
+function formatPersonSubject(value = '') {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  // Keep emails, room codes and mixed tokens untouched; title-case plain names.
+  if (!/^[a-z][a-z .'-]*$/i.test(text)) return text;
+  return text.replace(/\b[a-z]/g, (char) => char.toUpperCase());
 }
 
 async function ensureConversation({ conversationId, userId, environment = 'prod' }) {
@@ -312,8 +323,24 @@ export async function POST(req) {
       disambiguationToken,
       selectedProfessor,
       conversationId,
-      userId
+      userId,
+      history,
+      lastProfessor
     } = await req.json();
+
+    const assistantHistory = Array.isArray(history)
+      ? history
+        .filter((item) => item && typeof item.text === 'string' && item.text.trim())
+        .slice(-8)
+        .map((item) => ({
+          role: item.role === 'user' ? 'user' : 'assistant',
+          text: String(item.text).slice(0, 800)
+        }))
+      : [];
+
+    const assistantLastProfessor = typeof lastProfessor === 'string' && lastProfessor.trim()
+      ? lastProfessor.trim()
+      : null;
 
     const analyticsConversationId = String(conversationId || crypto.randomUUID());
     const analyticsUserId = userId ? String(userId) : null;
@@ -494,11 +521,102 @@ export async function POST(req) {
       });
     };
 
+    // The assistant brain handles greetings, time/calendar questions, and
+    // availability before the legacy faculty-search path. When it recognises a
+    // faculty lookup it returns a rewritten query (useful for "what is her
+    // email?") and we fall through to the existing search + disambiguation flow.
+    let assistantResult = null;
+    try {
+      assistantResult = await answerAssistant(effectiveMessage, {
+        now: new Date(),
+        conversationId: analyticsConversationId,
+        history: assistantHistory,
+        lastProfessor: assistantLastProfessor
+      });
+    } catch (error) {
+      console.error('Assistant brain failed, falling back to legacy search:', error);
+    }
+
+    const assistantFacultyLookup = assistantResult?.type === 'faculty';
+    const assistantPersonName = assistantFacultyLookup
+      ? String(assistantResult.personName || '').trim()
+      : '';
+
+    if (assistantFacultyLookup) {
+      if (assistantResult.query) effectiveMessage = assistantResult.query;
+      if (assistantPersonName) {
+        rememberConversation(analyticsConversationId, { lastProfessor: assistantPersonName });
+      }
+    } else if (assistantResult) {
+      const informationalTypes = new Set(['availability', 'calendar']);
+      const isInformational = informationalTypes.has(assistantResult.type)
+        || (assistantResult.type === 'assistant' && assistantResult.intent === 'roster')
+        || (assistantResult.type === 'assistant' && assistantResult.intent === 'llm');
+      const resultCount = Number(
+        assistantResult.count
+        ?? assistantResult.professors?.length
+        ?? assistantResult.results?.length
+        ?? 0
+      );
+
+      if (isInformational) {
+        chatMetrics.smartResponses += 1;
+        await logChatRequest({
+          outcome: 'smart_response',
+          disambiguationResolved: disambiguationResolvedInRequest
+        });
+      } else {
+        chatMetrics.helpResponses += 1;
+        await logChatRequest({
+          outcome: 'help',
+          disambiguationResolved: disambiguationResolvedInRequest
+        });
+      }
+
+      return sendStructuredResponse({
+        ...assistantResult,
+        timestamp: new Date().toISOString()
+      }, {
+        searchType: isInformational ? 'smart' : 'other',
+        normalizedName: assistantResult.person?.name
+          ? String(assistantResult.person.name).trim().toLowerCase()
+          : null,
+        resultCount,
+        searchSuccess: true,
+        hasSmartSearch: isInformational,
+        success: true,
+        botText: assistantResult.response
+      });
+    }
+
     // Search for relevant office hours data
     const query = effectiveMessage.toLowerCase();
+
+    // Legacy availability fallback: only reached if the assistant brain failed
+    // before handling the request.
+    const availabilityResult = await findAvailableInstructors(effectiveMessage).catch(() => null);
+    if (availabilityResult) {
+      chatMetrics.smartResponses += 1;
+      await logChatRequest({ outcome: 'smart_response', disambiguationResolved: disambiguationResolvedInRequest });
+      return sendStructuredResponse({
+        ...availabilityResult,
+        timestamp: new Date().toISOString()
+      }, {
+        searchType: 'smart',
+        normalizedName: null,
+        resultCount: availabilityResult.count || 0,
+        searchSuccess: (availabilityResult.count || 0) > 0,
+        hasSmartSearch: true,
+        success: (availabilityResult.count || 0) > 0,
+        botText: availabilityResult.count > 0
+          ? `Found ${availabilityResult.count} scheduled available instructor(s) for ${availabilityResult.targetLabel}.`
+          : `No verified instructors are scheduled available for ${availabilityResult.targetLabel}.`
+      });
+    }
     
     // Check if the user is asking for professor information (schedule/contact/department)
     const isOfficeHoursQuery =
+      assistantFacultyLookup ||
       query.includes('office') ||
       query.includes('hours') ||
       query.includes('meet') ||
@@ -508,8 +626,7 @@ export async function POST(req) {
       query.includes('email') ||
       query.includes('contact') ||
       query.includes('department') ||
-      query.includes('dr ') ||
-      query.includes('eng ') ||
+      /\b(dr|doctor|prof|professor|instructor|lecturer|faculty|teacher|named|called)\b/.test(query) ||
       query.split(' ').length <= 4;
 
     const context = extractQueryContext(effectiveMessage);
@@ -520,6 +637,13 @@ export async function POST(req) {
       // Single result - generate smart response
       if (results.length === 1) {
         const smartResponse = generateSmartResponse(results[0], effectiveMessage);
+        const resolvedProfessorName = String(results[0]?.professor || results[0]?.name || '').trim();
+        if (resolvedProfessorName) {
+          rememberConversation(analyticsConversationId, {
+            lastProfessor: resolvedProfessorName,
+            lastIntent: 'faculty'
+          });
+        }
         chatMetrics.smartResponses += 1;
         await logChatRequest({ outcome: 'smart_response', disambiguationResolved: disambiguationResolvedInRequest });
         
@@ -620,27 +744,29 @@ export async function POST(req) {
       chatMetrics.noResults += 1;
       await logChatRequest({ outcome: 'no_results', disambiguationResolved: disambiguationResolvedInRequest });
       const suggestions = await suggestClosestProfessors(effectiveMessage, 5);
-      const allProfessors = await getAllOfficeHours();
-      const subject = extractQuerySubject(effectiveMessage) || effectiveMessage.trim();
+      const subject = formatPersonSubject(
+        assistantPersonName || extractQuerySubject(effectiveMessage) || effectiveMessage.trim()
+      );
       const requestLabel = getIntentLabel(context);
+      const lookupContext = `${subject} ${effectiveMessage}`;
+      const mentionsEngineering = /\b(engineering|engineer)\b/i.test(lookupContext);
+
+      const scopeNote = mentionsEngineering
+        ? 'MUBXBot only supports the School of Computing. Engineering, Medicine, Business, and other schools are outside this directory. If this person also teaches in Computing, you can add them here.'
+        : 'MUBXBot only covers the School of Computing — Computer Science, Cybersecurity, AI & Data Science, and Information Technology. If this person teaches in Computing, they may just be missing.';
 
       const summary = suggestions.length > 0
-        ? `I couldn't find an exact faculty match for "${subject}", so I can't confirm the ${requestLabel} yet.`
-        : `I couldn't find a faculty match for "${subject}" in the current dataset, so I can't confirm the ${requestLabel}.`;
+        ? `I couldn't find an exact match for "${subject}" in the School of Computing directory.`
+        : `I couldn't find "${subject}" in the School of Computing directory.`;
 
-      const guidance = suggestions.length > 0
-        ? 'I could not find an exact match, but I found similar names you can select.'
-        : `I could not find a matching professor name in the current dataset of ${allProfessors.length} members.`;
+      const guidance = scopeNote;
 
       const hints = suggestions.length > 0
         ? [
-            'Pick one of the suggested names below.',
-            'Or type the full name as it appears in university records.'
+            'Pick a close match below, or add the correct person.'
           ]
         : [
-            'Try typing part of the email (example: murad.yaghi).',
-            'Try a shorter or alternate spelling of the name (example: Ahmad/Ahmed).',
-            'Use "By department" to browse all available records.'
+            'Try a shorter or alternate spelling, or the email prefix (example: murad.yaghi).'
           ];
 
       let missingNameStats = null;
@@ -661,20 +787,20 @@ export async function POST(req) {
       const requestCount = missingNameStats ? missingNameStats.searchCount : 0;
       const requesterLine = requestCount > 1
         ? `${requestCount} people have looked this up recently — we'd love your help filling it in.`
-        : 'Know the answer? Adding it takes about a minute and helps the next person instantly.';
+        : 'If this person teaches in Computing, adding their details helps the next student.';
 
       return sendStructuredResponse({
         type: 'no_results',
-        message: effectiveMessage,
+        message: subject,
         summary,
         requestLabel,
         subject,
         context,
         guidance,
+        scopeNote,
         hints,
         requesterLine,
         missingNameStats,
-        datasetCount: allProfessors.length,
         suggestions: suggestions.map(item => ({
           professor: item.professor,
           name: item.name,

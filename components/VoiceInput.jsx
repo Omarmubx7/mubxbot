@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Mic, MicOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function VoiceInput({ onResult }) {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const [error, setError] = useState(null);
+  const [interimText, setInterimText] = useState('');
+  const restartRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -15,32 +17,59 @@ export function VoiceInput({ onResult }) {
       const rec = new SpeechRecognition();
       
       rec.continuous = false;
-      rec.interimResults = false;
-      // You can set default language here, e.g., 'en-US' or 'ar-SA' if desired
-      rec.lang = 'en-US';
+      rec.interimResults = true;
+      rec.lang = navigator.language && navigator.language.startsWith('ar') ? 'ar-JO' : 'en-US';
+      rec.maxAlternatives = 1;
 
       rec.onstart = () => {
         setIsListening(true);
         setError(null);
+        setInterimText('');
+        restartRef.current = false;
       };
 
       rec.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (onResult) {
-          onResult(transcript);
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const transcript = event.results[i][0]?.transcript || '';
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        setInterimText(interimTranscript.trim());
+
+        if (finalTranscript.trim()) {
+          setInterimText('');
+          if (onResult) {
+            onResult(finalTranscript.trim());
+          }
         }
       };
 
       rec.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        if (event.error !== 'no-speech') {
-          setError(event.error);
+        if (event.error === 'no-speech') {
+          setError(null);
+        } else if (event.error === 'not-allowed') {
+          setError('Microphone permission denied');
+        } else if (event.error === 'audio-capture') {
+          setError('No microphone found');
+        } else if (event.error === 'network') {
+          setError('Network error while using voice');
+        } else {
+          setError('Voice recognition failed');
         }
         setIsListening(false);
+        setInterimText('');
       };
 
       rec.onend = () => {
         setIsListening(false);
+        setInterimText('');
       };
 
       setRecognition(rec);
@@ -49,56 +78,64 @@ export function VoiceInput({ onResult }) {
 
   const toggleListen = useCallback(() => {
     if (!recognition) {
-      alert("Voice recognition is not supported in this browser.");
+      setError('Voice recognition is not supported in this browser.');
       return;
     }
 
     if (isListening) {
-      recognition.stop();
-    } else {
       try {
-        recognition.start();
+        recognition.stop();
       } catch (err) {
-        console.error("Could not start recognition", err);
+        console.error("Could not stop recognition", err);
       }
+      return;
+    }
+
+    try {
+      setError(null);
+      setInterimText('');
+      recognition.start();
+    } catch (err) {
+      console.error("Could not start recognition", err);
+      setError('Could not start voice input');
     }
   }, [recognition, isListening]);
 
   if (!recognition && typeof window !== 'undefined') {
-    // Hide if not supported
     return null;
   }
 
   return (
     <div className="relative flex items-center justify-center">
       <AnimatePresence>
-        {isListening && (
+        {(isListening || interimText) && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 rounded-full bg-red-500/30 dark:bg-red-400/30 pointer-events-none"
+            className="absolute inset-0 rounded-full bg-[var(--accent)]/25 pointer-events-none"
           />
         )}
       </AnimatePresence>
       <button
         onClick={toggleListen}
         type="button"
-        className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 z-10 ${
-          isListening 
-            ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' 
-            : 'bg-[#E9ECEF] text-[#8E8E93] hover:bg-[#DEDFE1] hover:text-[#1C1C1E] dark:bg-[#2C2C2E] dark:text-[#98989D] dark:hover:bg-[#3C3C3E] dark:hover:text-white'
+        className={`z-10 flex h-9 w-9 items-center justify-center rounded-full outline-none transition-colors duration-200 ${
+          isListening
+            ? 'bg-[var(--accent)] text-white'
+            : 'text-[var(--ink-soft)] hover:bg-[var(--surface-strong)] hover:text-[var(--ink)]'
         }`}
         aria-label={isListening ? "Stop listening" : "Start voice input"}
-        title={isListening ? "Listening..." : "Voice input"}
+        title={isListening ? (interimText || "Listening...") : "Voice input"}
       >
-        {isListening ? (
-          <Mic className="w-5 h-5 animate-pulse" />
-        ) : (
-          <MicOff className="w-5 h-5" />
-        )}
+        <Mic className={`h-[18px] w-[18px] ${isListening ? 'animate-pulse' : ''}`} strokeWidth={1.9} />
       </button>
+      {error && (
+        <div className="absolute -top-8 right-0 whitespace-nowrap rounded-full bg-[var(--ink)] px-2 py-1 text-[10px] text-[var(--paper)]">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

@@ -46,7 +46,7 @@ export function TeamsButton({ email, facultyName }) {
   return (
     <button
       onClick={handleTeamsClick}
-      className="w-full sm:w-auto justify-center gap-2 text-[#DC2626] dark:text-[#EF4444] hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 px-3 py-2.5 sm:py-2 rounded-lg border border-[#DC2626]/30 dark:border-[#DC2626]/40 text-sm font-medium flex items-center transition-colors min-h-11 sm:min-h-0"
+      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--rule)] px-3 py-2 text-sm font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)] sm:min-h-0 sm:w-auto"
       title={`Click to open Teams and search for ${facultyName} (${email})`}
     >
       <MessageCircle className="w-4 h-4" />

@@ -2,13 +2,22 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { TeamsButton } from './TeamsButton';
 import { InstructorShareButton } from './InstructorShareButton';
-import { MapPin, Clock, Calendar, Mail, PencilLine } from 'lucide-react';
+import { PencilLine } from 'lucide-react';
 import { isNewDataName } from '../lib/updateList';
+import {
+  ResponseBody,
+  ResponseCard,
+  ResponseFact,
+  ResponseGrid,
+  ResponseHeader,
+  ResponseRow,
+  ResponseText
+} from './ResponseCard';
 
 /**
  * OfficeHoursDisplay Component
  * Shows faculty office hours with integrated Teams button and Add to Calendar button
- * 
+ *
  * Props:
  * - officeHours: array of office hour entries
  * - faculty: faculty name
@@ -36,110 +45,121 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
     : null;
 
   return (
-    <div className="bg-linear-to-r from-[#DC2626]/5 to-[#DC2626]/2 dark:from-[#DC2626]/10 dark:to-[#DC2626]/5 border border-[#DC2626]/20 dark:border-[#DC2626]/30 rounded-xl flex flex-col relative z-0">
-      {/* Header with Teams Button */}
-      <div className="p-3.5 sm:p-4 border-b border-[#DC2626]/15 dark:border-[#DC2626]/25 flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 bg-white/40 dark:bg-black/20 rounded-t-xl">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[17px] sm:text-lg font-semibold text-slate-900 dark:text-white wrap-break-word">{faculty}</h3>
-            {dataTag === 'new' && (
-              <span className="inline-flex items-center rounded-full bg-green-500/15 text-green-700 dark:text-green-400 text-[10px] font-black tracking-wide px-2 py-0.5">
-                NEW DATA
-              </span>
+    <ResponseCard className="relative z-0">
+      <ResponseHeader
+        label="Faculty"
+        meta="Directory profile"
+        badge={dataTag === 'new' ? 'New data' : dataTag === 'old' ? 'Old data' : null}
+        badgeTone={dataTag === 'new' ? 'accent' : 'muted'}
+      />
+
+      <ResponseBody>
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="font-display text-[17px] font-semibold leading-tight tracking-[-0.01em] text-[var(--ink)] break-words">
+              {faculty}
+            </h3>
+            {department && (
+              <p className="mt-0.5 text-[11.5px] leading-snug text-[var(--muted)] break-words">
+                {department}
+              </p>
             )}
-            {dataTag === 'old' && (
-              <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black tracking-wide px-2 py-0.5">
-                OLD DATA
-              </span>
-            )}
+          </div>
+
+          <div className="flex flex-row flex-wrap items-center gap-2 sm:justify-end">
             {dataTag === 'old' && onUpdate && (
               <button
                 type="button"
                 onClick={() => onUpdate({ name: faculty, email, department, office, officeHours })}
-                className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-black tracking-wide px-2.5 py-1 hover:bg-amber-500/25 active:scale-95 transition-all"
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--accent-line)] px-2.5 py-1 text-[10.5px] font-medium text-[var(--accent)] transition-all hover:bg-[var(--accent-soft)] active:scale-95"
                 title="Update this professor's data"
               >
                 <PencilLine size={11} />
-                UPDATE
+                Update
               </button>
             )}
+            {showTeamsButton && (
+              <>
+                <TeamsButton email={email} facultyName={faculty} />
+                <InstructorShareButton faculty={faculty} email={email} department={department} office={office} officeHours={officeHours} />
+              </>
+            )}
           </div>
-          {department && (
-            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 wrap-break-word">{department}</div>
-          )}
-          {office && (
-            <div className="mt-2 flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm wrap-break-word">
-              <MapPin className="w-4 h-4" />
-              <span>{office}</span>
-            </div>
-          )}
-          {email && (
-            <div className="mt-2 flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm min-w-0">
-              <Mail className="w-4 h-4" />
-              <a href={`mailto:${email}`} className="text-[#DC2626] dark:text-[#EF4444] hover:underline break-all block">
-                {email}
-              </a>
-            </div>
-          )}
         </div>
-        {showTeamsButton && (
-          <div className="w-full sm:w-auto mt-2 sm:mt-0 flex gap-2">
-            <div className="flex-1 sm:flex-none">
-              <TeamsButton email={email} facultyName={faculty} />
-            </div>
-            <InstructorShareButton faculty={faculty} email={email} department={department} office={office} officeHours={officeHours} />
-          </div>
-        )}
-      </div>
 
-      {/* Office Hours Content */}
-      <div className="p-3.5 sm:p-4 space-y-3">
+        <ResponseGrid className="mt-3">
+          {office && (
+            <ResponseFact label="Office" value={office} />
+          )}
+          <ResponseFact
+            label="Office hours"
+            value={uniqueHours.length > 0 ? `${uniqueHours.length} ${uniqueHours.length === 1 ? 'day' : 'days'}` : 'Not listed'}
+            accent={uniqueHours.length > 0}
+          />
+          {email && (
+            <ResponseFact
+              label="Email"
+              value={(
+                <a href={`mailto:${email}`} className="break-all text-[var(--accent)] underline decoration-current/25 hover:decoration-current">
+                  {email}
+                </a>
+              )}
+              wide
+            />
+          )}
+        </ResponseGrid>
+      </ResponseBody>
+
+      <div className="border-t border-[var(--rule)]">
+        <div className="flex items-center justify-between gap-3 px-3.5 pb-1.5 pt-2">
+          <span className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
+            Weekly schedule
+          </span>
+          <span className="text-[10px] text-[var(--muted)]">Amman time</span>
+        </div>
+
         {uniqueHours.length > 0 ? (
-          uniqueHours.map((hour) => (
-            <div key={hour.day} className="flex items-start gap-3 sm:gap-4 pb-3 border-b border-[#DC2626]/10 dark:border-[#DC2626]/15 last:border-0 last:pb-0">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center gap-1 bg-[#DC2626]/10 dark:bg-[#DC2626]/20 text-[#DC2626] dark:text-[#EF4444] text-xs px-2.5 py-1.5 rounded-full font-medium">
-                    <Calendar className="w-3 h-3" />
-                    {hour.day}
+          <div className="divide-y divide-[var(--rule)]">
+            {uniqueHours.map((hour) => (
+              <ResponseRow key={hour.day}>
+                <span className="flex h-7 min-w-[3rem] shrink-0 items-center justify-center rounded-full border border-[var(--rule)] bg-[var(--surface)] px-2 text-[10px] font-semibold text-[var(--ink-soft)]">
+                  {hour.day}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-[12.5px] font-semibold text-[var(--ink)]">
+                      {hour.start} – {hour.end}
+                    </span>
+                    {hour.type && (
+                      <span className="shrink-0 text-[10px] text-[var(--muted)]">{hour.type}</span>
+                    )}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 mb-1 wrap-break-word">
-                  <Clock className="w-4 h-4" />
-                  <span>
-                    {hour.start} - {hour.end}
-                  </span>
-                </div>
-
-                {hour.office && hour.office !== office && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 wrap-break-word mt-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{hour.office}</span>
-                  </div>
-                )}
-
-                {hour.type && (
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                    {hour.type}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
+                  {hour.office && hour.office !== office && (
+                    <span className="mt-0.5 block truncate text-[10.5px] text-[var(--muted)]">
+                      Office {hour.office}
+                    </span>
+                  )}
+                </span>
+              </ResponseRow>
+            ))}
+          </div>
         ) : (
-          <p className="text-sm text-slate-600 dark:text-slate-400 italic">{emptyStateMessage}</p>
+          <div className="px-3.5 pb-3">
+            <ResponseText className="text-[12px] italic text-[var(--muted)]">
+              {emptyStateMessage}
+            </ResponseText>
+          </div>
         )}
       </div>
 
       {showTeamsButton && (
-        <div className="p-4 border-t border-[#DC2626]/15 dark:border-[#DC2626]/25 bg-[#DC2626]/3 dark:bg-[#DC2626]/5 rounded-b-xl relative z-0">
-          <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
-            <span className="text-base leading-none">💡</span> Click <strong>Open in Teams</strong> above to search for this faculty member and start a chat.
-          </p>
+        <div className="border-t border-[var(--rule)] bg-[var(--surface)]/50 px-3.5 py-2">
+          <ResponseText className="text-[10.5px] leading-relaxed text-[var(--muted)]">
+            Use <span className="font-medium text-[var(--ink-soft)]">Open in Teams</span> above to search for this faculty member and start a chat.
+          </ResponseText>
         </div>
       )}
-    </div>
+    </ResponseCard>
   );
 }
 

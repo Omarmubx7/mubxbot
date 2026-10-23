@@ -109,10 +109,10 @@ export function BotShareButton() {
       {/* Share Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group relative z-10"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--ink)] active:scale-95 group relative z-10"
         title="Share MUBXBot"
       >
-        <Share2 className="w-5 h-5 text-[#8E8E93] dark:text-[#98989D] group-hover:text-[#DC2626] transition-colors" strokeWidth={2} />
+        <Share2 className="w-4 h-4 group-hover:text-[var(--paper)] transition-colors" strokeWidth={1.8} />
       </button>
 
       {/* Share Menu */}
@@ -123,24 +123,24 @@ export function BotShareButton() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 z-50 overflow-hidden origin-top-right"
+            className="absolute right-0 top-full z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-2xl border border-[var(--rule)] bg-[var(--panel)] shadow-[0_16px_50px_rgba(0,0,0,0.12)]"
           >
-            <div className="px-4 py-2.5 bg-linear-to-r from-[#DC2626]/10 to-[#DC2626]/5 dark:from-[#DC2626]/20 dark:to-[#DC2626]/10 border-b border-gray-200 dark:border-gray-700">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-[#8E8E93] dark:text-[#98989D]">
+            <div className="border-b border-[var(--rule)] px-4 py-3">
+              <div className="text-[12px] font-semibold text-[var(--ink)]">
                 Share MUBXBot
               </div>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="space-y-0.5 p-1.5">
               <button
                 onClick={shareText}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#DC2626]/10 dark:hover:bg-[#DC2626]/15 transition-all group"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--surface)]"
               >
-                <Share2 size={18} className="text-[#DC2626] dark:text-[#EF4444]" />
+                <Share2 size={17} className="text-[var(--muted)]" />
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-semibold text-gray-900 dark:text-white">
+                  <div className="text-[13px] font-medium text-[var(--ink)]">
                     Share Bot
                   </div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                  <div className="text-[11px] text-[var(--muted)]">
                     Tell others about it
                   </div>
                 </div>
@@ -148,14 +148,14 @@ export function BotShareButton() {
 
               <button
                 onClick={copyToClipboard}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#DC2626]/10 dark:hover:bg-[#DC2626]/15 transition-all group"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--surface)]"
               >
-                <Copy size={18} className="text-[#DC2626] dark:text-[#EF4444]" />
+                <Copy size={17} className="text-[var(--muted)]" />
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-semibold text-gray-900 dark:text-white">
+                  <div className="text-[13px] font-medium text-[var(--ink)]">
                     Copy Info
                   </div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                  <div className="text-[11px] text-[var(--muted)]">
                     Bot description
                   </div>
                 </div>
@@ -164,14 +164,14 @@ export function BotShareButton() {
               <button
                 onClick={captureScreenshot}
                 disabled={isCapturing}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#DC2626]/10 dark:hover:bg-[#DC2626]/15 transition-all group disabled:opacity-50"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--surface)] disabled:opacity-50"
               >
-                <ImageIcon size={18} className="text-[#DC2626] dark:text-[#EF4444]" />
+                <ImageIcon size={17} className="text-[var(--muted)]" />
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-semibold text-gray-900 dark:text-white">
+                  <div className="text-[13px] font-medium text-[var(--ink)]">
                     {isCapturing ? 'Capturing...' : 'Screenshot'}
                   </div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                  <div className="text-[11px] text-[var(--muted)]">
                     {isCapturing ? 'Processing...' : 'Create image'}
                   </div>
                 </div>

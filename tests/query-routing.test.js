@@ -78,6 +78,8 @@ test('query subject extraction removes question stopwords', () => {
   assert.equal(extractQuerySubject('when is razan free on wednesday'), 'razan');
   assert.equal(extractQuerySubject('where is asma office'), 'asma');
   assert.equal(extractQuerySubject('what is dr murad email'), 'murad');
+  assert.equal(extractQuerySubject('is there a doctor named lutfi'), 'lutfi');
+  assert.equal(extractQuerySubject('is there an instructor called lutfi'), 'lutfi');
 });
 
 test('contextual query builder preserves original intent', () => {
