@@ -76,7 +76,7 @@ export function VoiceInput({ onResult }) {
     }
   }, [onResult]);
 
-  const toggleListen = useCallback(() => {
+  const toggleListen = useCallback(async () => {
     if (!recognition) {
       setError('Voice recognition is not supported in this browser.');
       return;
@@ -94,6 +94,16 @@ export function VoiceInput({ onResult }) {
     try {
       setError(null);
       setInterimText('');
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (permErr) {
+          console.error('Microphone permission error', permErr);
+          setError('Microphone permission denied');
+          return;
+        }
+      }
       recognition.start();
     } catch (err) {
       console.error("Could not start recognition", err);

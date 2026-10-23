@@ -65,50 +65,85 @@ export function InstructorShareButton({ faculty, email, department, office, offi
     try {
       const html2canvas = (await import('html2canvas')).default;
 
-      if (!cardRef.current) {
+      const el = cardRef.current;
+      if (!el) {
         showFeedback('Card not found');
         setIsCapturing(false);
+        setIsOpen(false);
         return;
       }
 
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
+      const clone = el.cloneNode(true);
+      clone.style.position = 'absolute';
+      clone.style.left = '0';
+      clone.style.top = '0';
+      clone.style.width = '450px';
+      clone.style.maxWidth = '450px';
+      clone.style.visibility = 'visible';
+      clone.style.pointerEvents = 'none';
+      clone.style.zIndex = '2147483647';
+      document.body.appendChild(clone);
 
-      canvas.toBlob(async (blob) => {
+      try {
+        const canvas = await html2canvas(clone, {
+          backgroundColor: '#ffffff',
+          scale: 3,
+          logging: false,
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: false,
+          imageTimeout: 30000,
+          removeContainer: true
+        });
+
+        document.body.removeChild(clone);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const fileName = `${String(faculty || 'instructor').replace(/[^a-z0-9]+/gi, '-')}-info.png`;
+
         try {
-          const file = new File([blob], `${faculty}-info.png`, { type: 'image/png' });
-
-          if (navigator.share && navigator.canShare({ files: [file] })) {
-            const targetUrl = typeof window !== 'undefined' ? window.location.href : 'https://mubxbot.vercel.app';
-            await navigator.share({
-              files: [file],
-              title: `${faculty} - MUBXBot`,
-              text: `🎓 Found ${faculty}'s schedule using MUBXBot! Fast directory for School of Computing.\n\nTry it here: ${targetUrl}`,
-            });
-            showFeedback('Screenshot shared!');
-          } else {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${faculty}-info.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            showFeedback('Screenshot downloaded!');
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (typeof navigator !== 'undefined' && navigator.share) {
+            if (typeof navigator.canShare === 'function') {
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: `${faculty || 'Instructor'} - MUBXBot` });
+                showFeedback('Screenshot shared!');
+                setIsCapturing(false);
+                setIsOpen(false);
+                return;
+              }
+            } else {
+              await navigator.share({ files: [file], title: `${faculty || 'Instructor'} - MUBXBot` });
+              showFeedback('Screenshot shared!');
+              setIsCapturing(false);
+              setIsOpen(false);
+              return;
+            }
           }
-        } catch (error) {
-          showFeedback('Failed to share screenshot');
+        } catch (err) {
+          // continue to download
         }
-      });
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showFeedback('Screenshot downloaded!');
+        setIsCapturing(false);
+        setIsOpen(false);
+        return;
+      } catch (err) {
+        if (clone.parentNode) {
+          document.body.removeChild(clone);
+        }
+        throw err;
+      }
     } catch (error) {
+      console.error(error);
       showFeedback('Failed to capture screenshot');
-    } finally {
       setIsCapturing(false);
       setIsOpen(false);
     }
@@ -133,7 +168,7 @@ export function InstructorShareButton({ faculty, email, department, office, offi
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-[var(--rule)] bg-[var(--panel)] shadow-[0_16px_50px_rgba(0,0,0,0.12)]"
+            className="absolute right-[-4px] top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-[var(--rule)] bg-[var(--panel)] shadow-[0_16px_50px_rgba(0,0,0,0.12)] sm:right-0"
           >
             <div className="p-2 space-y-1">
               <button

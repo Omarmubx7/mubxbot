@@ -66,7 +66,7 @@ export function OfficeHoursDisplay({ officeHours, faculty, email, department, of
             )}
           </div>
 
-          <div className="flex flex-row flex-wrap items-center gap-2 sm:justify-end">
+          <div className="ml-auto flex w-full flex-row flex-wrap items-center justify-end gap-2 pr-1 sm:ml-0 sm:w-auto sm:justify-end sm:pr-0">
             {dataTag === 'old' && onUpdate && (
               <button
                 type="button"
