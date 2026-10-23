@@ -73,6 +73,13 @@ export function InstructorShareButton({ faculty, email, department, office, offi
         return;
       }
 
+      const originalSupports = typeof window !== 'undefined' && window.CSS ? window.CSS.supports : null;
+      if (typeof window !== 'undefined' && window.CSS) {
+        window.CSS.supports = function () {
+          return true;
+        };
+      }
+
       const clone = el.cloneNode(true);
       clone.style.position = 'absolute';
       clone.style.left = '0';
@@ -87,14 +94,42 @@ export function InstructorShareButton({ faculty, email, department, office, offi
       try {
         const canvas = await html2canvas(clone, {
           backgroundColor: '#ffffff',
-          scale: 3,
+          scale: 2.5,
           logging: false,
           useCORS: true,
           allowTaint: true,
           foreignObjectRendering: false,
           imageTimeout: 30000,
-          removeContainer: true
+          removeContainer: true,
+          onclone: (clonedDoc) => {
+            try {
+              const style = clonedDoc.createElement('style');
+              style.textContent = `
+                :root, html, body, * {
+                  --background: #ffffff !important;
+                  --foreground: #1f1f1f !important;
+                  --card: #ffffff !important;
+                  --card-foreground: #1f1f1f !important;
+                  --muted: #6b6b6b !important;
+                  --muted-foreground: #6b6b6b !important;
+                  --border: #e5e7eb !important;
+                  --rule: #e5e7eb !important;
+                  --accent: #dc2626 !important;
+                  --accent-foreground: #ffffff !important;
+                  color-scheme: light !important;
+                  color: inherit !important;
+                  background-color: transparent !important;
+                  border-color: #e5e7eb !important;
+                }
+              `;
+              clonedDoc.head.appendChild(style);
+            } catch (e) {}
+          }
         });
+
+        if (typeof window !== 'undefined' && window.CSS && originalSupports) {
+          window.CSS.supports = originalSupports;
+        }
 
         document.body.removeChild(clone);
 
@@ -122,7 +157,7 @@ export function InstructorShareButton({ faculty, email, department, office, offi
             }
           }
         } catch (err) {
-          // continue to download
+          // fall through
         }
 
         const link = document.createElement('a');
@@ -136,7 +171,10 @@ export function InstructorShareButton({ faculty, email, department, office, offi
         setIsOpen(false);
         return;
       } catch (err) {
-        if (clone.parentNode) {
+        if (typeof window !== 'undefined' && window.CSS && originalSupports) {
+          window.CSS.supports = originalSupports;
+        }
+        if (clone && clone.parentNode) {
           document.body.removeChild(clone);
         }
         throw err;
