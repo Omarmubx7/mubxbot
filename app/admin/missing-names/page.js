@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, UserPlus, CheckCircle2, XCircle, Inbox, Search, Copy, Check, RefreshCw, Flame } from 'lucide-react';
+import { ClipboardList, UserPlus, CheckCircle2, XCircle, Inbox, Search, Copy, Check, RefreshCw, Flame, Trash2 } from 'lucide-react';
 import { AdminHeader } from '../../../components/AdminHeader.jsx';
 import { useAutoSync, AutoSyncControls } from '../../../components/AutoSyncControls.jsx';
 import InstructorForm, { ALL_DAYS } from '../../../components/InstructorForm.jsx';
@@ -87,6 +87,8 @@ export default function AdminMissingNamesPage() {
   const [copied, setCopied] = useState(false);
   const [copiedHot, setCopiedHot] = useState(false);
   const [flippedNames, setFlippedNames] = useState([]);
+  const [selectedMissing, setSelectedMissing] = useState(new Set());
+  const [selectedStale, setSelectedStale] = useState(new Set());
   const flippedAtRef = useRef({});
 
   const loadAll = async (silent = false) => {
@@ -419,6 +421,57 @@ export default function AdminMissingNamesPage() {
     }
   };
 
+  const deleteMissing = async (all = false) => {
+    const ids = all
+      ? reports.map((r) => r.id).filter(Boolean)
+      : reports.filter((r) => selectedMissing.has(normalizeName(r.missing_name))).map((r) => r.id).filter(Boolean);
+
+    if (ids.length === 0 && !all) {
+      setError('Select at least one missing name to delete.');
+      return;
+    }
+    if (!confirm(all ? 'Delete all missing-name reports?' : `Delete ${ids.length} selected missing-name report(s)?`)) return;
+
+    try {
+      const res = await fetch('/api/admin/feedback', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(all ? { all: true, category: 'missing_name' } : { ids })
+      });
+      await throwForResponse(res, 'Failed to delete missing names');
+      setSelectedMissing(new Set());
+      await loadAll(true);
+    } catch (err) {
+      setError(String(err?.message || err || 'Failed to delete missing names'));
+    }
+  };
+
+  const deleteStale = async (all = false) => {
+    const candidates = all ? refreshItems.filter((item) => !item.flipped) : refreshItems;
+    const names = all
+      ? candidates.map((item) => item.name).filter(Boolean)
+      : refreshItems.filter((item) => selectedStale.has(normalizeName(item.name))).map((item) => item.name).filter(Boolean);
+
+    if (names.length === 0 && !all) {
+      setError('Select at least one instructor to delete.');
+      return;
+    }
+    if (!confirm(all ? 'Delete all instructors that need a refresh from the directory?' : `Delete ${names.length} selected instructor(s) from the directory?`)) return;
+
+    try {
+      const res = await fetch('/api/admin/doctors', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names })
+      });
+      await throwForResponse(res, 'Failed to delete instructors');
+      setSelectedStale(new Set());
+      await loadAll(true);
+    } catch (err) {
+      setError(String(err?.message || err || 'Failed to delete instructors'));
+    }
+  };
+
   return (
     <div className="h-dvh w-full overflow-y-auto no-scrollbar relative font-sans bg-[#F2F2F7] dark:bg-[#000000]">
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
@@ -527,6 +580,38 @@ export default function AdminMissingNamesPage() {
           <Flame size={15} />
           {copiedHot ? 'Copied hot list' : `Copy ${hotCount} hottest`}
         </button>
+        <button
+          onClick={() => deleteMissing(false)}
+          disabled={selectedMissing.size === 0}
+          className="flex items-center gap-2 rounded-xl bg-red-500/15 px-4 py-2.5 text-[13px] font-bold text-red-700 dark:text-red-300 hover:bg-red-500/25 transition-all disabled:opacity-40"
+        >
+          <Trash2 size={15} />
+          Delete selected missing ({selectedMissing.size})
+        </button>
+        <button
+          onClick={() => deleteMissing(true)}
+          disabled={openCount === 0}
+          className="flex items-center gap-2 rounded-xl bg-red-600 text-white px-4 py-2.5 text-[13px] font-bold hover:bg-red-700 transition-all disabled:opacity-40"
+        >
+          <Trash2 size={15} />
+          Delete all missing
+        </button>
+        <button
+          onClick={() => deleteStale(false)}
+          disabled={selectedStale.size === 0}
+          className="flex items-center gap-2 rounded-xl bg-amber-600/15 px-4 py-2.5 text-[13px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-600/25 transition-all disabled:opacity-40"
+        >
+          <Trash2 size={15} />
+          Delete selected refresh ({selectedStale.size})
+        </button>
+        <button
+          onClick={() => deleteStale(true)}
+          disabled={refreshItems.length === 0}
+          className="flex items-center gap-2 rounded-xl bg-amber-600 text-white px-4 py-2.5 text-[13px] font-bold hover:bg-amber-700 transition-all disabled:opacity-40"
+        >
+          <Trash2 size={15} />
+          Delete all refresh
+        </button>
           <span className="text-[12px] text-[var(--text-tertiary)] font-medium">
             Share the missing names with students to gather office-hours data via /contribute
           </span>
@@ -596,7 +681,20 @@ export default function AdminMissingNamesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {refreshItems.map((item) => (
                 <div key={item.name} className={`rounded-xl border p-4 space-y-2 ${item.flipped ? 'border-green-500/25 bg-green-500/5' : 'border-amber-500/20 bg-white/60 dark:bg-black/20'}`}>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedStale.has(normalizeName(item.name))}
+                      onChange={() => {
+                        const key = normalizeName(item.name);
+                        setSelectedStale((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(key)) next.delete(key); else next.add(key);
+                          return next;
+                        });
+                      }}
+                      className="h-4 w-4"
+                    />
                     <span className="text-[15px] font-black text-[var(--text-primary)]">{item.name}</span>
                     {item.flipped ? (
                       <span className="text-[11px] font-bold uppercase tracking-[0.12em] px-2 py-1 rounded-md bg-green-500/15 text-green-700 dark:text-green-400">New data</span>
@@ -652,6 +750,18 @@ export default function AdminMissingNamesPage() {
               {filteredAggregated.map((item) => (
                 <div key={item.key} className={`rounded-xl border p-4 space-y-2 ${item.resolved ? 'border-green-500/20 bg-green-500/5' : (item.isHot ? 'border-amber-500/30 bg-amber-500/10' : 'border-[#DC2626]/20 bg-[#DC2626]/5')}`}>
                   <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedMissing.has(item.key)}
+                      onChange={() => {
+                        setSelectedMissing((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(item.key)) next.delete(item.key); else next.add(item.key);
+                          return next;
+                        });
+                      }}
+                      className="h-4 w-4"
+                    />
                     <span className="text-[15px] font-black text-[var(--text-primary)]">{item.name}</span>
                     <span className={`text-[11px] font-bold uppercase tracking-[0.12em] px-2 py-1 rounded-md ${item.resolved ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-[#DC2626]/15 text-[#B91C1C] dark:text-[#F87171]'}`}>
                       {item.resolved ? 'In directory' : 'Missing'}

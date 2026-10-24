@@ -184,3 +184,70 @@ export async function GET(req) {
     );
   }
 }
+
+export async function DELETE(req) {
+  if (unauthorized(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let body = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+
+  const ids = Array.isArray(body?.ids) ? body.ids.map((v) => String(v || '').trim()).filter(Boolean) : [];
+  const deleteAll = Boolean(body?.all);
+  const category = String(body?.category || 'missing_name').toLowerCase();
+
+  try {
+    if (DATABASE_URL) {
+      let deleted = 0;
+      await withDb(async (client) => {
+        if (ids.length > 0) {
+          const result = await client.query(
+            'DELETE FROM user_feedback WHERE id = ANY($1::text[])',
+            [ids]
+          );
+          deleted += result.rowCount || 0;
+
+          // Legacy feedback events (best-effort; IDs may overlap).
+          try {
+            await client.query('DELETE FROM feedback_events WHERE id = ANY($1::text[])', [ids]);
+          } catch {
+            // ignore legacy table errors
+          }
+        } else if (deleteAll) {
+          const whereCategory = category && category !== 'all' ? 'WHERE category = $1' : '';
+          const params = category && category !== 'all' ? [category] : [];
+          const result = await client.query(`DELETE FROM user_feedback ${whereCategory}`, params);
+          deleted += result.rowCount || 0;
+        } else {
+          return;
+        }
+      });
+      return NextResponse.json({ ok: true, deleted });
+    }
+
+    // File fallback
+    const rows = await readFileRows();
+    let remaining = rows;
+    if (ids.length > 0) {
+      const idSet = new Set(ids);
+      remaining = rows.filter((row) => !idSet.has(String(row?.id || '')));
+    } else if (deleteAll) {
+      remaining = rows.filter((row) => {
+        if (category === 'all') return false;
+        return String(row?.category || '').toLowerCase() !== category;
+      });
+    }
+    await fs.writeFile(FILE_PATH, `${JSON.stringify(remaining, null, 2)}\n`, 'utf8');
+    return NextResponse.json({ ok: true, deleted: rows.length - remaining.length });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to delete feedback', details: error.message },
+      { status: 500 }
+    );
+  }
+}

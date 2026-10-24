@@ -1210,26 +1210,94 @@ export default function Page() {
             }]);
           }
         } else if (data.type === 'assistant') {
-          setMessages(prev => [...prev, {
-            id: Date.now(),
-            type: 'bot',
-            content: (
-              <div className="space-y-3">
-                <ResponseCard>
-                  <ResponseHeader label="MUBX assistant" meta="Answer" />
-                  <ResponseBody>
-                    <ResponseText>
-                      {renderTextWithClickableEmails(data.response)}
-                    </ResponseText>
-                  </ResponseBody>
-                </ResponseCard>
-              </div>
-            ),
-            timestamp: getCurrentTime(),
-            variant: 'smart',
-            rawText: data.response,
-            quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
-          }]);
+          const rosterProfessors = Array.isArray(data.professors) ? data.professors : [];
+          if (data.intent === 'roster' && rosterProfessors.length > 0) {
+            const where = data?.entities?.department || data?.department || 'the directory';
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: (
+                <div className="space-y-3">
+                  <ResponseCard>
+                    <ResponseHeader
+                      label="Faculty"
+                      meta={`${rosterProfessors.length} ${rosterProfessors.length === 1 ? 'match' : 'matches'}`}
+                    />
+                    <ResponseBody>
+                      <ResponseText className="text-[13px]">
+                        {`I found ${rosterProfessors.length} verified ${rosterProfessors.length === 1 ? 'instructor' : 'instructors'} in ${where}.`}
+                      </ResponseText>
+                    </ResponseBody>
+                    <div className="divide-y divide-[var(--rule)] border-t border-[var(--rule)]">
+                      {rosterProfessors.map((prof, index) => {
+                        const displayName = prof?.name || prof?.professor || '';
+                        if (!displayName) return null;
+                        const dept = prof?.department || where;
+                        const office = prof?.office ? `Office ${prof.office}` : null;
+                        const detail = [dept, office].filter(Boolean).join(' · ') || 'Faculty';
+                        return (
+                          <ResponseRow
+                            key={`${displayName}-${index}`}
+                            onClick={() => handleSendMessage(displayName, null, displayName)}
+                          >
+                            <ResponseAvatar>{displayName.charAt(0)}</ResponseAvatar>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13px] font-medium text-[var(--ink)]">
+                                {displayName}
+                              </span>
+                              <span className="mt-0.5 block truncate text-[11px] text-[var(--muted)]">
+                                {detail}
+                              </span>
+                            </span>
+                            <span className="text-[13px] text-[var(--accent)]">→</span>
+                          </ResponseRow>
+                        );
+                      })}
+                    </div>
+                    <ResponseActions className="px-3.5 pb-3.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (rosterProfessors.length === 0) return;
+                          const random = rosterProfessors[Math.floor(Math.random() * rosterProfessors.length)];
+                          const name = random?.name || random?.professor || '';
+                          if (name) handleSendMessage(name, null, name);
+                        }}
+                        className="w-full rounded-xl border border-[var(--rule)] bg-[var(--panel)] px-3 py-2 text-left text-[12.5px] font-medium text-[var(--ink-soft)] transition-colors hover:bg-[var(--surface)]"
+                      >
+                        Random from {where}
+                      </button>
+                    </ResponseActions>
+                  </ResponseCard>
+                </div>
+              ),
+              timestamp: getCurrentTime(),
+              variant: 'smart',
+              rawText: data.response,
+              quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              type: 'bot',
+              content: (
+                <div className="space-y-3">
+                  <ResponseCard>
+                    <ResponseHeader label="MUBX assistant" meta="Answer" />
+                    <ResponseBody>
+                      <ResponseText>
+                        {renderTextWithClickableEmails(data.response)}
+                      </ResponseText>
+                    </ResponseBody>
+                  </ResponseCard>
+                </div>
+              ),
+              timestamp: getCurrentTime(),
+              variant: 'smart',
+              rawText: data.response,
+              quickReplies: data.quickReplies?.length ? data.quickReplies : ['By department']
+            }]);
+          }
         } else if (data.type === 'calendar') {
           setMessages(prev => [...prev, {
             id: Date.now(),

@@ -321,25 +321,28 @@ export async function DELETE(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name } = await req.json();
-    const normalized = normalizeName(name);
-    if (!normalized) {
+    const body = await req.json();
+    const names = Array.isArray(body?.names)
+      ? body.names.map((v) => String(v || '').trim()).filter(Boolean)
+      : (body?.name ? [String(body.name).trim()] : []);
+
+    if (names.length === 0) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const deleted = await deleteFacultyRows(name);
+    let deletedCount = 0;
+    for (const name of names) {
+      const deleted = await deleteFacultyRows(name);
+      if (deleted) deletedCount += 1;
 
-    try {
-      await removeNewDataName(name);
-    } catch (error) {
-      console.error('Failed to remove name from new data store', error?.message || error);
+      try {
+        await removeNewDataName(name);
+      } catch (error) {
+        console.error('Failed to remove name from new data store', error?.message || error);
+      }
     }
 
-    if (!deleted) {
-      return NextResponse.json({ ok: true, deleted: false });
-    }
-
-    return NextResponse.json({ ok: true, deleted: true });
+    return NextResponse.json({ ok: true, deleted: deletedCount > 0, deletedCount });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete doctor', details: error.message }, { status: 500 });
   }
