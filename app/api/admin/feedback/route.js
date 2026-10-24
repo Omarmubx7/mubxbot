@@ -205,7 +205,20 @@ export async function DELETE(req) {
     if (DATABASE_URL) {
       let deleted = 0;
       await withDb(async (client) => {
+        let affectedMissingNames = [];
+
         if (ids.length > 0) {
+          // Best-effort: collect missing names for affected feedback rows
+          try {
+            const fb = await client.query(
+              "SELECT missing_name FROM user_feedback WHERE id = ANY($1::text[]) AND category = 'missing_name'",
+              [ids]
+            );
+            affectedMissingNames = fb.rows.map((r) => r.missing_name).filter(Boolean);
+          } catch {
+            // ignore
+          }
+
           const result = await client.query(
             'DELETE FROM user_feedback WHERE id = ANY($1::text[])',
             [ids]
@@ -219,12 +232,44 @@ export async function DELETE(req) {
             // ignore legacy table errors
           }
         } else if (deleteAll) {
+          if (category === 'missing_name' || category === 'all') {
+            try {
+              const fb = await client.query(
+                category === 'all' ? "SELECT missing_name FROM user_feedback WHERE category = 'missing_name'" : "SELECT missing_name FROM user_feedback WHERE category = 'missing_name'"
+              );
+              affectedMissingNames = fb.rows.map((r) => r.missing_name).filter(Boolean);
+            } catch {
+              // ignore
+            }
+          }
           const whereCategory = category && category !== 'all' ? 'WHERE category = $1' : '';
           const params = category && category !== 'all' ? [category] : [];
           const result = await client.query(`DELETE FROM user_feedback ${whereCategory}`, params);
           deleted += result.rowCount || 0;
         } else {
           return;
+        }
+
+        // Also ignore/delete missing name metrics so hot/missing lists stay in sync
+        if ((category === 'missing_name' || category === 'all') && affectedMissingNames.length > 0) {
+          try {
+            const names = Array.from(new Set(affectedMissingNames.map((n) => String(n || '').trim()).filter(Boolean)));
+            if (names.length > 0) {
+              // Mark as ignored to hide from hot lists; if metrics table exists
+              await client.query(
+                "UPDATE missing_name_metrics SET status = 'ignored', updated_at = NOW() WHERE lower(display_name) = ANY($1) OR name_norm = ANY($1)",
+                [names.map((n) => n.toLowerCase())]
+              ).catch(async () => {
+                // Fallback: try by normalizing differently if needed
+                await client.query(
+                  "DELETE FROM missing_name_metrics WHERE lower(display_name) = ANY($1)",
+                  [names.map((n) => n.toLowerCase())]
+                ).catch(() => {});
+              });
+            }
+          } catch {
+            // best-effort only
+          }
         }
       });
       return NextResponse.json({ ok: true, deleted });

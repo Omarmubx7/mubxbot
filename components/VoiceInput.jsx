@@ -78,7 +78,7 @@ export function VoiceInput({ onResult }) {
 
   const toggleListen = useCallback(async () => {
     if (!recognition) {
-      setError('Voice recognition is not supported in this browser.');
+      setError('Voice input not supported in this browser.');
       return;
     }
 
@@ -100,14 +100,31 @@ export function VoiceInput({ onResult }) {
           stream.getTracks().forEach((track) => track.stop());
         } catch (permErr) {
           console.error('Microphone permission error', permErr);
-          setError('Microphone permission denied');
+          const name = permErr?.name || '';
+          if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+            setError('Microphone permission denied. Allow mic access and try again.');
+          } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+            setError('No microphone found. Use text input instead.');
+          } else if (name === 'NotSupportedError') {
+            setError('Microphone access not supported. Use text input instead.');
+          } else {
+            setError('Microphone permission denied. Use text input instead.');
+          }
           return;
         }
+      } else {
+        setError('Microphone access requires HTTPS or localhost. Use text input instead.');
+        return;
       }
-      recognition.start();
+      try {
+        recognition.start();
+      } catch (startErr) {
+        console.error("Could not start recognition", startErr);
+        setError('Could not start voice input. Use text input instead.');
+      }
     } catch (err) {
-      console.error("Could not start recognition", err);
-      setError('Could not start voice input');
+      console.error("Could not start voice input", err);
+      setError('Voice input unavailable. Use text input instead.');
     }
   }, [recognition, isListening]);
 

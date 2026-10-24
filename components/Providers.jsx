@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 
 const DoctorsContext = createContext();
-const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v4';
+const DOCTORS_CACHE_KEY = 'mubx_doctors_cache_v5';
 
 function safeParseDoctorsCache(raw) {
   try {
@@ -12,25 +12,6 @@ function safeParseDoctorsCache(raw) {
   } catch {
     return [];
   }
-}
-
-function normalizeName(value = '') {
-  return String(value || '').trim().toLowerCase();
-}
-
-function mergeDoctors(serverDoctors, cachedDoctors) {
-  const map = new Map();
-
-  for (const doctor of serverDoctors || []) {
-    map.set(normalizeName(doctor?.name), doctor);
-  }
-
-  // Cached entries override server entries with same name.
-  for (const doctor of cachedDoctors || []) {
-    map.set(normalizeName(doctor?.name), doctor);
-  }
-
-  return Array.from(map.values()).filter(doctor => doctor?.name);
 }
 
 export const useDoctors = () => useContext(DoctorsContext);
@@ -70,10 +51,14 @@ export default function Providers({ children }) {
       fetch("/api/office-hours").then(res => res.json()).catch(() => [])
     ])
       .then(([doctorsData, officeHoursData]) => {
-        // DB data wins — overwrite whatever was in the cache
+        // DB data wins — overwrite whatever was in the cache, no merge
         const serverDoctors = Array.isArray(doctorsData) ? doctorsData : [];
         setInstructors(serverDoctors);
-        localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(serverDoctors));
+        try {
+          localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(serverDoctors));
+        } catch (e) {
+          console.warn('Storage write disabled', e);
+        }
         setOfficeHours(Array.isArray(officeHoursData) ? officeHoursData : []);
         setLoading(false);
       })
