@@ -255,7 +255,13 @@ export function AcademicStatusBanner() {
 
               <div className="mt-4 flex items-center justify-between text-[10px] text-[var(--muted)]">
                 <span>Asia/Amman · GMT+3</span>
-                <span>Tap to close</span>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  className="-m-1 rounded p-1 transition-colors duration-150 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                >
+                  Tap to close
+                </button>
               </div>
             </div>
           </motion.div>
