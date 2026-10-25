@@ -15,7 +15,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const POLL_MS = 3000;
+const POLL_MS = 1000;
 
 function timeAgo(value) {
   if (!value) return '—';
@@ -40,40 +40,45 @@ function formatClock(value) {
 
 function sessionLabel(session) {
   if (session?.label) return session.label;
+  if (session?.ipAddress) {
+    const ip = String(session.ipAddress);
+    return ip.length > 15 ? `${ip.slice(0, 12)}...` : ip;
+  }
   const conv = session?.conversationId || '';
   return conv ? `Visitor ${conv.slice(0, 6)}` : `Visitor ${String(session?.sessionId || '').slice(0, 6)}`;
 }
 
 function SessionRow({ session, active, onSelect }) {
+  const label = sessionLabel(session);
   return (
     <button
       type="button"
       onClick={() => onSelect(session.sessionId)}
-      className={`w-full text-left rounded-2xl border p-3 transition-all duration-200 active:scale-[0.99] ${
+      className={`w-full text-left rounded-2xl border p-2.5 sm:p-3 transition-all duration-200 active:scale-[0.99] ${
         active
           ? 'border-[#DC2626]/40 bg-[#DC2626]/10'
           : 'border-black/5 dark:border-white/10 bg-white/70 dark:bg-black/30 hover:bg-black/[0.03] dark:hover:bg-white/[0.06]'
       }`}
     >
-      <div className="flex items-center gap-3">
-        <div className="relative w-10 h-10 rounded-xl bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-black text-[15px] shrink-0">
-          {sessionLabel(session).charAt(0).toUpperCase()}
-          <span className="absolute -right-0.5 -bottom-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-white dark:border-black" />
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-black text-[14px] sm:text-[15px] shrink-0">
+          {label.charAt(0).toUpperCase()}
+          <span className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 border-2 border-white dark:border-black" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-[14px] truncate text-[var(--text-primary)]">{sessionLabel(session)}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="font-bold text-[13px] sm:text-[14px] truncate text-[var(--text-primary)]">{label}</span>
             {session.takeover && (
-              <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5">
+              <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5">
                 Live
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-[var(--text-tertiary)]">
-            <Clock size={11} />
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-[var(--text-tertiary)]">
+            <Clock size={10} className="sm:w-[11px] sm:h-[11px]" />
             <span>{timeAgo(session.lastSeenAt)}</span>
             <span className="opacity-40">•</span>
-            <MessageSquare size={11} />
+            <MessageSquare size={10} className="sm:w-[11px] sm:h-[11px]" />
             <span>{session.messageCount} msgs</span>
           </div>
         </div>
@@ -136,6 +141,32 @@ export default function AdminLiveChatPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const groupedSessions = useMemo(() => {
+    const groups = new Map();
+    for (const s of sessions) {
+      const key = s.ipHash || s.ipAddress || s.sessionId;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          ipAddress: s.ipAddress,
+          ipHash: s.ipHash,
+          sessions: [],
+          lastSeenAt: s.lastSeenAt,
+          messageCount: 0,
+          takeover: false
+        });
+      }
+      const g = groups.get(key);
+      g.sessions.push(s);
+      if (new Date(s.lastSeenAt) > new Date(g.lastSeenAt)) g.lastSeenAt = s.lastSeenAt;
+      g.messageCount += Number(s.messageCount || 0);
+      if (s.takeover) g.takeover = true;
+    }
+    const result = Array.from(groups.values());
+    result.sort((a, b) => new Date(b.lastSeenAt) - new Date(a.lastSeenAt));
+    return result;
+  }, [sessions]);
+
   const scrollRef = useRef(null);
   const selectedIdRef = useRef(null);
   selectedIdRef.current = selectedId;
@@ -154,6 +185,8 @@ export default function AdminLiveChatPage() {
       setLoading(false);
       setSelectedId(prev => {
         if (prev && list.some(s => s.sessionId === prev)) return prev;
+        // Keep existing selection if possible, otherwise pick most recent
+        if (list.length === 0) return null;
         return list[0]?.sessionId || null;
       });
     } catch {
@@ -184,14 +217,22 @@ export default function AdminLiveChatPage() {
 
   useEffect(() => {
     loadSessions();
-    const interval = globalThis.setInterval(loadSessions, POLL_MS);
+    const interval = globalThis.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadSessions();
+      }
+    }, POLL_MS);
     return () => globalThis.clearInterval(interval);
   }, [loadSessions]);
 
   useEffect(() => {
     if (!selectedId) return undefined;
     loadSession(selectedId);
-    const interval = globalThis.setInterval(() => loadSession(selectedId), POLL_MS);
+    const interval = globalThis.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadSession(selectedId);
+      }
+    }, POLL_MS);
     return () => globalThis.clearInterval(interval);
   }, [selectedId, loadSession]);
 
@@ -204,6 +245,15 @@ export default function AdminLiveChatPage() {
     if (!text || !selectedId || sending) return;
     setSending(true);
     setError('');
+    const optimisticId = `opt-${Date.now()}`;
+    setTranscript(prev => [...prev, {
+      id: optimisticId,
+      sender: 'operator',
+      text,
+      createdAt: new Date().toISOString(),
+      tags: { operator: true }
+    }]);
+    setDraft('');
     try {
       const res = await fetch(`/api/admin/live/${encodeURIComponent(selectedId)}`, {
         method: 'POST',
@@ -214,10 +264,12 @@ export default function AdminLiveChatPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || 'Failed to send');
       }
-      setDraft('');
       await loadSession(selectedId);
+      await loadSessions();
     } catch (err) {
       setError(err.message || 'Failed to send');
+      setTranscript(prev => prev.filter(m => m.id !== optimisticId));
+      setDraft(text);
     } finally {
       setSending(false);
     }
@@ -257,7 +309,7 @@ export default function AdminLiveChatPage() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 w-full max-w-6xl mx-auto p-4 sm:p-6 md:p-10">
+      <div className="flex-1 min-h-0 w-full max-w-6xl mx-auto p-1.5 sm:p-3 md:p-5 lg:p-8 xl:p-10">
         {!enabled ? (
           <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6 flex items-start gap-3">
             <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
@@ -269,9 +321,9 @@ export default function AdminLiveChatPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 h-full min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-1.5 sm:gap-3 md:gap-4 h-full min-h-0">
             {/* Sessions list */}
-            <div className="rounded-3xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-black/25 p-3 flex flex-col min-h-0 max-h-full">
+            <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-black/25 p-2 sm:p-3 flex-col min-h-0 max-h-full`}>
               <div className="flex items-center justify-between px-1 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -289,7 +341,7 @@ export default function AdminLiveChatPage() {
                 </button>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2">
+              <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1 sm:space-y-1.5">
                 {loading ? (
                   <div className="text-center text-[13px] text-[var(--text-tertiary)] py-10">Loading…</div>
                 ) : sessions.length === 0 ? (
@@ -314,24 +366,39 @@ export default function AdminLiveChatPage() {
             </div>
 
             {/* Conversation panel */}
-            <div className="rounded-3xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-black/25 flex flex-col min-h-0">
+            <div className={`${selectedId ? 'flex' : 'hidden lg:flex'} rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-black/25 flex flex-col min-h-0`}>
               {!session ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8">
                   <MessageSquare size={26} className="text-[var(--text-tertiary)] mb-3" />
                   <div className="font-bold text-[var(--text-primary)]">Select a session</div>
                   <p className="text-[13px] text-[var(--text-tertiary)] mt-1 max-w-xs">
-                    Pick someone from the list to watch their conversation and reply as the bot.
+                    Pick someone from the list (grouped by IP) to watch their conversation and reply as the bot.
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Panel header */}
-                  <div className="px-4 py-3 border-b border-black/5 dark:border-white/10 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-bold text-[15px] text-[var(--text-primary)] truncate">{sessionLabel(session)}</div>
-                      <div className="text-[11px] text-[var(--text-tertiary)] truncate">
-                        {session.conversationId ? `Conversation ${String(session.conversationId).slice(0, 12)}…` : 'No conversation yet'}
-                        {' · '}seen {timeAgo(session.lastSeenAt)}
+                  <div className="px-2 sm:px-4 py-2 sm:py-3 border-b border-black/5 dark:border-white/10 flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(null)}
+                        className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95"
+                        aria-label="Back to sessions"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11.25 14.25L5.25 9L11.25 3.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <div className="min-w-0">
+                        <div className="font-bold text-[14px] sm:text-[15px] text-[var(--text-primary)] truncate">{sessionLabel(session)}</div>
+                        <div className="text-[10px] sm:text-[11px] text-[var(--text-tertiary)] truncate flex items-center gap-1.5">
+                          {session.ipAddress && <span className="font-mono">{session.ipAddress}</span>}
+                          {session.ipAddress && session.conversationId && <span>•</span>}
+                          {session.conversationId ? `Conv ${String(session.conversationId).slice(0, 8)}` : (!session.ipAddress ? 'No conversation yet' : null)}
+                          <span>•</span>
+                          <span>seen {timeAgo(session.lastSeenAt)}</span>
+                        </div>
                       </div>
                     </div>
                     <button
@@ -339,7 +406,7 @@ export default function AdminLiveChatPage() {
                       onClick={toggleTakeover}
                       role="switch"
                       aria-checked={Boolean(session.takeover)}
-                      className={`shrink-0 inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-[12px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                      className={`shrink-0 inline-flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-[12px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 ${
                         session.takeover
                           ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
                           : 'bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] hover:bg-black/10 dark:hover:bg-white/15'
@@ -347,7 +414,7 @@ export default function AdminLiveChatPage() {
                       title={session.takeover ? 'Bot paused — you are answering' : 'Take over the chat (pause the bot)'}
                     >
                       <UserCheck size={14} />
-                      {session.takeover ? 'Answering' : 'Take over'}
+                      <span className="hidden xs:inline sm:inline">{session.takeover ? 'Answering' : 'Take over'}</span>
                     </button>
                   </div>
 
@@ -358,7 +425,7 @@ export default function AdminLiveChatPage() {
                   )}
 
                   {/* Transcript */}
-                  <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-4 space-y-3">
+                  <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2 sm:p-4 space-y-2 sm:space-y-3">
                     {transcript.length === 0 ? (
                       <div className="text-center text-[13px] text-[var(--text-tertiary)] py-10">
                         No messages in this conversation yet.
@@ -369,7 +436,7 @@ export default function AdminLiveChatPage() {
                   </div>
 
                   {/* Composer */}
-                  <div className="p-3 border-t border-black/5 dark:border-white/10">
+                  <div className="p-2 sm:p-3 border-t border-black/5 dark:border-white/10">
                     {error && (
                       <div className="mb-2 text-[12px] font-semibold text-[#B91C1C] dark:text-[#F87171]">{error}</div>
                     )}
@@ -385,16 +452,16 @@ export default function AdminLiveChatPage() {
                         }}
                         rows={1}
                         placeholder="Reply as the bot…"
-                        className="flex-1 resize-none rounded-2xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3.5 py-2.5 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#DC2626]/40 max-h-32"
+                        className="flex-1 resize-none rounded-xl sm:rounded-2xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3 sm:px-3.5 py-2 sm:py-2.5 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#DC2626]/40 max-h-32"
                       />
                       <button
                         type="button"
                         onClick={sendMessage}
                         disabled={sending || !draft.trim()}
-                        className="shrink-0 inline-flex items-center gap-2 rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-[13px] px-4 py-2.5 transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-red-500/20"
+                        className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-[13px] px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-red-500/20"
                       >
                         <Send size={15} />
-                        Send
+                        <span className="hidden sm:inline">Send</span>
                       </button>
                     </div>
                     <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">

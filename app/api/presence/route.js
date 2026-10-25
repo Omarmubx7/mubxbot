@@ -32,7 +32,8 @@ export async function POST(req) {
       userId: body?.userId,
       path: body?.path,
       userAgent: req.headers.get('user-agent') || '',
-      ackIds: body?.ackIds
+      ackIds: body?.ackIds,
+      req
     });
 
     return NextResponse.json(result);
