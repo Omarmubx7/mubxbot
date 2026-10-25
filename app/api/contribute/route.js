@@ -250,92 +250,16 @@ export async function GET() {
     const missingNames = [];
 
     if (DATABASE_URL) {
-      const readMissing = async () => withDb(async (client) => {
-        const result = await client.query(
-          `
-            SELECT missing_name, message, created_at
-            FROM user_feedback
-            WHERE category = 'missing_name' AND missing_name IS NOT NULL
-            ORDER BY created_at DESC
-            LIMIT 500
-          `
-        );
-        return result.rows;
-      });
-
-      const readExisting = async () => withDb(async (client) => {
-        const result = await client.query('SELECT DISTINCT faculty FROM office_hours_entries');
-        return result.rows;
-      });
-
-      let rows = [];
-      let existingResult = [];
-      try {
-        [rows, existingResult] = await Promise.all([readMissing(), readExisting()]);
-      } catch (error) {
-        if (error?.code !== '42P01' && error?.code !== '42703') {
-          throw error;
-        }
-      }
-
-      const existingNames = new Set(existingResult.map(r => normalizeName(r.faculty)));
-
-      const map = new Map();
-      for (const row of rows) {
-        const rawName = String(row.missing_name || '').trim();
-        const key = normalizeText(rawName);
-        if (!key || key.length < 2) continue;
-        if (isJunk(rawName)) continue;
-        if (!map.has(key)) {
-          map.set(key, {
-            name: row.missing_name,
-            count: 0,
-            last_reported: row.created_at,
-            resolved: existingNames.has(normalizeName(row.missing_name)),
-            sample_message: row.message || null,
-            searchCount: 0,
-            isHot: false
-          });
-        }
-        map.get(key).count += 1;
-        if (row.created_at && new Date(row.created_at) > new Date(map.get(key).last_reported)) {
-          map.get(key).last_reported = row.created_at;
-        }
-        if (!map.get(key).sample_message && row.message) {
-          map.get(key).sample_message = row.message;
-        }
-      }
-
-      missingNames.push(...Array.from(map.values())
-        .sort((a, b) => new Date(b.last_reported) - new Date(a.last_reported)));
+      // Disabled - start fresh, don't load missing names from user_feedback
+      missingNames.length = 0;
+    } else {
+      missingNames.length = 0;
     }
 
     let hotMissing = [];
     try {
-      const hot = await getHotMissing({ limit: 50, minSearch: 1, days: 30 });
-      hotMissing = hot
-        .filter((h) => !isJunk(h.display_name || h.name_norm))
-        .map((h) => ({
-          name: h.display_name || h.name_norm,
-          nameKey: h.name_norm,
-          searchCount: h.search_count || 0,
-          reportCount: h.report_count || 0,
-          isHot: (h.search_count || 0) >= HOT_SEARCH_THRESHOLD,
-          lastSeen: h.last_searched_at || h.last_reported_at || null
-        }));
-
-      const metricsByKey = new Map(hotMissing.map((h) => [h.nameKey, h]));
-      for (const item of missingNames) {
-        const metric = metricsByKey.get(normalizeText(item.name));
-        if (metric) {
-          item.searchCount = metric.searchCount;
-          item.isHot = metric.isHot;
-        }
-      }
-      missingNames.sort((a, b) => {
-        if (b.isHot !== a.isHot) return b.isHot ? 1 : -1;
-        return new Date(b.last_reported) - new Date(a.last_reported);
-      });
+      hotMissing = [];
+      missingNames.length = 0;
     } catch (error) {
       console.warn('Failed to load hot missing names', error?.message || error);
     }
