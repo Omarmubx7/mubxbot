@@ -160,8 +160,8 @@ export default function Page() {
         '@type': 'WebPage',
         '@id': `${SITE_URL}/#webpage`,
         url: SITE_URL,
-        name: 'MUBXBot | HTU School of Computing',
-        description: 'Official HTU School of Computing and Informatics assistant for instructor email lookup, office locations, and office hours.',
+        name: 'MUBXBot | HTU Faculty & Office Hours Assistant',
+        description: 'Independent, student-built assistant for HTU (Al Hussein Technical University) instructor email lookup, office locations, and office hours. Not affiliated with HTU.',
         isPartOf: {
           '@id': `${SITE_URL}/#website`
         },
@@ -2387,14 +2387,35 @@ export default function Page() {
     }
   };
 
+  const homeStructuredData = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: homeStructuredDataJson }}
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex h-[100dvh] w-full items-center justify-center bg-[var(--paper)]">
-        <div className="flex flex-col items-center gap-4">
+      <main className="relative flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden bg-[var(--paper)] px-6">
+        {homeStructuredData}
+        <div className="flex max-w-[560px] flex-col items-center gap-4 text-center">
           <div className="h-9 w-9 animate-spin rounded-full border-2 border-[var(--rule)] border-t-[var(--accent)]" />
+          <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.025em] text-[var(--ink)] sm:text-[32px]">
+            MUBXBot — HTU Faculty &amp; Office Hours Assistant
+          </h1>
+          <p className="max-w-[460px] text-[14px] leading-relaxed text-[var(--muted)] sm:text-[15px]">
+            Ask about instructor emails, office hours, office locations, and departments at Al
+            Hussein Technical University (HTU). MUBXBot is a free, independent student project by
+            MUBX — not affiliated with or endorsed by HTU.
+          </p>
           <p className="animate-pulse text-[12.5px] text-[var(--muted)]">Getting things ready…</p>
         </div>
-      </div>
+        <noscript>
+          MUBXBot helps HTU (Al Hussein Technical University) students find instructor emails,
+          office hours, office locations, and departments. It is an independent student project by
+          MUBX, not affiliated with HTU. See the FAQ at /faq.
+        </noscript>
+      </main>
     );
   }
 
@@ -2409,13 +2430,12 @@ export default function Page() {
 
   return (
     <main className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[var(--paper)]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: homeStructuredDataJson }}
-      />
+      {homeStructuredData}
 
       <noscript>
-        MUBXBot is the HTU School of Computing and Informatics assistant for finding instructor emails, office hours, departments, and office locations.
+        MUBXBot helps HTU (Al Hussein Technical University) students find instructor emails,
+        office hours, office locations, and departments. It is an independent student project by
+        MUBX, not affiliated with or endorsed by HTU.
       </noscript>
 
       {/* Header */}

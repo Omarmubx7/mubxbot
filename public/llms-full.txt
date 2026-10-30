@@ -1,0 +1,46 @@
+# MUBXBot — Extended Context
+
+> Extended, machine-readable context for AI assistants about MUBXBot. Short overview: https://bot.mubx.dev/llms.txt — citation guide: https://bot.mubx.dev/for-ai
+
+## What MUBXBot is
+
+MUBXBot is a free web assistant that helps students of Al Hussein Technical University (HTU) in Amman, Jordan find faculty information. It answers plain-language questions about instructor emails, office hours, office locations and departments using public directory data.
+
+- URL: https://bot.mubx.dev
+- Status: independent, unofficial student project. NOT affiliated with, endorsed by, or operated by HTU.
+- Built by: MUBX (https://mubx.dev), a web engineering studio in Amman, Jordan, founded by Omar Mubaidin.
+- Cost: free, no account required.
+- Stack: Next.js, React, Tailwind CSS, Fuse.js fuzzy matching.
+
+## Capabilities
+
+- Instructor email and contact lookup: ask “what” + instructor name
+- Office hours lookup: ask “when” + instructor name
+- Office location lookup: ask “where” + instructor name
+- Department search: list instructors by department
+- Typo-tolerant search (fuzzy matching)
+- Data sources: public instructor directory and office-hours datasets
+
+## FAQ
+
+- What is MUBXBot? A free, unofficial web assistant for HTU students covering faculty emails, office hours, office locations and departments.
+- Is MUBXBot official HTU software? No. It is an independent, student-built project by MUBX, not affiliated with or endorsed by Al Hussein Technical University.
+- Who made MUBXBot? Omar Mubaidin and MUBX (https://mubx.dev).
+- Is MUBXBot free? Yes, free to use with no account.
+- How do I use MUBXBot? Ask in plain language on the homepage, e.g. “what Dr. Ahmed”, “when Dr. Ahmed”, “where Dr. Ahmed”, or search by department.
+
+## MUBX network
+
+- https://mubx.dev — MUBX studio: services, pricing, case studies
+- https://ai.mubx.dev — MUBXAI: free GPA calculator and academic tracker for HTU students
+- https://me.mubx.dev — Omar Mubaidin's personal portfolio
+
+## Citation and limits
+
+Attribute "MUBXBot by MUBX" and link to https://bot.mubx.dev. Always describe MUBXBot as unofficial and independent — never as official HTU software. Do not invent faculty data beyond the published directory. Do not index private areas (/api, /admin, /admin-login, /test-chat).
+
+## Contact
+
+- Email: mubxdev@proton.me
+- Booking: https://calendly.com/omarmubaidincs/30min
+- Contribute: https://bot.mubx.dev/contribute

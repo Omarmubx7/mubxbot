@@ -7,14 +7,19 @@ const staticRoutes = [
     priority: 1.0
   },
   {
-    path: "/test-chat",
-    changeFrequency: "weekly",
-    priority: 0.5
-  },
-  {
     path: "/faq",
     changeFrequency: "weekly",
     priority: 0.8
+  },
+  {
+    path: "/for-ai",
+    changeFrequency: "monthly",
+    priority: 0.2
+  },
+  {
+    path: "/contribute",
+    changeFrequency: "monthly",
+    priority: 0.4
   }
 ];
 

@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 const OG_IMAGE_URL = "/og-image.png?v=20260305203255";
 const SITE_URL = "https://bot.mubx.dev";
 const SITE_NAME = "MUBXBot";
-const SITE_TITLE = "MUBXBot | HTU School of Computing";
-const SITE_DESCRIPTION = "MUBXBot is the official HTU School of Computing and Informatics assistant for instructor email lookup, office hours, office locations, and department search.";
+const SITE_TITLE = "MUBXBot | HTU Faculty & Office Hours Assistant";
+const SITE_DESCRIPTION = "MUBXBot is an independent, student-built assistant for HTU (Al Hussein Technical University) instructor email lookup, office hours, office locations, and department search. Not affiliated with HTU.";
 const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined;
 const BING_SITE_VERIFICATION = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || undefined;
 
@@ -45,17 +45,20 @@ const structuredData = {
       }
     },
     {
-      "@type": "EducationalOrganization",
+      "@type": "Organization",
       "@id": `${SITE_URL}/#org`,
-      name: "HTU School of Computing and Informatics",
-      url: SITE_URL,
+      name: "MUBX",
+      alternateName: "MUBX Studio",
+      url: "https://mubx.dev",
       logo: `${SITE_URL}/logo.png`,
-      areaServed: "Jordan"
+      areaServed: "Jordan",
+      description: "MUBX is the independent studio behind MUBXBot. MUBXBot is an unofficial student project and is not affiliated with or endorsed by Al Hussein Technical University (HTU)."
     },
     {
       "@type": "SoftwareApplication",
       "@id": `${SITE_URL}/#app`,
       name: SITE_NAME,
+      alternateName: ["MUBX Bot", "MUBXBot HTU"],
       applicationCategory: "EducationalApplication",
       operatingSystem: "Web",
       url: SITE_URL,
@@ -85,8 +88,9 @@ export const metadata = {
   keywords: [
     "MUBXBot",
     "HTU",
+    "Al Hussein Technical University",
     "School of Computing and Informatics",
-    "Hashemite University of Technology",
+    "HTU faculty search",
     "Jordan faculty search",
     "faculty assistant",
     "faculty directory chatbot",
@@ -94,11 +98,12 @@ export const metadata = {
     "instructor contact",
     "instructor email",
     "professor office location",
-    "department lookup"
+    "department lookup",
+    "unofficial HTU assistant"
   ],
   authors: [{ name: "Omar Mubaidin" }],
   creator: "Omar Mubaidin",
-  publisher: "HTU School of Computing and Informatics",
+  publisher: "MUBX",
   category: "education",
   alternates: {
     canonical: "/"
@@ -140,7 +145,7 @@ export const metadata = {
         url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "MUBXBot - HTU School of Computing",
+        alt: "MUBXBot - HTU Faculty Assistant",
       },
     ],
     type: "website",
@@ -158,6 +163,8 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${geist.variable} ${geistMono.variable} font-sans`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <link rel="alternate" type="text/plain" hrefLang="en" href="/llms.txt" title="LLM context" />
+        <link rel="alternate" type="text/plain" hrefLang="en" href="/llms-full.txt" title="LLM context (extended)" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

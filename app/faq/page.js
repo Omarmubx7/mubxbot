@@ -10,14 +10,14 @@ export const metadata = {
     canonical: '/faq'
   },
   openGraph: {
-    title: 'MUBXBot FAQ | HTU School of Computing',
+    title: 'MUBXBot FAQ | HTU Faculty Assistant',
     description: 'Answers to common MUBXBot questions about instructor email lookup, office hours, office locations, and department search at HTU.',
     url: `${SITE_URL}/faq`,
     type: 'article'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MUBXBot FAQ | HTU School of Computing',
+    title: 'MUBXBot FAQ | HTU Faculty Assistant',
     description: 'Answers to common MUBXBot questions about instructor email lookup, office hours, office locations, and department search at HTU.'
   }
 };
