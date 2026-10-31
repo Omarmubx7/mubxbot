@@ -139,33 +139,8 @@ export default function AdminLiveChatPage() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const groupedSessions = useMemo(() => {
-    const groups = new Map();
-    for (const s of sessions) {
-      const key = s.ipHash || s.ipAddress || s.sessionId;
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          ipAddress: s.ipAddress,
-          ipHash: s.ipHash,
-          sessions: [],
-          lastSeenAt: s.lastSeenAt,
-          messageCount: 0,
-          takeover: false
-        });
-      }
-      const g = groups.get(key);
-      g.sessions.push(s);
-      if (new Date(s.lastSeenAt) > new Date(g.lastSeenAt)) g.lastSeenAt = s.lastSeenAt;
-      g.messageCount += Number(s.messageCount || 0);
-      if (s.takeover) g.takeover = true;
-    }
-    const result = Array.from(groups.values());
-    result.sort((a, b) => new Date(b.lastSeenAt) - new Date(a.lastSeenAt));
-    return result;
-  }, [sessions]);
 
   const scrollRef = useRef(null);
   const selectedIdRef = useRef(null);
@@ -175,21 +150,30 @@ export default function AdminLiveChatPage() {
     try {
       const res = await fetch('/api/admin/live', { cache: 'no-store' });
       if (res.status === 401) {
-        globalThis.location.href = '/admin-login';
+        const loginUrl = new URL('/admin-login', globalThis.location.href);
+        loginUrl.searchParams.set('next', '/admin/live');
+        globalThis.location.href = loginUrl.toString();
         return;
       }
-      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || 'Could not load live sessions.');
+      }
+
+      const data = await res.json();
       setEnabled(data?.enabled !== false);
       const list = Array.isArray(data?.sessions) ? data.sessions : [];
       setSessions(list);
-      setLoading(false);
+      setLoadError('');
       setSelectedId(prev => {
         if (prev && list.some(s => s.sessionId === prev)) return prev;
         // Keep existing selection if possible, otherwise pick most recent
         if (list.length === 0) return null;
         return list[0]?.sessionId || null;
       });
-    } catch {
+    } catch (err) {
+      setLoadError(String(err?.message || err || 'Could not load live sessions.'));
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -203,15 +187,23 @@ export default function AdminLiveChatPage() {
     try {
       const res = await fetch(`/api/admin/live/${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
       if (res.status === 404) {
+        // Session aged out — the next list refresh drops it from the sidebar.
         setSession(null);
         setTranscript([]);
         return;
       }
-      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || 'Could not load this conversation.');
+      }
+
+      const data = await res.json();
       setSession(data?.session || null);
       setTranscript(Array.isArray(data?.transcript) ? data.transcript : []);
-    } catch {
-      // keep previous view on transient errors
+      setLoadError('');
+    } catch (err) {
+      // Keep the previous view on transient errors, but say so.
+      setLoadError(String(err?.message || err || 'Could not load this conversation.'));
     }
   }, []);
 
@@ -310,6 +302,11 @@ export default function AdminLiveChatPage() {
       </div>
 
       <div className="flex-1 min-h-0 w-full max-w-6xl mx-auto p-1.5 sm:p-3 md:p-5 lg:p-8 xl:p-10">
+        {loadError && (
+          <div className="mb-2 rounded-xl border border-red-300/40 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-[12px] font-semibold text-red-700 dark:text-red-300">
+            {loadError}
+          </div>
+        )}
         {!enabled ? (
           <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6 flex items-start gap-3">
             <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
@@ -372,7 +369,7 @@ export default function AdminLiveChatPage() {
                   <MessageSquare size={26} className="text-[var(--text-tertiary)] mb-3" />
                   <div className="font-bold text-[var(--text-primary)]">Select a session</div>
                   <p className="text-[13px] text-[var(--text-tertiary)] mt-1 max-w-xs">
-                    Pick someone from the list (grouped by IP) to watch their conversation and reply as the bot.
+                    Pick someone from the list to watch their conversation and reply as the bot.
                   </p>
                 </div>
               ) : (

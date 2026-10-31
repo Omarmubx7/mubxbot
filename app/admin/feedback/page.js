@@ -85,21 +85,43 @@ export default function AdminFeedbackPage() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversationError, setConversationError] = useState('');
 
+  const handleSessionExpired = (next) => {
+    const loginUrl = new URL('/admin-login', globalThis.location.href);
+    loginUrl.searchParams.set('next', next);
+    globalThis.location.href = loginUrl.toString();
+  };
+
+  const readError = async (response, fallback = 'Request failed') => {
+    try {
+      const body = await response.json();
+      return body?.error || body?.details || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   const loadRows = async (silent = false) => {
     try {
-      if (!silent) setLoading(true);
-      setError('');
-      setConversationError('');
+      if (!silent) {
+        setLoading(true);
+        setError('');
+        setConversationError('');
+      }
 
       const qs = new URLSearchParams({ category, limit: '300' });
       const response = await fetch(`/api/admin/feedback?${qs.toString()}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to load feedback');
+      if (response.status === 401) {
+        handleSessionExpired('/admin/feedback');
+        return;
+      }
+      if (!response.ok) throw new Error(await readError(response, 'Failed to load feedback'));
 
       const data = await response.json();
       setRows(Array.isArray(data?.rows) ? data.rows : []);
       setSourceInfo({ fetchedAt: data?.fetchedAt || null, source: data?.source || null });
+      setError('');
     } catch (err) {
-      if (!silent) setError(String(err?.message || err || 'Failed to load feedback'));
+      setError(String(err?.message || err || 'Failed to load feedback'));
     } finally {
       if (!silent) setLoading(false);
     }

@@ -18,6 +18,7 @@ const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'instructor_submissions.json');
 const OFFICE_HOURS_FILE_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
+const FEEDBACK_FILE_PATH = path.join(process.cwd(), 'data', 'feedback_submissions.json');
 
 const SUBMISSION_LIMIT_PER_IP = 5;
 const ipHits = new Map();
@@ -245,33 +246,66 @@ async function tryPersistToDb(record) {
   return null;
 }
 
+/**
+ * Distinct instructor names users reported as missing from the directory.
+ * Reads the same source the admin Missing Names screen uses (`user_feedback`),
+ * with a file fallback for read-only deployments.
+ */
+async function loadReportedMissingNames() {
+  const names = new Set();
+
+  if (DATABASE_URL) {
+    try {
+      const result = await withDb((client) => client.query(
+        `SELECT DISTINCT missing_name
+           FROM user_feedback
+          WHERE category = 'missing_name'
+            AND missing_name IS NOT NULL
+            AND TRIM(missing_name) <> ''`
+      ));
+      for (const row of result.rows) {
+        const value = String(row?.missing_name || '').trim();
+        if (value) names.add(value);
+      }
+    } catch (error) {
+      if (error?.code !== '42P01' && error?.code !== '42703') {
+        console.warn('Failed to load reported missing names', error?.message || error);
+      }
+    }
+  }
+
+  if (names.size === 0) {
+    try {
+      const parsed = JSON.parse(await fs.readFile(FEEDBACK_FILE_PATH, 'utf8'));
+      if (Array.isArray(parsed)) {
+        for (const row of parsed) {
+          if (String(row?.category || '').toLowerCase() !== 'missing_name') continue;
+          const value = String(row?.missing_name || '').trim();
+          if (value) names.add(value);
+        }
+      }
+    } catch {
+      // No feedback file in this deployment — nothing reported yet.
+    }
+  }
+
+  return [...names];
+}
+
 export async function GET() {
   try {
-    const missingNames = [];
-
-    if (DATABASE_URL) {
-      // Disabled - start fresh, don't load missing names from user_feedback
-      missingNames.length = 0;
-    } else {
-      missingNames.length = 0;
-    }
-
-    let hotMissing = [];
-    try {
-      hotMissing = [];
-      missingNames.length = 0;
-    } catch (error) {
-      console.warn('Failed to load hot missing names', error?.message || error);
-    }
-
     let staleInstructors = [];
     let newDataNames = [];
-    let counts = { new: 0, old: 0, missing: missingNames.length, total: 0 };
+    let directoryKeys = new Set();
+    let counts = { new: 0, old: 0, missing: 0, total: 0 };
     let departments = [...DEPARTMENTS];
     try {
       const ohRows = await readOfficeHoursRows();
       const aggregated = aggregateOfficeHours(ohRows);
       newDataNames = await loadNewDataNames();
+      directoryKeys = new Set(
+        aggregated.map(d => normalizeText(d.name)).filter(Boolean)
+      );
       const stale = aggregated.filter(d => !isNewDataName(d.name, newDataNames));
 
       const seenDepartments = new Set();
@@ -302,12 +336,43 @@ export async function GET() {
       counts = {
         new: aggregated.length - stale.length,
         old: staleInstructors.length,
-        missing: missingNames.length,
+        missing: 0,
         total: aggregated.length
       };
     } catch (error) {
       console.warn('Failed to build stale instructor list', error?.message || error);
     }
+
+    // Reported-but-still-absent names: the Missing Names worklist.
+    const missingNames = (await loadReportedMissingNames())
+      .filter((name) => !directoryKeys.has(normalizeText(name)))
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ name, department: '', resolved: false }));
+
+    // Names students keep searching for without a hit — the priority list.
+    let hotMissing = [];
+    try {
+      const hot = await getHotMissing({ limit: 25, minSearch: HOT_SEARCH_THRESHOLD });
+      hotMissing = hot
+        .map((record) => {
+          const name = String(record.display_name || record.name_norm || '').trim();
+          const searchCount = Number(record.search_count) || 0;
+          return {
+            name,
+            department: '',
+            searchCount,
+            reportCount: Number(record.report_count) || 0,
+            isHot: searchCount >= HOT_SEARCH_THRESHOLD,
+            resolved: directoryKeys.has(normalizeText(name)),
+            lastSeen: record.last_searched_at || record.last_reported_at || null
+          };
+        })
+        .filter((item) => item.name && !item.resolved && !isJunk(item.name));
+    } catch (error) {
+      console.warn('Failed to load hot missing names', error?.message || error);
+    }
+
+    counts = { ...counts, missing: missingNames.length };
 
     let submissionsCount = 0;
     try {

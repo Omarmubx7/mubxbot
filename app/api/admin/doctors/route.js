@@ -168,6 +168,71 @@ async function deleteFacultyRows(facultyName) {
 }
 
 /**
+ * Renames a faculty member in a single transaction (DB) or a single atomic
+ * file write, so a failed save can never leave the directory with the old
+ * instructor deleted and the new one missing.
+ */
+async function renameFacultyRows(fromName, newRows) {
+  if (DATABASE_URL) {
+    return withDb(async (client) => {
+      await client.query('BEGIN');
+      try {
+        await client.query(
+          'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
+          [normalizeName(fromName)]
+        );
+
+        const insertSql = `
+          INSERT INTO office_hours_entries
+            (faculty, department, email, office, day, start, "end", type)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `;
+
+        for (const row of newRows) {
+          await client.query(insertSql, [
+            row.faculty || '',
+            row.department || '',
+            row.email || '',
+            row.office || '',
+            row.day || '',
+            row.start || '',
+            row.end || '',
+            row.type || 'In-Person'
+          ]);
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    });
+  }
+
+  let allRows;
+  try {
+    const raw = await fs.readFile(DATA_PATH, 'utf8');
+    allRows = JSON.parse(raw || '[]');
+    if (!Array.isArray(allRows)) allRows = [];
+  } catch {
+    allRows = [];
+  }
+
+  const key = normalizeName(fromName);
+  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  const combined = [...filtered, ...newRows];
+
+  try {
+    await fs.writeFile(DATA_PATH, `${JSON.stringify(combined, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    if (error?.code === 'EROFS' || error?.code === 'EPERM') {
+      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+    }
+    throw error;
+  }
+}
+
+/**
  * Checks whether a faculty name already exists in the DB / file.
  */
 async function facultyExists(facultyName) {
@@ -294,13 +359,38 @@ export async function PUT(req) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const exists = await facultyExists(doctor.name);
-    if (!exists) {
-      return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
+    // `originalName` lets the client rename in place instead of delete-then-create.
+    const originalName = String(doctor.originalName || '').trim();
+    const renaming = Boolean(originalName) && normalizeName(originalName) !== normalizeName(doctor.name);
+
+    if (renaming) {
+      const originalExists = await facultyExists(originalName);
+      if (!originalExists) {
+        return NextResponse.json({ error: 'Instructor not found' }, { status: 404 });
+      }
+      const targetExists = await facultyExists(doctor.name);
+      if (targetExists) {
+        return NextResponse.json({ error: 'Doctor already exists' }, { status: 409 });
+      }
+    } else {
+      const exists = await facultyExists(doctor.name);
+      if (!exists) {
+        return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
+      }
     }
 
     const newRows = buildRowsFromDoctor(doctor);
-    await writeFacultyRows(doctor.name, newRows);
+    if (renaming) {
+      await renameFacultyRows(originalName, newRows);
+      try {
+        await removeNewDataName(originalName);
+      } catch (error) {
+        console.error('Failed to clear new-data flag on rename', error?.message || error);
+      }
+    } else {
+      await writeFacultyRows(doctor.name, newRows);
+    }
+
     let marked = true;
     try {
       await markNewData(doctor.name);
@@ -309,7 +399,7 @@ export async function PUT(req) {
       console.error('Failed to mark name as new data', error?.message || error);
     }
     await markMissingNameResolved(doctor.name);
-    return NextResponse.json({ ok: true, marked });
+    return NextResponse.json({ ok: true, marked, renamed: renaming }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update doctor', details: error.message }, { status: 500 });
   }

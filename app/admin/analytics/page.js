@@ -326,14 +326,26 @@ export default function AdminAnalyticsPage() {
   const requestQueryString = activeTab === 'conversations' ? conversationQueryString : queryString;
 
   const fetchTabData = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    setError('');
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
     try {
       const config = tabRequestConfig[activeTab];
       if (config) {
         const res = await fetch(`${config.path}?${requestQueryString}${config.extra}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(config.errorMessage);
+        if (res.status === 401) {
+          const loginUrl = new URL('/admin-login', globalThis.location.href);
+          loginUrl.searchParams.set('next', '/admin/analytics');
+          globalThis.location.href = loginUrl.toString();
+          return;
+        }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error || body?.details || config.errorMessage);
+        }
         config.assign(await res.json());
+        setError('');
       }
     } catch (e) {
       setError(e.message || 'Failed to load analytics data');
@@ -539,12 +551,12 @@ export default function AdminAnalyticsPage() {
                 />
               </div>
               <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Live polling only</span>
-                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Historical query: {selectedRangeLabel}</span>
-                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Freshness required on every widget</span>
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Live data</span>
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Range: {selectedRangeLabel}</span>
+                <span className="rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-3 py-1">Refresh timestamp on every widget</span>
               </div>
               <div className="text-[12px] text-[var(--text-secondary)] mt-3 font-medium">
-                All charts and tables respect this date range. If data is delayed or missing, the UI must show that state instead of guessing.
+                All charts and tables respect this date range. Missing data is shown as missing rather than estimated.
               </div>
             </div>
 

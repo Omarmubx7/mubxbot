@@ -297,11 +297,81 @@ export default function Page() {
       }
     };
 
-    tick();
-    const interval = globalThis.setInterval(tick, 5000);
+    // Serialise ticks so the stream wake-up and the fallback poll can never
+    // fetch the same operator message twice.
+    let ticking = false;
+    const safeTick = async () => {
+      if (ticking || stopped) return;
+      ticking = true;
+      try {
+        await tick();
+      } finally {
+        ticking = false;
+      }
+    };
+
+    let pollTimer = null;
+    let source = null;
+    let fallbackTimer = null;
+
+    const startPolling = () => {
+      if (pollTimer || stopped) return;
+      pollTimer = globalThis.setInterval(() => {
+        if (globalThis.document?.visibilityState === 'visible') safeTick();
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (!pollTimer) return;
+      globalThis.clearInterval(pollTimer);
+      pollTimer = null;
+    };
+
+    const startStream = () => {
+      if (stopped || typeof globalThis.EventSource === 'undefined') return false;
+      try {
+        const params = new URLSearchParams({
+          sessionId: getSessionId(),
+          conversationId: conversationIdRef.current || '',
+          userId: analyticsUserIdRef.current || '',
+          path: globalThis.location?.pathname || '/'
+        });
+        source = new globalThis.EventSource(`/api/presence/stream?${params.toString()}`);
+        source.onopen = () => {
+          stopPolling();
+          safeTick();
+        };
+        source.onmessage = () => { void safeTick(); };
+        source.onerror = () => {
+          // The browser retries the stream itself; poll in the meantime.
+          startPolling();
+        };
+        return true;
+      } catch {
+        source = null;
+        return false;
+      }
+    };
+
+    void safeTick();
+    const hasStream = startStream();
+    if (!hasStream) startPolling();
+    // If the stream never opens (buffering proxy, serverless limits), keep polling.
+    fallbackTimer = globalThis.setTimeout(() => {
+      if (!source || source.readyState !== 1) startPolling();
+    }, 6000);
+
     return () => {
       stopped = true;
-      globalThis.clearInterval(interval);
+      if (fallbackTimer) globalThis.clearTimeout(fallbackTimer);
+      stopPolling();
+      if (source) {
+        source.onopen = null;
+        source.onmessage = null;
+        source.onerror = null;
+        source.close();
+        source = null;
+      }
     };
   }, []);
 

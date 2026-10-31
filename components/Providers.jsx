@@ -47,8 +47,13 @@ export default function Providers({ children }) {
     }
 
     Promise.all([
-      fetch("/api/doctors").then(res => res.json()),
-      fetch("/api/office-hours").then(res => res.json()).catch(() => [])
+      fetch("/api/doctors").then((res) => {
+        if (!res.ok) throw new Error(`Directory request failed (${res.status})`);
+        return res.json();
+      }),
+      fetch("/api/office-hours")
+        .then((res) => (res.ok ? res.json() : []))
+        .catch(() => [])
     ])
       .then(([doctorsData, officeHoursData]) => {
         // DB data wins — overwrite whatever was in the cache, no merge
@@ -63,7 +68,8 @@ export default function Providers({ children }) {
         setLoading(false);
       })
       .catch(err => {
-        console.error("Failed to load data:", err);
+        // Keep whatever we rendered from cache instead of replacing it with [].
+        console.error("Failed to load directory data:", err);
         setLoading(false);
       });
   }, []);

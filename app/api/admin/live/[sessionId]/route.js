@@ -3,6 +3,7 @@ import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../../li
 import {
   getSession,
   getTranscript,
+  getSessionInboxMessages,
   setTakeover,
   enqueueOperatorMessage
 } from '../../../../../lib/liveSessions.js';
@@ -27,9 +28,20 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 });
   }
 
-  const transcript = session.conversationId
-    ? await getTranscript(session.conversationId, { limit: 100 })
-    : [];
+  let transcript = [];
+  if (session.conversationId) {
+    // Mirrored operator replies live in `messages`; queue rows that were
+    // written before a conversation existed are only in `session_inbox`.
+    const [mirrored, unmirrored] = await Promise.all([
+      getTranscript(session.conversationId, { limit: 100 }),
+      getSessionInboxMessages(session.sessionId, { limit: 100, onlyUnmirrored: true })
+    ]);
+    transcript = [...mirrored, ...unmirrored]
+      .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  } else {
+    // The visitor has not produced a conversation yet — show what we queued.
+    transcript = await getSessionInboxMessages(session.sessionId, { limit: 100 });
+  }
 
   return NextResponse.json({ session, transcript });
 }

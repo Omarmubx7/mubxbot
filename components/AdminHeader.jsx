@@ -37,8 +37,6 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
                 <span className="bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-md border border-black/5 dark:border-white/5">v2.0</span>
                 <span className="hidden sm:inline text-black/20 dark:text-white/20">•</span>
                 <span>Operations Console</span>
-                <span className="hidden sm:inline text-black/20 dark:text-white/20">•</span>
-                <span>Real backend data only</span>
               </div>
             </div>
           </div>
@@ -58,7 +56,7 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
           href="/admin" 
           className="whitespace-nowrap rounded-xl bg-black/5 dark:bg-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-secondary)] hover:bg-black/10 dark:hover:bg-white/20 hover:text-[var(--text-primary)] transition-all"
         >
-          Instructors Directory
+          Instructor Directory
         </Link>
         <Link 
           href="/admin/static" 
@@ -90,9 +88,6 @@ export function AdminHeader({ title = 'Admin Control Center', onLogout }) {
         >
           Live Chat
         </Link>
-        <div className="whitespace-nowrap rounded-xl border border-dashed border-black/10 dark:border-white/10 px-4 py-3 text-[13px] font-bold text-[var(--text-tertiary)] bg-white/30 dark:bg-black/10">
-          No placeholder analytics
-        </div>
       </div>
     </>
   );

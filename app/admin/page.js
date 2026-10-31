@@ -97,7 +97,6 @@ function DataStatusToggle({ isNew, onToggle, disabled }) {
       <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${isNew ? 'bg-green-500' : 'bg-black/20 dark:bg-white/25'}`}>
         <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${isNew ? 'left-3.5' : 'left-0.5'}`} />
       </span>
-      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Test</span>
     </button>
   );
 }
@@ -118,24 +117,47 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [togglingName, setTogglingName] = useState(null);
   const [usageSnapshot, setUsageSnapshot] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [usageError, setUsageError] = useState('');
 
   const refreshInstructors = async () => {
-    const response = await fetch('/api/doctors');
-    if (!response.ok) return;
-
-    const data = await response.json();
-    setInstructors(data);
     try {
-      globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.warn('Storage write disabled', e);
+      const response = await fetch('/api/doctors', { cache: 'no-store' });
+
+      if (response.status === 401) {
+        const loginUrl = new URL('/admin-login', globalThis.location.href);
+        loginUrl.searchParams.set('next', '/admin');
+        globalThis.location.href = loginUrl.toString();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Could not refresh the instructor directory.');
+      }
+
+      const data = await response.json();
+      if (!Array.isArray(data)) {
+        throw new Error('The instructor directory returned an unexpected response.');
+      }
+
+      setInstructors(data);
+      setLoadError('');
+      try {
+        globalThis.localStorage.setItem(DOCTORS_CACHE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('Storage write disabled', e);
+      }
+    } catch (err) {
+      setLoadError(String(err?.message || err || 'Could not refresh the instructor directory.'));
     }
   };
 
   const refreshUsageSnapshot = async () => {
     try {
       const response = await fetch('/api/admin/analytics/overview?preset=last7', { cache: 'no-store' });
-      if (!response.ok) return;
+      if (response.status === 401) return;
+      if (!response.ok) throw new Error('Usage snapshot unavailable');
+
       const data = await response.json();
       setUsageSnapshot({
         totalMessages: Number(data?.kpis?.totalMessages?.value || 0),
@@ -146,8 +168,10 @@ export default function AdminPage() {
         peakHourViews: Number(data?.usageSummary?.peakHourViews || 0),
         generatedAt: data?.generatedAt || null
       });
+      setUsageError('');
     } catch {
-      // Keep this silent so instructor management is never blocked by analytics failures.
+      // Usage is supplementary — report it without blocking instructor management.
+      setUsageError('Usage snapshot could not be loaded. The directory data above is still current.');
     }
   };
 
@@ -237,15 +261,9 @@ export default function AdminPage() {
   };
 
   const saveExistingDoctor = async () => {
-    const nameChanged = formData.name === currentDoctor.name;
-
-    if (nameChanged) {
-      await requestDoctorMutation('PUT', formData);
-      return;
-    }
-
-    await requestDoctorMutation('DELETE', { name: currentDoctor.name });
-    await requestDoctorMutation('POST', formData);
+    // One atomic update — the API renames in place, so a failed save can never
+    // delete the instructor before the replacement is written.
+    await requestDoctorMutation('PUT', { ...formData, originalName: currentDoctor.name });
   };
 
   const handleSave = async (e) => {
@@ -399,11 +417,17 @@ export default function AdminPage() {
       {/* Premium Apple Header */}
       <div className="sticky top-0 z-50 px-4 sm:px-6 md:px-10 py-4 sm:py-6 glass-surface border-b border-black/[0.03] dark:border-white/[0.05] pt-safe backdrop-blur-3xl">
         <div className="max-w-6xl mx-auto">
-          <AdminHeader title="Control Center" onLogout={handleLogout} />
+          <AdminHeader title="Instructor Directory" onLogout={handleLogout} />
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 pb-20 sm:pb-32">
+        {(loadError || usageError) && (
+          <div className="rounded-xl border border-red-300/40 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+            {loadError || usageError}
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             {/* Spotlight Search */}
@@ -579,9 +603,9 @@ export default function AdminPage() {
       <Modal title={currentDoctor ? "Edit Instructor" : "Add New Instructor"} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <form onSubmit={handleSave} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="doctor-name" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Full Identity</label>
+            <label htmlFor="doctor-name" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Name</label>
             <input id="doctor-name" required className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
-              value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Name" />
+              value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Instructor name" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -596,9 +620,9 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <label htmlFor="doctor-email" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Digital Address</label>
+            <label htmlFor="doctor-email" className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)] px-1">Email</label>
             <input id="doctor-email" required type="email" className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium text-[var(--text-primary)]"
-              value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="Email" />
+              value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="name@htu.edu.jo" />
           </div>
 
           {/* Office Hours per day */}

@@ -93,8 +93,10 @@ export default function AdminMissingNamesPage() {
 
   const loadAll = async (silent = false) => {
     try {
-      if (!silent) setLoading(true);
-      setError('');
+      if (!silent) {
+        setLoading(true);
+        setError('');
+      }
 
       const qs = new URLSearchParams({ category: 'missing_name', limit: '500' });
       const [feedbackRes, doctorsRes, submissionsRes, contributeRes] = await Promise.all([
@@ -112,7 +114,7 @@ export default function AdminMissingNamesPage() {
         throw new Error(await readError(feedbackRes.ok ? submissionsRes : feedbackRes, 'Failed to load admin data'));
       }
       if (!doctorsRes.ok || !contributeRes.ok) {
-        throw new Error('Failed to load data');
+        throw new Error('Failed to load the directory data');
       }
 
       const feedback = await feedbackRes.json();
@@ -134,8 +136,9 @@ export default function AdminMissingNamesPage() {
       setFlippedNames(prev => prev.filter(key =>
         now - (flippedAtRef.current[key] || 0) < 30000
       ));
+      setError('');
     } catch (err) {
-      if (!silent) setError(String(err?.message || err || 'Failed to load data'));
+      setError(String(err?.message || err || 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }

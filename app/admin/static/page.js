@@ -22,16 +22,28 @@ export default function AdminStaticResponsesPage() {
 
   const loadRows = async (silent = false) => {
     try {
-      if (!silent) setLoading(true);
-      setError('');
+      if (!silent) {
+        setLoading(true);
+        setError('');
+      }
 
       const response = await fetch('/api/admin/static-responses', { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to load static responses');
+      if (response.status === 401) {
+        const loginUrl = new URL('/admin-login', globalThis.location.href);
+        loginUrl.searchParams.set('next', '/admin/static');
+        globalThis.location.href = loginUrl.toString();
+        return;
+      }
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || body?.details || 'Failed to load static responses');
+      }
 
       const data = await response.json();
       setRows(Array.isArray(data) ? data : []);
+      setError('');
     } catch (err) {
-      if (!silent) setError(err.message || 'Failed to load static responses');
+      setError(err.message || 'Failed to load static responses');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -147,7 +159,7 @@ export default function AdminStaticResponsesPage() {
         <div className="flex items-center justify-between gap-4 mb-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Response Templates</h2>
-            <p className="text-sm mt-1 text-[var(--text-secondary)]">Master data only. These are exact-match response rules, not analytics or live conversation data.</p>
+            <p className="text-sm mt-1 text-[var(--text-secondary)]">Exact-match reply rules. When a message matches a trigger, the bot answers with the response below verbatim.</p>
           </div>
         </div>
 

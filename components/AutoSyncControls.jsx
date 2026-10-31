@@ -120,7 +120,7 @@ export function AutoSyncControls({
       </div>
       
       <div className="sm:ml-auto px-2 text-center sm:text-right space-y-0.5">
-        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Backend data only</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Sync status</div>
         <div className="text-[12px] font-medium text-[var(--text-secondary)]">{statusLabel}</div>
         <div className="text-[11px] font-medium text-[var(--text-tertiary)]">Last successful sync: {lastSyncLabel}{!syncing && autoSyncEnabled ? ` · Next sync in ${syncCountdown}s` : ''}</div>
       </div>
