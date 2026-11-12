@@ -1,27 +1,22 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { verifySubmissionActionToken } from '../../../../../lib/adminAuth.js';
 import { applyInstructorToDirectory } from '../../../../../lib/instructorWriter.js';
 
 export const dynamic = 'force-dynamic';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'instructor_submissions.json');
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
   }
+  return sql;
 }
 
 async function readFileRows() {
@@ -47,33 +42,38 @@ function parseOfficeHours(value) {
 
 async function loadSubmission(id) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      const result = await client.query(
-        'SELECT id, name, department, email, office, office_hours, missing_name_link, status, created_at, reviewed_at, reviewed_by FROM instructor_submissions WHERE id = $1',
-        [id]
-      );
-      const row = result.rows[0];
-      return row ? { ...row, office_hours: parseOfficeHours(row.office_hours) } : null;
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return null;
+
+    const rows = await sqlInstance`
+      SELECT id, name, department, email, office, office_hours, missing_name_link, status, created_at, reviewed_at, reviewed_by
+      FROM instructor_submissions
+      WHERE id = ${id}
+    `;
+    const row = rows[0];
+    return row ? { ...row, office_hours: parseOfficeHours(row.office_hours) } : null;
   }
 
   const rows = await readFileRows();
-  const row = rows.find(r => String(r?.id || '') === id);
+  const row = rows.find((r) => String(r?.id || '') === id);
   return row ? { ...row, office_hours: parseOfficeHours(row.office_hours) } : null;
 }
 
 async function setStatus(id, status, reviewedBy) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      await client.query(
-        'UPDATE instructor_submissions SET status = $1, reviewed_at = NOW(), reviewed_by = $2 WHERE id = $3',
-        [status, reviewedBy, id]
-      );
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return;
+
+    await sqlInstance`
+      UPDATE instructor_submissions
+      SET status = ${status}, reviewed_at = NOW(), reviewed_by = ${reviewedBy}
+      WHERE id = ${id}
+    `;
+    return;
   }
 
   const rows = await readFileRows();
-  const idx = rows.findIndex(r => String(r?.id || '') === id);
+  const idx = rows.findIndex((r) => String(r?.id || '') === id);
   if (idx === -1) throw new Error('Submission not found');
   rows[idx] = {
     ...rows[idx],

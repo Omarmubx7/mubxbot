@@ -1,96 +1,90 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
 import { chatMetricsStore, pendingDisambiguationsStore } from '../../../../lib/chatMetricsStore.js';
 import { getOnlineCount } from '../../../../lib/presence.js';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const OH_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const STATIC_PATH = path.join(process.cwd(), 'data', 'static_responses.json');
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
+let sql = null;
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
   }
+  return sql;
 }
 
 async function getDbMetrics() {
-  return withDb(async (client) => {
-    const [chatRes, instrRes, staticRes] = await Promise.all([
-      client.query(`
-        SELECT
-          COUNT(*)::int                                                                               AS total_requests,
-          COUNT(*) FILTER (WHERE outcome = 'smart_response')::int                                   AS smart_responses,
-          COUNT(*) FILTER (WHERE outcome = 'no_results')::int                                       AS no_results,
-          COUNT(*) FILTER (WHERE outcome = 'help')::int                                             AS help_responses,
-          COUNT(*) FILTER (WHERE outcome = 'error')::int                                            AS errors,
-          COUNT(*) FILTER (WHERE disambiguation_issued    = true)::int                              AS disambiguations_issued,
-          COUNT(*) FILTER (WHERE disambiguation_resolved  = true)::int                              AS disambiguations_resolved,
-          COUNT(*) FILTER (WHERE disambiguation_expired   = true)::int                              AS disambiguations_expired,
-          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int                   AS today_requests,
-          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 hour')::int                     AS last_hour_requests
-        FROM chat_request_logs
-      `),
-      client.query(`
-        SELECT
-          COUNT(DISTINCT faculty)::int                                                               AS instructor_count,
-          COUNT(DISTINCT department) FILTER (WHERE department IS NOT NULL AND department <> '')::int AS department_count
-        FROM office_hours_entries
-      `),
-      client.query(`
-        SELECT
-          COUNT(*)::int                                                    AS total,
-          COUNT(*) FILTER (WHERE is_active = true)::int                   AS active,
-          COUNT(*) FILTER (WHERE audience = 'user')::int                  AS audience_user,
-          COUNT(*) FILTER (WHERE audience = 'admin')::int                 AS audience_admin,
-          COUNT(*) FILTER (WHERE audience = 'all')::int                   AS audience_all,
-          COUNT(*) FILTER (WHERE audience NOT IN ('user','admin','all'))::int AS audience_other
-        FROM bot_static_responses
-      `)
-    ]);
+  const sqlInstance = getSql();
+  if (!sqlInstance) throw new Error('Database not configured');
+  const [chatRes, instrRes, staticRes] = await Promise.all([
+    sqlInstance`
+      SELECT
+        COUNT(*)::int                                                                               AS total_requests,
+        COUNT(*) FILTER (WHERE outcome = 'smart_response')::int                                   AS smart_responses,
+        COUNT(*) FILTER (WHERE outcome = 'no_results')::int                                       AS no_results,
+        COUNT(*) FILTER (WHERE outcome = 'help')::int                                             AS help_responses,
+        COUNT(*) FILTER (WHERE outcome = 'error')::int                                            AS errors,
+        COUNT(*) FILTER (WHERE disambiguation_issued    = true)::int                              AS disambiguations_issued,
+        COUNT(*) FILTER (WHERE disambiguation_resolved  = true)::int                              AS disambiguations_resolved,
+        COUNT(*) FILTER (WHERE disambiguation_expired   = true)::int                              AS disambiguations_expired,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int                   AS today_requests,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 hour')::int                     AS last_hour_requests
+      FROM chat_request_logs
+    `,
+    sqlInstance`
+      SELECT
+        COUNT(DISTINCT faculty)::int                                                               AS instructor_count,
+        COUNT(DISTINCT department) FILTER (WHERE department IS NOT NULL AND department <> '')::int AS department_count
+      FROM office_hours_entries
+    `,
+    sqlInstance`
+      SELECT
+        COUNT(*)::int                                                    AS total,
+        COUNT(*) FILTER (WHERE is_active = true)::int                   AS active,
+        COUNT(*) FILTER (WHERE audience = 'user')::int                  AS audience_user,
+        COUNT(*) FILTER (WHERE audience = 'admin')::int                 AS audience_admin,
+        COUNT(*) FILTER (WHERE audience = 'all')::int                   AS audience_all,
+        COUNT(*) FILTER (WHERE audience NOT IN ('user','admin','all'))::int AS audience_other
+      FROM bot_static_responses
+    `
+  ]);
 
-    const c = chatRes.rows[0] || {};
-    const i = instrRes.rows[0] || {};
-    const s = staticRes.rows[0] || {};
+  const c = chatRes[0] || {};
+  const i = instrRes[0] || {};
+  const s = staticRes[0] || {};
 
-    return {
-      chatMetrics: {
-        totalRequests:            c.total_requests            || 0,
-        smartResponses:           c.smart_responses           || 0,
-        disambiguationsIssued:    c.disambiguations_issued    || 0,
-        disambiguationsResolved:  c.disambiguations_resolved  || 0,
-        disambiguationsExpired:   c.disambiguations_expired   || 0,
-        noResults:                c.no_results                || 0,
-        helpResponses:            c.help_responses            || 0,
-        errors:                   c.errors                    || 0,
-        pendingDisambiguations:   pendingDisambiguationsStore.size
-      },
-      todayRequests:    c.today_requests     || 0,
-      lastHourRequests: c.last_hour_requests || 0,
-      instructorCount:  i.instructor_count   || 0,
-      departmentCount:  i.department_count   || 0,
-      staticResponses: {
-        total:  s.total          || 0,
-        active: s.active         || 0,
-        byAudience: {
-          user:  s.audience_user  || 0,
-          admin: s.audience_admin || 0,
-          all:   s.audience_all   || 0,
-          other: s.audience_other || 0
-        }
+  return {
+    chatMetrics: {
+      totalRequests:            c.total_requests            || 0,
+      smartResponses:           c.smart_responses           || 0,
+      disambiguationsIssued:    c.disambiguations_issued    || 0,
+      disambiguationsResolved:  c.disambiguations_resolved  || 0,
+      disambiguationsExpired:   c.disambiguations_expired   || 0,
+      noResults:                c.no_results                || 0,
+      helpResponses:            c.help_responses            || 0,
+      errors:                   c.errors                    || 0,
+      pendingDisambiguations:   pendingDisambiguationsStore.size
+    },
+    todayRequests:    c.today_requests     || 0,
+    lastHourRequests: c.last_hour_requests || 0,
+    instructorCount:  i.instructor_count   || 0,
+    departmentCount:  i.department_count   || 0,
+    staticResponses: {
+      total:  s.total          || 0,
+      active: s.active         || 0,
+      byAudience: {
+        user:  s.audience_user  || 0,
+        admin: s.audience_admin || 0,
+        all:   s.audience_all   || 0,
+        other: s.audience_other || 0
       }
-    };
-  });
+    }
+  };
 }
 
 async function getFileMetrics() {

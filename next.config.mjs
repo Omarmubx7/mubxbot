@@ -15,7 +15,7 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    unoptimized: false,
+    unoptimized: true, // Required for Cloudflare Pages (no image optimization API)
     minimumCacheTTL: 31536000, // 1 year for static images
   },
 

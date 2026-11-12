@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../../lib/adminAuth.js';
-import { hasAnalyticsDb, parseDateRange, safeQuery, withAnalyticsDb } from '../../../../../lib/adminAnalyticsDb.js';
+import { hasAnalyticsDb, parseDateRange, safeQuery, getAnalyticsSql } from '../../../../../lib/adminAnalyticsDb.js';
 
 function unauthorized(req) {
   const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value || '';
@@ -12,7 +12,8 @@ export async function GET(req) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasAnalyticsDb()) {
+  const sql = getAnalyticsSql();
+  if (!sql) {
     return NextResponse.json({ kpis: {}, avgLatencyPerDay: [], p95LatencyPerDay: [], histogram: [], warning: 'Database is not configured' });
   }
 
@@ -20,95 +21,64 @@ export async function GET(req) {
   const range = parseDateRange(url.searchParams);
 
   try {
-    const data = await withAnalyticsDb(async (client) => {
-      const [kpiRes, avgDailyRes, p95DailyRes, histogramRes] = await Promise.all([
-        safeQuery(
-          client,
-          `
-            SELECT
-              AVG(total_latency_ms)::numeric(10,2) AS avg_latency,
-              PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY total_latency_ms)::numeric(10,2) AS p95_latency,
-              AVG(model_latency_ms)::numeric(10,2) AS avg_model_latency,
-              COUNT(*)::int AS total_requests
-            FROM performance_events
-            WHERE created_at >= $1 AND created_at <= $2
-          `,
-          [range.from, range.to],
-          [{ avg_latency: 0, p95_latency: 0, avg_model_latency: 0, total_requests: 0 }]
-        ),
-        safeQuery(
-          client,
-          `
-            SELECT
-              DATE(created_at) AS day,
-              AVG(total_latency_ms)::numeric(10,2) AS avg_latency
-            FROM performance_events
-            WHERE created_at >= $1 AND created_at <= $2
-            GROUP BY DATE(created_at)
-            ORDER BY day ASC
-          `,
-          [range.from, range.to],
-          []
-        ),
-        safeQuery(
-          client,
-          `
-            SELECT
-              DATE(created_at) AS day,
-              PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY total_latency_ms)::numeric(10,2) AS p95_latency
-            FROM performance_events
-            WHERE created_at >= $1 AND created_at <= $2
-            GROUP BY DATE(created_at)
-            ORDER BY day ASC
-          `,
-          [range.from, range.to],
-          []
-        ),
-        safeQuery(
-          client,
-          `
-            SELECT
-              WIDTH_BUCKET(total_latency_ms, 0, 5000, 10) AS bucket,
-              COUNT(*)::int AS count
-            FROM performance_events
-            WHERE created_at >= $1 AND created_at <= $2
-            GROUP BY bucket
-            ORDER BY bucket ASC
-          `,
-          [range.from, range.to],
-          []
-        )
-      ]);
-
-      return {
-        kpis: {
-          avgLatencyMs: Number(kpiRes.rows[0]?.avg_latency || 0),
-          p95LatencyMs: Number(kpiRes.rows[0]?.p95_latency || 0),
-          avgModelLatencyMs: Number(kpiRes.rows[0]?.avg_model_latency || 0),
-          totalRequests: Number(kpiRes.rows[0]?.total_requests || 0)
-        },
-        avgLatencyPerDay: avgDailyRes.rows.map((row) => ({
-          day: new Date(row.day).toISOString().slice(0, 10),
-          value: Number(row.avg_latency || 0)
-        })),
-        p95LatencyPerDay: p95DailyRes.rows.map((row) => ({
-          day: new Date(row.day).toISOString().slice(0, 10),
-          value: Number(row.p95_latency || 0)
-        })),
-        histogram: histogramRes.rows.map((row) => ({
-          bucket: Number(row.bucket || 0),
-          count: Number(row.count || 0)
-        }))
-      };
-    });
+    const [kpiRes, avgDailyRes, p95DailyRes, histogramRes] = await Promise.all([
+      safeQuery`
+        SELECT
+          AVG(total_latency_ms)::numeric(10,2) AS avg_latency,
+          PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY total_latency_ms)::numeric(10,2) AS p95_latency,
+          AVG(model_latency_ms)::numeric(10,2) AS avg_model_latency,
+          COUNT(*)::int AS total_requests
+        FROM performance_events
+        WHERE created_at >= ${range.from} AND created_at <= ${range.to}
+      `,
+      safeQuery`
+        SELECT
+          DATE(created_at) AS day,
+          AVG(total_latency_ms)::numeric(10,2) AS avg_latency
+        FROM performance_events
+        WHERE created_at >= ${range.from} AND created_at <= ${range.to}
+        GROUP BY DATE(created_at)
+        ORDER BY day ASC
+      `,
+      safeQuery`
+        SELECT
+          DATE(created_at) AS day,
+          PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY total_latency_ms)::numeric(10,2) AS p95_latency
+        FROM performance_events
+        WHERE created_at >= ${range.from} AND created_at <= ${range.to}
+        GROUP BY DATE(created_at)
+        ORDER BY day ASC
+      `,
+      safeQuery`
+        SELECT
+          WIDTH_BUCKET(total_latency_ms, 0, 5000, 10) AS bucket,
+          COUNT(*)::int AS count
+        FROM performance_events
+        WHERE created_at >= ${range.from} AND created_at <= ${range.to}
+        GROUP BY bucket
+        ORDER BY bucket ASC
+      `
+    ]);
 
     return NextResponse.json({
-      ...data,
-      range: {
-        from: range.from.toISOString(),
-        to: range.to.toISOString(),
-        preset: range.preset
-      }
+      kpis: {
+        avgLatencyMs: Number(kpiRes[0]?.avg_latency || 0),
+        p95LatencyMs: Number(kpiRes[0]?.p95_latency || 0),
+        avgModelLatencyMs: Number(kpiRes[0]?.avg_model_latency || 0),
+        totalRequests: Number(kpiRes[0]?.total_requests || 0)
+      },
+      avgLatencyPerDay: avgDailyRes.map((row) => ({
+        day: new Date(row.day).toISOString().slice(0, 10),
+        value: Number(row.avg_latency || 0)
+      })),
+      p95LatencyPerDay: p95DailyRes.map((row) => ({
+        day: new Date(row.day).toISOString().slice(0, 10),
+        value: Number(row.p95_latency || 0)
+      })),
+      histogram: histogramRes.map((row) => ({
+        bucket: Number(row.bucket || 0),
+        count: Number(row.count || 0)
+      }))
     }, {
       headers: {
         'Cache-Control': 'private, max-age=30, s-maxage=30',

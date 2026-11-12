@@ -2,14 +2,22 @@ import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { notifyFeedbackSubmission } from '../../../lib/notifications';
 import { upsertReport } from '../../../lib/missingNameMetrics.js';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'feedback_submissions.json');
 const ALLOWED_CATEGORIES = new Set(['missing_name', 'general']);
+
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
 
 const FEEDBACK_LIMIT_PER_WINDOW = 10;
 const FEEDBACK_WINDOW_MS = 60 * 60 * 1000;
@@ -24,25 +32,175 @@ function rateLimit(req) {
   const ip = clientIp(req);
   const now = Date.now();
   const windowStart = now - FEEDBACK_WINDOW_MS;
-  const hits = (ipHits.get(ip) || []).filter(t => t > windowStart);
+  const hits = (ipHits.get(ip) || []).filter((t) => t > windowStart);
   ipHits.set(ip, hits);
   if (hits.length >= FEEDBACK_LIMIT_PER_WINDOW) return true;
   ipHits.set(ip, [...hits, now]);
   return false;
 }
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
+async function ensureTable() {
+  const sqlInstance = getSql();
+  if (!sqlInstance) throw new Error('Database not configured');
+  await sqlInstance`
+    CREATE TABLE IF NOT EXISTS user_feedback (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL CHECK (category IN ('missing_name', 'general')),
+      message TEXT,
+      missing_name TEXT,
+      user_query TEXT,
+      request_label TEXT,
+      conversation_id TEXT,
+      user_id TEXT,
+      source_path TEXT,
+      source TEXT NOT NULL DEFAULT 'chat',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category)`;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at)`;
+}
 
-  await client.connect();
+async function ensureLegacyConversation(conversationId, userId) {
+  if (!conversationId) return;
+  const sqlInstance = getSql();
+  if (!sqlInstance) return;
+  await sqlInstance`
+    INSERT INTO conversations (id, user_id, started_at, environment)
+    VALUES (${conversationId}, ${userId || null}, NOW(), 'prod')
+    ON CONFLICT (id) DO NOTHING
+  `;
+}
+
+function buildLegacyReason(record) {
+  return JSON.stringify({
+    category: record.category,
+    message: record.message || '',
+    missing_name: record.missing_name || null,
+    user_query: record.user_query || null,
+    request_label: record.request_label || null,
+    source_path: record.source_path || null,
+    source: record.source || 'chat'
+  });
+}
+
+async function insertLegacyFeedbackEvent(record) {
+  const sqlInstance = getSql();
+  if (!sqlInstance) return null;
+
+  await ensureLegacyConversation(record.conversation_id, record.user_id);
+
+  await sqlInstance`
+    INSERT INTO feedback_events (id, conversation_id, message_id, feedback, reason)
+    VALUES (${record.id}, ${record.conversation_id}, NULL, 'down', ${buildLegacyReason(record)})
+  `;
+
+  return {
+    id: record.id,
+    category: record.category,
+    message: record.message,
+    missing_name: record.missing_name,
+    user_query: record.user_query,
+    request_label: record.request_label,
+    conversation_id: record.conversation_id,
+    user_id: record.user_id,
+    source_path: record.source_path,
+    source: record.source,
+    created_at: new Date().toISOString(),
+    storage: 'feedback_events'
+  };
+}
+
+async function tryPersistToDb(record) {
+  if (!DATABASE_URL) return null;
+
   try {
-    return await fn(client);
-  } finally {
-    await client.end();
+    const sqlInstance = getSql();
+    if (!sqlInstance) return null;
+
+    const rows = await sqlInstance`
+      INSERT INTO user_feedback (
+        id,
+        category,
+        message,
+        missing_name,
+        user_query,
+        request_label,
+        conversation_id,
+        user_id,
+        source_path,
+        source
+      ) VALUES (
+        ${record.id},
+        ${record.category},
+        ${record.message},
+        ${record.missing_name},
+        ${record.user_query},
+        ${record.request_label},
+        ${record.conversation_id},
+        ${record.user_id},
+        ${record.source_path},
+        ${record.source}
+      )
+      RETURNING id, category, message, missing_name, user_query, request_label, conversation_id, user_id, source_path, source, created_at
+    `;
+    return rows[0];
+  } catch (error) {
+    if (error?.code !== '42P01' && error?.code !== '42703') {
+      throw error;
+    }
   }
+
+  try {
+    await ensureTable();
+    const sqlInstance = getSql();
+    if (!sqlInstance) return null;
+    const rows = await sqlInstance`
+      INSERT INTO user_feedback (
+        id,
+        category,
+        message,
+        missing_name,
+        user_query,
+        request_label,
+        conversation_id,
+        user_id,
+        source_path,
+        source
+      ) VALUES (
+        ${record.id},
+        ${record.category},
+        ${record.message},
+        ${record.missing_name},
+        ${record.user_query},
+        ${record.request_label},
+        ${record.conversation_id},
+        ${record.user_id},
+        ${record.source_path},
+        ${record.source}
+      )
+      RETURNING id, category, message, missing_name, user_query, request_label, conversation_id, user_id, source_path, source, created_at
+    `;
+    return rows[0];
+  } catch (error) {
+    console.warn(
+      'user_feedback bootstrap failed; trying legacy fallback',
+      error?.code || error?.message || error
+    );
+  }
+
+  try {
+    if (record.conversation_id) {
+      return await insertLegacyFeedbackEvent(record);
+    }
+  } catch (error) {
+    console.warn(
+      'legacy feedback_events insert failed; trying file fallback',
+      error?.code || error?.message || error
+    );
+  }
+
+  return null;
 }
 
 async function readFileRows() {
@@ -89,148 +247,6 @@ function normalizePayload(payload) {
   };
 }
 
-async function insertDbRecord(record) {
-  return withDb(async (client) => {
-    const result = await client.query(
-      `
-        INSERT INTO user_feedback (
-          id,
-          category,
-          message,
-          missing_name,
-          user_query,
-          request_label,
-          conversation_id,
-          user_id,
-          source_path,
-          source
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-        RETURNING id, category, message, missing_name, user_query, request_label, conversation_id, user_id, source_path, source, created_at
-      `,
-      [
-        record.id,
-        record.category,
-        record.message,
-        record.missing_name,
-        record.user_query,
-        record.request_label,
-        record.conversation_id,
-        record.user_id,
-        record.source_path,
-        record.source
-      ]
-    );
-
-    return result.rows[0];
-  });
-}
-
-async function ensureUserFeedbackTable() {
-  return withDb(async (client) => {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_feedback (
-        id TEXT PRIMARY KEY,
-        category TEXT NOT NULL CHECK (category IN ('missing_name', 'general')),
-        message TEXT,
-        missing_name TEXT,
-        user_query TEXT,
-        request_label TEXT,
-        conversation_id TEXT,
-        user_id TEXT,
-        source_path TEXT,
-        source TEXT NOT NULL DEFAULT 'chat',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-
-    await client.query('CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at)');
-  });
-}
-
-async function ensureLegacyConversation(client, conversationId, userId) {
-  if (!conversationId) return;
-
-  await client.query(
-    `
-      INSERT INTO conversations (id, user_id, started_at, environment)
-      VALUES ($1, $2, NOW(), 'prod')
-      ON CONFLICT (id) DO NOTHING
-    `,
-    [conversationId, userId || null]
-  );
-}
-
-function buildLegacyReason(record) {
-  return JSON.stringify({
-    category: record.category,
-    message: record.message || '',
-    missing_name: record.missing_name || null,
-    user_query: record.user_query || null,
-    request_label: record.request_label || null,
-    source_path: record.source_path || null,
-    source: record.source || 'chat'
-  });
-}
-
-async function insertLegacyFeedbackEvent(record) {
-  return withDb(async (client) => {
-    await ensureLegacyConversation(client, record.conversation_id, record.user_id);
-
-    await client.query(
-      `
-        INSERT INTO feedback_events (id, conversation_id, message_id, feedback, reason)
-        VALUES ($1, $2, NULL, 'down', $3)
-      `,
-      [record.id, record.conversation_id, buildLegacyReason(record)]
-    );
-
-    return {
-      id: record.id,
-      category: record.category,
-      message: record.message,
-      missing_name: record.missing_name,
-      user_query: record.user_query,
-      request_label: record.request_label,
-      conversation_id: record.conversation_id,
-      user_id: record.user_id,
-      source_path: record.source_path,
-      source: record.source,
-      created_at: new Date().toISOString(),
-      storage: 'feedback_events'
-    };
-  });
-}
-
-async function tryPersistToDb(record) {
-  if (!DATABASE_URL) return null;
-
-  try {
-    return await insertDbRecord(record);
-  } catch (error) {
-    if (error?.code !== '42P01' && error?.code !== '42703') {
-      throw error;
-    }
-  }
-
-  try {
-    await ensureUserFeedbackTable();
-    return await insertDbRecord(record);
-  } catch (error) {
-    console.warn('user_feedback bootstrap failed; trying legacy fallback', error?.code || error?.message || error);
-  }
-
-  try {
-    if (record.conversation_id) {
-      return await insertLegacyFeedbackEvent(record);
-    }
-  } catch (error) {
-    console.warn('legacy feedback_events insert failed; trying file fallback', error?.code || error?.message || error);
-  }
-
-  return null;
-}
-
 export async function POST(req) {
   try {
     if (rateLimit(req)) {
@@ -266,7 +282,10 @@ export async function POST(req) {
       } catch (fileError) {
         if (fileError?.code === 'EROFS' || fileError?.code === 'EPERM') {
           return NextResponse.json(
-            { error: 'Feedback storage is not writable in this deployment. Please enable DB table user_feedback.' },
+            {
+              error:
+                'Feedback storage is not writable in this deployment. Please enable DB table user_feedback.'
+            },
             { status: 503 }
           );
         }

@@ -1,0 +1,9 @@
+name = "mubxbot"
+compatibility_date = "2026-11-12"
+pages_build_output_dir = ".next"
+
+[build]
+command = "npm run build"
+
+[env]
+DATABASE_URL = ""

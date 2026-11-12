@@ -1,30 +1,46 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'feedback_submissions.json');
+
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
 
 function unauthorized(req) {
   const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value || '';
   return !verifyAdminSessionToken(token);
 }
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
-  }
+async function ensureTable() {
+  const sqlInstance = getSql();
+  if (!sqlInstance) throw new Error('Database not configured');
+  await sqlInstance`
+    CREATE TABLE IF NOT EXISTS user_feedback (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL CHECK (category IN ('missing_name', 'general')),
+      message TEXT,
+      missing_name TEXT,
+      user_query TEXT,
+      request_label TEXT,
+      conversation_id TEXT,
+      user_id TEXT,
+      source_path TEXT,
+      source TEXT NOT NULL DEFAULT 'chat',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_feedback_category ON user_feedback (category)`;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at ON user_feedback (created_at)`;
 }
 
 async function readFileRows() {
@@ -49,54 +65,43 @@ function parseLegacyReason(value) {
 }
 
 async function readLegacyFeedbackRows(category, limit) {
-  return withDb(async (client) => {
-    const params = [limit];
-    const result = await client.query(
-      `
-        SELECT id, conversation_id, reason, created_at
-        FROM feedback_events
-        WHERE feedback = 'down'
-        ORDER BY created_at DESC
-        LIMIT $1
-      `,
-      params
-    );
+  const sqlInstance = getSql();
+  if (!sqlInstance) return [];
 
-    const mapped = result.rows.map((row) => {
-      const reason = parseLegacyReason(row.reason);
-      return {
-        id: row.id,
-        category: String(reason.category || 'general').toLowerCase(),
-        message: reason.message || row.reason || '',
-        missing_name: reason.missing_name || null,
-        user_query: reason.user_query || null,
-        request_label: reason.request_label || null,
-        conversation_id: row.conversation_id || null,
-        user_id: null,
-        source_path: reason.source_path || null,
-        source: reason.source || 'chat',
-        created_at: row.created_at
-      };
-    });
+  const rows = await sqlInstance`
+    SELECT id, conversation_id, reason, created_at
+    FROM feedback_events
+    WHERE feedback = 'down'
+    ORDER BY created_at DESC
+    LIMIT ${Math.min(500, Math.max(1, limit))}
+  `;
 
-    return applyFilters(mapped, category);
+  const mapped = rows.map((row) => {
+    const reason = parseLegacyReason(row.reason);
+    return {
+      id: row.id,
+      category: String(reason.category || 'general').toLowerCase(),
+      message: reason.message || row.reason || '',
+      missing_name: reason.missing_name || null,
+      user_query: reason.user_query || null,
+      request_label: reason.request_label || null,
+      conversation_id: row.conversation_id || null,
+      user_id: null,
+      source_path: reason.source_path || null,
+      source: reason.source || 'chat',
+      created_at: row.created_at
+    };
   });
+
+  return applyFilters(mapped, category);
 }
 
 async function readUserFeedbackRows(category, limit) {
-  return withDb(async (client) => {
-    const params = [];
-    let where = '';
+  const sqlInstance = getSql();
+  if (!sqlInstance) return [];
 
-    if (category !== 'all') {
-      params.push(category);
-      where = `WHERE category = $${params.length}`;
-    }
-
-    params.push(limit);
-
-    const result = await client.query(
-      `
+  const rows = category !== 'all'
+    ? await sqlInstance`
         SELECT
           id,
           category,
@@ -110,15 +115,29 @@ async function readUserFeedbackRows(category, limit) {
           source,
           created_at
         FROM user_feedback
-        ${where}
+        WHERE category = ${category}
         ORDER BY created_at DESC
-        LIMIT $${params.length}
-      `,
-      params
-    );
+        LIMIT ${Math.min(500, Math.max(1, limit))}
+      `
+    : await sqlInstance`
+        SELECT
+          id,
+          category,
+          message,
+          missing_name,
+          user_query,
+          request_label,
+          conversation_id,
+          user_id,
+          source_path,
+          source,
+          created_at
+        FROM user_feedback
+        ORDER BY created_at DESC
+        LIMIT ${Math.min(500, Math.max(1, limit))}
+      `;
 
-    return result.rows;
-  });
+  return rows;
 }
 
 async function tryReadFromDb(category, limit) {
@@ -197,81 +216,84 @@ export async function DELETE(req) {
     body = {};
   }
 
-  const ids = Array.isArray(body?.ids) ? body.ids.map((v) => String(v || '').trim()).filter(Boolean) : [];
+  const ids = Array.isArray(body?.ids)
+    ? body.ids.map((v) => String(v || '').trim()).filter(Boolean)
+    : [];
   const deleteAll = Boolean(body?.all);
   const category = String(body?.category || 'missing_name').toLowerCase();
 
   try {
     if (DATABASE_URL) {
-      let deleted = 0;
-      await withDb(async (client) => {
-        let affectedMissingNames = [];
+      const sqlInstance = getSql();
+      if (!sqlInstance) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+      }
 
-        if (ids.length > 0) {
-          // Best-effort: collect missing names for affected feedback rows
+      let deleted = 0;
+      let affectedMissingNames = [];
+
+      if (ids.length > 0) {
+        // Collect missing names for affected feedback rows
+        try {
+          const fb = await sqlInstance`
+            SELECT missing_name
+            FROM user_feedback
+            WHERE id = ANY(${ids}) AND category = 'missing_name'
+          `;
+          affectedMissingNames = fb.map((r) => r.missing_name).filter(Boolean);
+        } catch {
+          // ignore
+        }
+
+        const delRows = await sqlInstance`DELETE FROM user_feedback WHERE id = ANY(${ids})`;
+        deleted += delRows.length;
+
+        // Legacy feedback events (best-effort).
+        try {
+          await sqlInstance`DELETE FROM feedback_events WHERE id = ANY(${ids})`;
+        } catch {
+          // ignore legacy table errors
+        }
+      } else if (deleteAll) {
+        if (category === 'missing_name' || category === 'all') {
           try {
-            const fb = await client.query(
-              "SELECT missing_name FROM user_feedback WHERE id = ANY($1::text[]) AND category = 'missing_name'",
-              [ids]
-            );
-            affectedMissingNames = fb.rows.map((r) => r.missing_name).filter(Boolean);
+            const fb = await sqlInstance`
+              SELECT missing_name
+              FROM user_feedback
+              WHERE category = 'missing_name'
+            `;
+            affectedMissingNames = fb.map((r) => r.missing_name).filter(Boolean);
           } catch {
             // ignore
           }
+        }
 
-          const result = await client.query(
-            'DELETE FROM user_feedback WHERE id = ANY($1::text[])',
-            [ids]
+        const whereCategory = category && category !== 'all' ? `WHERE category = ${category}` : '';
+        const delRows = await sqlInstance`DELETE FROM user_feedback ${whereCategory}`;
+        deleted += delRows.length;
+      } else {
+        return NextResponse.json({ ok: true, deleted: 0 });
+      }
+
+      // Mark missing name metrics as ignored to hide from hot lists
+      if ((category === 'missing_name' || category === 'all') && affectedMissingNames.length > 0) {
+        try {
+          const names = Array.from(
+            new Set(affectedMissingNames.map((n) => String(n || '').trim()).filter(Boolean))
           );
-          deleted += result.rowCount || 0;
-
-          // Legacy feedback events (best-effort; IDs may overlap).
-          try {
-            await client.query('DELETE FROM feedback_events WHERE id = ANY($1::text[])', [ids]);
-          } catch {
-            // ignore legacy table errors
+          if (names.length > 0) {
+            await sqlInstance`
+              UPDATE missing_name_metrics
+              SET status = 'ignored', updated_at = NOW()
+              WHERE lower(display_name) = ANY(${names.map((n) => n.toLowerCase())})
+                OR name_norm = ANY(${names.map((n) => n.toLowerCase())})
+            `;
           }
-        } else if (deleteAll) {
-          if (category === 'missing_name' || category === 'all') {
-            try {
-              const fb = await client.query(
-                category === 'all' ? "SELECT missing_name FROM user_feedback WHERE category = 'missing_name'" : "SELECT missing_name FROM user_feedback WHERE category = 'missing_name'"
-              );
-              affectedMissingNames = fb.rows.map((r) => r.missing_name).filter(Boolean);
-            } catch {
-              // ignore
-            }
-          }
-          const whereCategory = category && category !== 'all' ? 'WHERE category = $1' : '';
-          const params = category && category !== 'all' ? [category] : [];
-          const result = await client.query(`DELETE FROM user_feedback ${whereCategory}`, params);
-          deleted += result.rowCount || 0;
-        } else {
-          return;
+        } catch {
+          // best-effort only
         }
+      }
 
-        // Also ignore/delete missing name metrics so hot/missing lists stay in sync
-        if ((category === 'missing_name' || category === 'all') && affectedMissingNames.length > 0) {
-          try {
-            const names = Array.from(new Set(affectedMissingNames.map((n) => String(n || '').trim()).filter(Boolean)));
-            if (names.length > 0) {
-              // Mark as ignored to hide from hot lists; if metrics table exists
-              await client.query(
-                "UPDATE missing_name_metrics SET status = 'ignored', updated_at = NOW() WHERE lower(display_name) = ANY($1) OR name_norm = ANY($1)",
-                [names.map((n) => n.toLowerCase())]
-              ).catch(async () => {
-                // Fallback: try by normalizing differently if needed
-                await client.query(
-                  "DELETE FROM missing_name_metrics WHERE lower(display_name) = ANY($1)",
-                  [names.map((n) => n.toLowerCase())]
-                ).catch(() => {});
-              });
-            }
-          } catch {
-            // best-effort only
-          }
-        }
-      });
       return NextResponse.json({ ok: true, deleted });
     }
 

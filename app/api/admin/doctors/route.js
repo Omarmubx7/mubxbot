@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../lib/adminAuth.js';
 import { markNewData, removeNewDataName } from '../../../../lib/newDataStore';
 import { markResolved as markMissingNameResolved } from '../../../../lib/missingNameMetrics.js';
@@ -9,7 +9,15 @@ import { markResolved as markMissingNameResolved } from '../../../../lib/missing
 const DATA_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
 const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
-const { Client } = pg;
+
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
 
 function unauthorized(req) {
   const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value || '';
@@ -20,41 +28,28 @@ function normalizeName(value = '') {
   return String(value).trim().toLowerCase();
 }
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
-  }
-}
-
 async function readRows() {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      const { rows } = await client.query(
-        `SELECT faculty, department, email, office, day, start, "end", type
-         FROM office_hours_entries
-         ORDER BY
-           faculty,
-           CASE LOWER(TRIM(day))
-             WHEN 'sunday'    THEN 0
-             WHEN 'monday'    THEN 1
-             WHEN 'tuesday'   THEN 2
-             WHEN 'wednesday' THEN 3
-             WHEN 'thursday'  THEN 4
-             WHEN 'friday'    THEN 5
-             WHEN 'saturday'  THEN 6
-             ELSE 7
-           END,
-           start`
-      );
-      return rows;
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return [];
+    const rows = await sqlInstance`
+      SELECT faculty, department, email, office, day, start, "end", type
+      FROM office_hours_entries
+      ORDER BY
+        faculty,
+        CASE LOWER(TRIM(day))
+          WHEN 'sunday'    THEN 0
+          WHEN 'monday'    THEN 1
+          WHEN 'tuesday'   THEN 2
+          WHEN 'wednesday' THEN 3
+          WHEN 'thursday'  THEN 4
+          WHEN 'friday'    THEN 5
+          WHEN 'saturday'  THEN 6
+          ELSE 7
+        END,
+        start
+    `;
+    return rows;
   }
 
   const raw = await fs.readFile(DATA_PATH, 'utf8');
@@ -65,42 +60,39 @@ async function readRows() {
 /**
  * Writes rows for a single faculty member only (surgical DB path).
  * For file fallback, replaces all rows for that faculty name.
+ *
+ * Note: @neondatabase/serverless does not support explicit transactions.
+ * DELETE and INSERTs run sequentially without atomic rollback.
  */
 async function writeFacultyRows(facultyName, newRows) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      await client.query('BEGIN');
-      try {
-        await client.query(
-          'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
-          [normalizeName(facultyName)]
-        );
+    const sqlInstance = getSql();
+    if (!sqlInstance) throw new Error('Database not configured');
 
-        const insertSql = `
-          INSERT INTO office_hours_entries
-            (faculty, department, email, office, day, start, "end", type)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `;
+    // neon serverless driver does not support BEGIN/COMMIT/ROLLBACK.
+    // Execute statements sequentially.
+    await sqlInstance`
+      DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = ${normalizeName(facultyName)}
+    `;
 
-        for (const row of newRows) {
-          await client.query(insertSql, [
-            row.faculty || '',
-            row.department || '',
-            row.email || '',
-            row.office || '',
-            row.day || '',
-            row.start || '',
-            row.end || '',
-            row.type || 'In-Person'
-          ]);
-        }
+    for (const row of newRows) {
+      await sqlInstance`
+        INSERT INTO office_hours_entries
+          (faculty, department, email, office, day, start, "end", type)
+        VALUES (
+          ${row.faculty || ''},
+          ${row.department || ''},
+          ${row.email || ''},
+          ${row.office || ''},
+          ${row.day || ''},
+          ${row.start || ''},
+          ${row.end || ''},
+          ${row.type || 'In-Person'}
+        )
+      `;
+    }
 
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      }
-    });
+    return;
   }
 
   // File fallback: read all, filter out this faculty, write back with new rows
@@ -114,14 +106,16 @@ async function writeFacultyRows(facultyName, newRows) {
   }
 
   const key = normalizeName(facultyName);
-  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  const filtered = allRows.filter((r) => normalizeName(r.faculty) !== key);
   const combined = [...filtered, ...newRows];
 
   try {
     await fs.writeFile(DATA_PATH, `${JSON.stringify(combined, null, 2)}\n`, 'utf8');
   } catch (error) {
     if (error?.code === 'EROFS' || error?.code === 'EPERM') {
-      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+      throw new Error(
+        'Persistent admin saves require writable storage. This deployment filesystem is read-only.'
+      );
     }
     throw error;
   }
@@ -132,13 +126,14 @@ async function writeFacultyRows(facultyName, newRows) {
  */
 async function deleteFacultyRows(facultyName) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      const { rowCount } = await client.query(
-        'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
-        [normalizeName(facultyName)]
-      );
-      return rowCount;
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return 0;
+
+    const rows = await sqlInstance`
+      DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = ${normalizeName(facultyName)}
+      RETURNING 1
+    `;
+    return rows.length;
   }
 
   // File fallback
@@ -153,14 +148,16 @@ async function deleteFacultyRows(facultyName) {
 
   const key = normalizeName(facultyName);
   const before = allRows.length;
-  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  const filtered = allRows.filter((r) => normalizeName(r.faculty) !== key);
   if (filtered.length === before) return 0;
 
   try {
     await fs.writeFile(DATA_PATH, `${JSON.stringify(filtered, null, 2)}\n`, 'utf8');
   } catch (error) {
     if (error?.code === 'EROFS' || error?.code === 'EPERM') {
-      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+      throw new Error(
+        'Persistent admin saves require writable storage. This deployment filesystem is read-only.'
+      );
     }
     throw error;
   }
@@ -168,45 +165,37 @@ async function deleteFacultyRows(facultyName) {
 }
 
 /**
- * Renames a faculty member in a single transaction (DB) or a single atomic
- * file write, so a failed save can never leave the directory with the old
- * instructor deleted and the new one missing.
+ * Renames a faculty member. DB path: DELETE old rows + INSERT new rows sequentially
+ * (no transaction support in neon serverless driver).
+ * File path: single atomic write.
  */
 async function renameFacultyRows(fromName, newRows) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      await client.query('BEGIN');
-      try {
-        await client.query(
-          'DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1',
-          [normalizeName(fromName)]
-        );
+    const sqlInstance = getSql();
+    if (!sqlInstance) throw new Error('Database not configured');
 
-        const insertSql = `
-          INSERT INTO office_hours_entries
-            (faculty, department, email, office, day, start, "end", type)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `;
+    await sqlInstance`
+      DELETE FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = ${normalizeName(fromName)}
+    `;
 
-        for (const row of newRows) {
-          await client.query(insertSql, [
-            row.faculty || '',
-            row.department || '',
-            row.email || '',
-            row.office || '',
-            row.day || '',
-            row.start || '',
-            row.end || '',
-            row.type || 'In-Person'
-          ]);
-        }
+    for (const row of newRows) {
+      await sqlInstance`
+        INSERT INTO office_hours_entries
+          (faculty, department, email, office, day, start, "end", type)
+        VALUES (
+          ${row.faculty || ''},
+          ${row.department || ''},
+          ${row.email || ''},
+          ${row.office || ''},
+          ${row.day || ''},
+          ${row.start || ''},
+          ${row.end || ''},
+          ${row.type || 'In-Person'}
+        )
+      `;
+    }
 
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      }
-    });
+    return;
   }
 
   let allRows;
@@ -219,14 +208,16 @@ async function renameFacultyRows(fromName, newRows) {
   }
 
   const key = normalizeName(fromName);
-  const filtered = allRows.filter(r => normalizeName(r.faculty) !== key);
+  const filtered = allRows.filter((r) => normalizeName(r.faculty) !== key);
   const combined = [...filtered, ...newRows];
 
   try {
     await fs.writeFile(DATA_PATH, `${JSON.stringify(combined, null, 2)}\n`, 'utf8');
   } catch (error) {
     if (error?.code === 'EROFS' || error?.code === 'EPERM') {
-      throw new Error('Persistent admin saves require writable storage. This deployment filesystem is read-only.');
+      throw new Error(
+        'Persistent admin saves require writable storage. This deployment filesystem is read-only.'
+      );
     }
     throw error;
   }
@@ -237,18 +228,18 @@ async function renameFacultyRows(fromName, newRows) {
  */
 async function facultyExists(facultyName) {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      const { rows } = await client.query(
-        'SELECT 1 FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = $1 LIMIT 1',
-        [normalizeName(facultyName)]
-      );
-      return rows.length > 0;
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return false;
+
+    const rows = await sqlInstance`
+      SELECT 1 FROM office_hours_entries WHERE LOWER(TRIM(faculty)) = ${normalizeName(facultyName)} LIMIT 1
+    `;
+    return rows.length > 0;
   }
 
   const allRows = await readRows();
   const key = normalizeName(facultyName);
-  return allRows.some(r => normalizeName(r.faculty) === key);
+  return allRows.some((r) => normalizeName(r.faculty) === key);
 }
 
 function parseDaySlots(rawValue = '') {
@@ -257,16 +248,16 @@ function parseDaySlots(rawValue = '') {
 
   return value
     .split(',')
-    .map(slot => slot.trim())
+    .map((slot) => slot.trim())
     .filter(Boolean)
-    .map(slot => {
-      const [startPart, endPart] = slot.split('-').map(part => String(part || '').trim());
+    .map((slot) => {
+      const [startPart, endPart] = slot.split('-').map((part) => String(part || '').trim());
       return {
         start: startPart || '',
         end: endPart || ''
       };
     })
-    .filter(slot => slot.start || slot.end);
+    .filter((slot) => slot.start || slot.end);
 }
 
 function buildRowsFromDoctor(doctor) {
@@ -343,7 +334,10 @@ export async function POST(req) {
     await markMissingNameResolved(doctor.name);
     return NextResponse.json({ ok: true, marked }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create doctor', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create doctor', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -401,7 +395,10 @@ export async function PUT(req) {
     await markMissingNameResolved(doctor.name);
     return NextResponse.json({ ok: true, marked, renamed: renaming }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update doctor', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update doctor', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -414,7 +411,7 @@ export async function DELETE(req) {
     const body = await req.json();
     const names = Array.isArray(body?.names)
       ? body.names.map((v) => String(v || '').trim()).filter(Boolean)
-      : (body?.name ? [String(body.name).trim()] : []);
+      : body?.name ? [String(body.name).trim()] : [];
 
     if (names.length === 0) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -434,7 +431,10 @@ export async function DELETE(req) {
 
     return NextResponse.json({ ok: true, deleted: deletedCount > 0, deletedCount });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete doctor', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete doctor', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -466,6 +466,9 @@ export async function PATCH(req) {
 
     return NextResponse.json({ ok: true, name: trimmed, isNew });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update data status', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update data status', details: error.message },
+      { status: 500 }
+    );
   }
 }

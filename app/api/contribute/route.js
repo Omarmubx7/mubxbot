@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import { notifyDataSubmission } from '../../../lib/notifications';
 import { aggregateOfficeHours } from '../../../lib/officeHours';
 import { isNewDataName } from '../../../lib/updateList';
@@ -14,7 +14,6 @@ import { DEPARTMENTS, normalizeDepartmentName, formatRoom, parseRoom } from '../
 
 export const dynamic = 'force-dynamic';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'instructor_submissions.json');
 const OFFICE_HOURS_FILE_PATH = path.join(process.cwd(), 'data', 'office_hours.json');
@@ -24,6 +23,15 @@ const SUBMISSION_LIMIT_PER_IP = 5;
 const ipHits = new Map();
 
 const HOT_SEARCH_THRESHOLD = Number(process.env.MISSING_NAME_HOT_THRESHOLD || 3);
+
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
 
 function normalizeName(value = '') {
   return String(value || '').trim().toLowerCase();
@@ -37,65 +45,52 @@ function isJunk(value = '') {
   return isLikelyJunkName(value) || isLikelyJunkNameShared(value);
 }
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
-  }
-}
-
 async function ensureTable() {
-  return withDb(async (client) => {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS instructor_submissions (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        department TEXT,
-        email TEXT,
-        office TEXT,
-        office_hours JSONB NOT NULL DEFAULT '{}'::jsonb,
-        missing_name_link TEXT,
-        missing_name_report_id TEXT,
-        origin TEXT,
-        status TEXT NOT NULL DEFAULT 'pending',
-        ip_hash TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        reviewed_at TIMESTAMPTZ,
-        reviewed_by TEXT
-      )
-    `);
-    await client.query('ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS missing_name_report_id TEXT');
-    await client.query('ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS origin TEXT');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_status ON instructor_submissions (status)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_name ON instructor_submissions (name)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_instructor_submissions_created_at ON instructor_submissions (created_at)');
-  });
+  const sqlInstance = getSql();
+  if (!sqlInstance) throw new Error('Database not configured');
+  await sqlInstance`
+    CREATE TABLE IF NOT EXISTS instructor_submissions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      department TEXT,
+      email TEXT,
+      office TEXT,
+      office_hours JSONB NOT NULL DEFAULT '{}'::jsonb,
+      missing_name_link TEXT,
+      missing_name_report_id TEXT,
+      origin TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      ip_hash TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      reviewed_at TIMESTAMPTZ,
+      reviewed_by TEXT
+    )
+  `;
+  await sqlInstance`ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS missing_name_report_id TEXT`;
+  await sqlInstance`ALTER TABLE instructor_submissions ADD COLUMN IF NOT EXISTS origin TEXT`;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_instructor_submissions_status ON instructor_submissions (status)`;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_instructor_submissions_name ON instructor_submissions (name)`;
+  await sqlInstance`CREATE INDEX IF NOT EXISTS idx_instructor_submissions_created_at ON instructor_submissions (created_at)`;
 }
 
 async function ensureMetricsTable() {
-  return withDb(async (client) => {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS missing_name_metrics (
-        name_norm TEXT PRIMARY KEY,
-        display_name TEXT,
-        search_count INTEGER NOT NULL DEFAULT 0,
-        report_count INTEGER NOT NULL DEFAULT 0,
-        first_reported_at TIMESTAMPTZ,
-        last_reported_at TIMESTAMPTZ,
-        first_searched_at TIMESTAMPTZ,
-        last_searched_at TIMESTAMPTZ,
-        resolved_at TIMESTAMPTZ,
-        status TEXT NOT NULL DEFAULT 'reported',
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-  });
+  const sqlInstance = getSql();
+  if (!sqlInstance) throw new Error('Database not configured');
+  await sqlInstance`
+    CREATE TABLE IF NOT EXISTS missing_name_metrics (
+      name_norm TEXT PRIMARY KEY,
+      display_name TEXT,
+      search_count INTEGER NOT NULL DEFAULT 0,
+      report_count INTEGER NOT NULL DEFAULT 0,
+      first_reported_at TIMESTAMPTZ,
+      last_reported_at TIMESTAMPTZ,
+      first_searched_at TIMESTAMPTZ,
+      last_searched_at TIMESTAMPTZ,
+      resolved_at TIMESTAMPTZ,
+      status TEXT NOT NULL DEFAULT 'reported',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }
 
 async function readFileRows() {
@@ -106,16 +101,14 @@ async function readFileRows() {
 
 async function readOfficeHoursRows() {
   if (DATABASE_URL) {
-    return withDb(async (client) => {
-      const { rows } = await client.query(
-        `
-          SELECT faculty, department, email, office, day, start, "end", type
-          FROM office_hours_entries
-          ORDER BY faculty
-        `
-      );
-      return rows;
-    });
+    const sqlInstance = getSql();
+    if (!sqlInstance) return [];
+    const rows = await sqlInstance`
+      SELECT faculty, department, email, office, day, start, "end", type
+      FROM office_hours_entries
+      ORDER BY faculty
+    `;
+    return rows;
   }
 
   const raw = await fs.readFile(OFFICE_HOURS_FILE_PATH, 'utf8').catch(() => '[]');
@@ -140,7 +133,7 @@ function rateLimit(req) {
   const ip = clientIp(req);
   const now = Date.now();
   const windowStart = now - 60 * 60 * 1000;
-  const hits = (ipHits.get(ip) || []).filter(t => t > windowStart);
+  const hits = (ipHits.get(ip) || []).filter((t) => t > windowStart);
   ipHits.set(ip, hits);
   if (hits.length >= SUBMISSION_LIMIT_PER_IP) return true;
   ipHits.set(ip, [...hits, now]);
@@ -157,9 +150,7 @@ function normalizePayload(payload) {
     const parsed = parseRoom(rawOffice);
     return parsed ? formatRoom(parsed.building, parsed.number) : rawOffice;
   })();
-  const officeHours = payload?.office_hours && typeof payload?.office_hours === 'object'
-    ? payload.office_hours
-    : {};
+  const officeHours = payload?.office_hours && typeof payload?.office_hours === 'object' ? payload.office_hours : {};
 
   const cleanedHours = {};
   let hasHours = false;
@@ -200,33 +191,33 @@ function normalizePayload(payload) {
 async function tryPersistToDb(record) {
   if (!DATABASE_URL) return null;
 
-  const insert = async () => withDb(async (client) => {
-    const result = await client.query(
-      `
-        INSERT INTO instructor_submissions
-          (id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, ip_hash, created_at, reviewed_at, reviewed_by)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-        RETURNING id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, created_at, reviewed_at, reviewed_by
-      `,
-      [
-        record.id,
-        record.name,
-        record.department,
-        record.email,
-        record.office,
-        JSON.stringify(record.office_hours),
-        record.missing_name_link,
-        record.missing_name_report_id,
-        record.origin,
-        record.status,
-        record.ip_hash,
-        record.created_at,
-        record.reviewed_at,
-        record.reviewed_by
-      ]
-    );
-    return result.rows[0];
-  });
+  const sqlInstance = getSql();
+  if (!sqlInstance) return null;
+
+  const insert = async () => {
+    const rows = await sqlInstance`
+      INSERT INTO instructor_submissions
+        (id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, ip_hash, created_at, reviewed_at, reviewed_by)
+      VALUES (
+        ${record.id},
+        ${record.name},
+        ${record.department},
+        ${record.email},
+        ${record.office},
+        ${JSON.stringify(record.office_hours)}::jsonb,
+        ${record.missing_name_link},
+        ${record.missing_name_report_id},
+        ${record.origin},
+        ${record.status},
+        ${record.ip_hash},
+        ${record.created_at},
+        ${record.reviewed_at},
+        ${record.reviewed_by}
+      )
+      RETURNING id, name, department, email, office, office_hours, missing_name_link, missing_name_report_id, origin, status, created_at, reviewed_at, reviewed_by
+    `;
+    return rows[0];
+  };
 
   try {
     return await insert();
@@ -256,14 +247,16 @@ async function loadReportedMissingNames() {
 
   if (DATABASE_URL) {
     try {
-      const result = await withDb((client) => client.query(
-        `SELECT DISTINCT missing_name
-           FROM user_feedback
-          WHERE category = 'missing_name'
-            AND missing_name IS NOT NULL
-            AND TRIM(missing_name) <> ''`
-      ));
-      for (const row of result.rows) {
+      const sqlInstance = getSql();
+      if (!sqlInstance) return [];
+      const rows = await sqlInstance`
+        SELECT DISTINCT missing_name
+        FROM user_feedback
+        WHERE category = 'missing_name'
+          AND missing_name IS NOT NULL
+          AND TRIM(missing_name) <> ''
+      `;
+      for (const row of rows) {
         const value = String(row?.missing_name || '').trim();
         if (value) names.add(value);
       }
@@ -304,9 +297,9 @@ export async function GET() {
       const aggregated = aggregateOfficeHours(ohRows);
       newDataNames = await loadNewDataNames();
       directoryKeys = new Set(
-        aggregated.map(d => normalizeText(d.name)).filter(Boolean)
+        aggregated.map((d) => normalizeText(d.name)).filter(Boolean)
       );
-      const stale = aggregated.filter(d => !isNewDataName(d.name, newDataNames));
+      const stale = aggregated.filter((d) => !isNewDataName(d.name, newDataNames));
 
       const seenDepartments = new Set();
       for (const item of aggregated) {
@@ -314,19 +307,19 @@ export async function GET() {
         if (canonical) seenDepartments.add(canonical);
       }
       if (seenDepartments.size > 0) {
-        departments = [...DEPARTMENTS.filter(d => seenDepartments.has(d))];
+        departments = [...DEPARTMENTS.filter((d) => seenDepartments.has(d))];
         for (const dept of seenDepartments) {
           if (!departments.includes(dept)) departments.push(dept);
         }
       }
 
       staleInstructors = stale
-        .map(d => ({
+        .map((d) => ({
           name: d.name,
           department: d.department,
           email: d.email,
           office: d.office,
-          hasOfficeHours: Object.values(d.office_hours || {}).some(v => String(v).trim()),
+          hasOfficeHours: Object.values(d.office_hours || {}).some((v) => String(v).trim()),
           existingDays: Object.entries(d.office_hours || {})
             .filter(([, v]) => String(v).trim())
             .map(([day]) => day)
@@ -377,20 +370,20 @@ export async function GET() {
     let submissionsCount = 0;
     try {
       if (DATABASE_URL) {
-        submissionsCount = await withDb(async (client) => {
-          try {
-            const result = await client.query(
-              "SELECT COUNT(*)::int AS c FROM instructor_submissions WHERE status = 'pending'"
-            );
-            return result.rows[0]?.c || 0;
-          } catch (error) {
-            if (error?.code !== '42P01' && error?.code !== '42703') throw error;
-            return 0;
-          }
-        });
+        const sqlInstance = getSql();
+        if (!sqlInstance) return [];
+        try {
+          const rows = await sqlInstance`
+            SELECT COUNT(*)::int AS c FROM instructor_submissions WHERE status = 'pending'
+          `;
+          submissionsCount = rows[0]?.c || 0;
+        } catch (error) {
+          if (error?.code !== '42P01' && error?.code !== '42703') throw error;
+          submissionsCount = 0;
+        }
       } else {
         const fileRows = await readFileRows().catch(() => []);
-        submissionsCount = fileRows.filter(r => r?.status === 'pending').length;
+        submissionsCount = fileRows.filter((r) => r?.status === 'pending').length;
       }
     } catch (error) {
       console.warn('Failed to count pending submissions', error?.message || error);
@@ -399,24 +392,27 @@ export async function GET() {
     const progressTotal = counts.total + missingNames.length;
     const progressDone = counts.total;
 
-    return NextResponse.json({
-      missingNames,
-      hotMissing,
-      staleInstructors,
-      newDataNames,
-      departments,
-      counts,
-      submissionsCount,
-      progress: {
-        total: progressTotal,
-        filled: progressDone,
-        missing: missingNames.length,
-        percent: progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 100
+    return NextResponse.json(
+      {
+        missingNames,
+        hotMissing,
+        staleInstructors,
+        newDataNames,
+        departments,
+        counts,
+        submissionsCount,
+        progress: {
+          total: progressTotal,
+          filled: progressDone,
+          missing: missingNames.length,
+          percent: progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 100
+        },
+        hotThreshold: HOT_SEARCH_THRESHOLD,
+        generatedAt: new Date().toISOString(),
+        source: DATABASE_URL ? 'database' : 'file'
       },
-      hotThreshold: HOT_SEARCH_THRESHOLD,
-      generatedAt: new Date().toISOString(),
-      source: DATABASE_URL ? 'database' : 'file'
-    }, { status: 200 });
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to load missing names', details: error.message },
@@ -458,7 +454,10 @@ export async function POST(req) {
       } catch (fileError) {
         if (fileError?.code === 'EROFS' || fileError?.code === 'EPERM') {
           return NextResponse.json(
-            { error: 'Submissions storage is not writable in this deployment. Please enable DB table instructor_submissions.' },
+            {
+              error:
+                'Submissions storage is not writable in this deployment. Please enable DB table instructor_submissions.'
+            },
             { status: 503 }
           );
         }
@@ -476,13 +475,16 @@ export async function POST(req) {
       console.warn('data submission notification email failed', error?.message || error);
     });
 
-    return NextResponse.json({
-      ...responseRecord,
-      celebration: {
-        message: `Thanks! ${record.name} is on the way into the directory.`,
-        thanks: 'You just saved the next person a search.'
-      }
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        ...responseRecord,
+        celebration: {
+          message: `Thanks! ${record.name} is on the way into the directory.`,
+          thanks: 'You just saved the next person a search.'
+        }
+      },
+      { status: 201 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to submit data', details: error.message },

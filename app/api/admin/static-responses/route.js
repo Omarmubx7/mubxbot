@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 
-const { Client } = pg;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
 const FILE_PATH = path.join(process.cwd(), 'data', 'static_responses.json');
+
+let sql = null;
+
+function getSql() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
 
 function toBool(value, fallback = true) {
   if (typeof value === 'boolean') return value;
@@ -31,40 +39,29 @@ function validatePayload(payload) {
   return null;
 }
 
-async function withDb(fn) {
-  const client = new Client({
-    connectionString: DATABASE_URL,
-    ssl: (process.env.PGSSL_MODE === 'disable' ? false : { rejectUnauthorized: true, ...(process.env.SSL_ROOT_CERT ? { ca: process.env.SSL_ROOT_CERT } : {}) })
-  });
-
-  await client.connect();
-  try {
-    return await fn(client);
-  } finally {
-    await client.end();
-  }
-}
-
 export async function GET() {
   try {
     if (DATABASE_URL) {
-      const rows = await withDb(async (client) => {
-        const result = await client.query(
-          `
-            SELECT id, trigger, response, audience, is_active, created_at, updated_at
-            FROM bot_static_responses
-            ORDER BY id DESC
-          `
-        );
-        return result.rows;
-      });
+      const sqlInstance = getSql();
+      if (!sqlInstance) {
+        const rows = await readFileRows();
+        return NextResponse.json(rows);
+      }
+      const rows = await sqlInstance`
+        SELECT id, trigger, response, audience, is_active, created_at, updated_at
+        FROM bot_static_responses
+        ORDER BY id DESC
+      `;
       return NextResponse.json(rows);
     }
 
     const rows = await readFileRows();
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to load static responses', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to load static responses', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -82,18 +79,17 @@ export async function POST(req) {
     };
 
     if (DATABASE_URL) {
-      const created = await withDb(async (client) => {
-        const result = await client.query(
-          `
-            INSERT INTO bot_static_responses (trigger, response, audience, is_active)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id, trigger, response, audience, is_active, created_at, updated_at
-          `,
-          [nextRecord.trigger, nextRecord.response, nextRecord.audience, nextRecord.is_active]
-        );
-        return result.rows[0];
-      });
-      return NextResponse.json(created, { status: 201 });
+      const sqlInstance = getSql();
+      if (!sqlInstance) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+      }
+
+      const rows = await sqlInstance`
+        INSERT INTO bot_static_responses (trigger, response, audience, is_active)
+        VALUES (${nextRecord.trigger}, ${nextRecord.response}, ${nextRecord.audience}, ${nextRecord.is_active})
+        RETURNING id, trigger, response, audience, is_active, created_at, updated_at
+      `;
+      return NextResponse.json(rows[0], { status: 201 });
     }
 
     const rows = await readFileRows();
@@ -107,7 +103,10 @@ export async function POST(req) {
     await writeFileRows(nextRows);
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create static response', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create static response', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -130,40 +129,42 @@ export async function PUT(req) {
     };
 
     if (DATABASE_URL) {
-      const updated = await withDb(async (client) => {
-        const result = await client.query(
-          `
-            UPDATE bot_static_responses
-            SET trigger = $1,
-                response = $2,
-                audience = $3,
-                is_active = $4,
-                updated_at = NOW()
-            WHERE id = $5
-            RETURNING id, trigger, response, audience, is_active, created_at, updated_at
-          `,
-          [nextRecord.trigger, nextRecord.response, nextRecord.audience, nextRecord.is_active, id]
-        );
-        return result.rows[0] || null;
-      });
+      const sqlInstance = getSql();
+      if (!sqlInstance) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+      }
 
-      if (!updated) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
-      return NextResponse.json(updated);
+      const rows = await sqlInstance`
+        UPDATE bot_static_responses
+        SET trigger = ${nextRecord.trigger},
+            response = ${nextRecord.response},
+            audience = ${nextRecord.audience},
+            is_active = ${nextRecord.is_active},
+            updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING id, trigger, response, audience, is_active, created_at, updated_at
+      `;
+
+      if (!rows[0]) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+      return NextResponse.json(rows[0]);
     }
 
-    const rows = await readFileRows();
-    const idx = rows.findIndex((row) => Number(row.id) === id);
+    const fileRows = await readFileRows();
+    const idx = fileRows.findIndex((row) => Number(row.id) === id);
     if (idx === -1) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
 
-    rows[idx] = {
-      ...rows[idx],
+    fileRows[idx] = {
+      ...fileRows[idx],
       ...nextRecord,
       updated_at: new Date().toISOString()
     };
-    await writeFileRows(rows);
-    return NextResponse.json(rows[idx]);
+    await writeFileRows(fileRows);
+    return NextResponse.json(fileRows[idx]);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update static response', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update static response', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -176,22 +177,30 @@ export async function DELETE(req) {
     }
 
     if (DATABASE_URL) {
-      const deleted = await withDb(async (client) => {
-        const result = await client.query('DELETE FROM bot_static_responses WHERE id = $1 RETURNING id', [id]);
-        return result.rows[0] || null;
-      });
+      const sqlInstance = getSql();
+      if (!sqlInstance) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+      }
 
-      if (!deleted) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+      const rows = await sqlInstance`
+        DELETE FROM bot_static_responses WHERE id = ${id} RETURNING id
+      `;
+
+      if (!rows[0]) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
       return NextResponse.json({ ok: true });
     }
 
-    const rows = await readFileRows();
-    const nextRows = rows.filter((row) => Number(row.id) !== id);
-    if (nextRows.length === rows.length) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    const fileRows = await readFileRows();
+    const nextRows = fileRows.filter((row) => Number(row.id) !== id);
+    if (nextRows.length === fileRows.length)
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
 
     await writeFileRows(nextRows);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete static response', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete static response', details: error.message },
+      { status: 500 }
+    );
   }
 }

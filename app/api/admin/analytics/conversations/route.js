@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '../../../../../lib/adminAuth.js';
-import { coercePage, hasAnalyticsDb, parseDateRange, safeQuery, withAnalyticsDb } from '../../../../../lib/adminAnalyticsDb.js';
+import { Pool } from '@neondatabase/serverless';
+import { coercePage, parseDateRange } from '../../../../../lib/adminAnalyticsDb.js';
+
+const DATABASE_URL = process.env.DATABASE_URL || process.env.STORAGE_DATABASE_URL || '';
+
+let pool = null;
+
+function getPool() {
+  if (!pool && DATABASE_URL) {
+    pool = new Pool({ connectionString: DATABASE_URL });
+  }
+  return pool;
+}
 
 function unauthorized(req) {
   const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value || '';
@@ -12,7 +24,8 @@ export async function GET(req) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasAnalyticsDb()) {
+  const poolInstance = getPool();
+  if (!poolInstance) {
     return NextResponse.json({ rows: [], total: 0, page: 1, pageSize: 20, range: null, warning: 'Database is not configured' });
   }
 
@@ -189,58 +202,49 @@ export async function GET(req) {
   const outerWhereSql = outerWhere.length > 0 ? `WHERE ${outerWhere.join(' AND ')}` : '';
 
   try {
-    const data = await withAnalyticsDb(async (client) => {
-      const countRes = await safeQuery(
-        client,
-        `${baseSql} SELECT COUNT(*)::int AS total FROM base ${outerWhereSql}`,
-        params,
-        [{ total: 0 }]
-      );
+    const countResult = await poolInstance.query(
+      `${baseSql} SELECT COUNT(*)::int AS total FROM base ${outerWhereSql}`,
+      params
+    );
+    const total = Number(countResult.rows[0]?.total || 0);
 
-      const dataParams = [...params, pageSize, offset];
-      const rowsRes = await safeQuery(
-        client,
-        `
-          ${baseSql}
-          SELECT
-            base.id,
-            base.id AS conversation_id,
-            base.id AS session_id,
-            base.user_id,
-            base.department,
-            base.started_at,
-            base.ended_at,
-            base.first_message_at,
-            base.last_activity_at,
-            EXTRACT(EPOCH FROM (COALESCE(base.last_activity_at, NOW()) - base.started_at))::int AS duration_seconds,
-            base.message_count,
-            base.actual_message_count,
-            base.has_smart_search,
-            base.has_error,
-            base.success,
-            base.detected_intent,
-            base.status,
-            base.feedback_state,
-            base.escalation_state,
-            base.meta
-          FROM base
-          ${outerWhereSql}
-          ORDER BY ${sortColumn} ${sortDir}, base.started_at DESC
-          LIMIT $${dataParams.length - 1}
-          OFFSET $${dataParams.length}
-        `,
-        dataParams,
-        []
-      );
-
-      return {
-        total: Number(countRes.rows[0]?.total || 0),
-        rows: rowsRes.rows
-      };
-    });
+    const dataParams = [...params, pageSize, offset];
+    const rowsResult = await poolInstance.query(
+      `
+        ${baseSql}
+        SELECT
+          base.id,
+          base.id AS conversation_id,
+          base.id AS session_id,
+          base.user_id,
+          base.department,
+          base.started_at,
+          base.ended_at,
+          base.first_message_at,
+          base.last_activity_at,
+          EXTRACT(EPOCH FROM (COALESCE(base.last_activity_at, NOW()) - base.started_at))::int AS duration_seconds,
+          base.message_count,
+          base.actual_message_count,
+          base.has_smart_search,
+          base.has_error,
+          base.success,
+          base.detected_intent,
+          base.status,
+          base.feedback_state,
+          base.escalation_state,
+          base.meta
+        FROM base
+        ${outerWhereSql}
+        ORDER BY ${sortColumn} ${sortDir}, base.started_at DESC
+        LIMIT $${dataParams.length - 1}
+        OFFSET $${dataParams.length}
+      `,
+      dataParams
+    );
 
     return NextResponse.json({
-      ...data,
+      total,
+      rows: rowsResult.rows,
       page,
       pageSize,
       range: {
