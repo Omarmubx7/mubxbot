@@ -1,56 +1,29 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-data/raw/.next/
-App Development/dist/
-
+# Build artifacts
 .next/
+.open-next/
+.wrangler/
+out/
 
-# Environment variables
+# Dependencies
+node_modules/
+
+# Environment files
 .env
 .env.local
-.env.*.local
-.env.*
-!.env.example
+.env.production
 
-# Local security scan artifacts
-gitleaks-*.json
+# Logs
+logs/
+*.log
 
-# Python cache/temp artifacts
-__pycache__/
-*.pyc
+# IDE
+.vscode/
+.idea/
 
-# Local tool cache
-.qodo/
+# OS
+.DS_Store
+Thumbs.db
 
-
-# Watcher state
-data/snapshot.json
-# data/new_data_names.json is tracked: it is the committed NEW-name baseline
-# (Postgres new_data_names table takes over when DATABASE_URL is set)
-
-# Runtime user-submitted data (PII) - never commit
-data/user_feedback.json
-data/feedback_submissions.json
-data/instructor_submissions.json
+# Misc
+*.tmp
+*.zip

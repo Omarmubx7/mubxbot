@@ -1,9 +1,7 @@
 name = "mubxbot"
 compatibility_date = "2026-11-12"
-pages_build_output_dir = ".next"
-
-[build]
-command = "npm run build"
+main = ".open-next/worker.js"
+assets = { directory = ".open-next/assets" }
 
 [env]
 DATABASE_URL = ""
